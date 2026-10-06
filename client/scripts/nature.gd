@@ -67,7 +67,7 @@ func clear_at(p: Vector2, for_tree: bool) -> bool:
 	return true
 
 func stream_at(viewer: Vector3) -> void:
-	var next = Vector2i(floori(viewer.x / GRASS_TILE), floori(viewer.z / GRASS_TILE))
+	var next = Vector2i(floori((viewer.x + terrain.origin.x) / GRASS_TILE), floori((viewer.z + terrain.origin.z) / GRASS_TILE))
 	var radius = quality + 2
 	if next != grass_center:
 		grass_center = next
@@ -81,7 +81,7 @@ func stream_at(viewer: Vector3) -> void:
 				var key = next + Vector2i(x, z)
 				if not grass.has(key): pending_grass.append(key)
 		pending_grass.sort_custom(func(a, b): return a.distance_squared_to(next) < b.distance_squared_to(next))
-	var grove = Vector2i(floori(viewer.x / GROVE_TILE), floori(viewer.z / GROVE_TILE))
+	var grove = Vector2i(floori((viewer.x + terrain.origin.x) / GROVE_TILE), floori((viewer.z + terrain.origin.z) / GROVE_TILE))
 	var grove_radius = quality + 1
 	if grove != grove_center:
 		grove_center = grove
@@ -123,7 +123,7 @@ func build_grass(key: Vector2i) -> void:
 	var rng = seeded(key, 1931)
 	var transforms: Array[Transform3D] = []
 	var colors: Array[Color] = []
-	var corner = Vector2(key.x, key.y) * GRASS_TILE
+	var corner = Vector2(key.x, key.y) * GRASS_TILE - Vector2(terrain.origin.x, terrain.origin.z)
 	var base = Vector3(corner.x, terrain.height_at(corner.x + 12, corner.y + 12), corner.y)
 	for i in range([256, 640, 960][quality]):
 		var p = corner + Vector2(rng.randf_range(0, GRASS_TILE), rng.randf_range(0, GRASS_TILE))
@@ -153,7 +153,7 @@ func build_grove(key: Vector2i) -> void:
 	var node = Node3D.new()
 	add_child(node)
 	groves[key] = node
-	var corner = Vector2(key.x, key.y) * GROVE_TILE
+	var corner = Vector2(key.x, key.y) * GROVE_TILE - Vector2(terrain.origin.x, terrain.origin.z)
 	for i in range(3):
 		var p = corner + Vector2(rng.randf_range(8, 72), rng.randf_range(8, 72))
 		if not clear_at(p, true): continue

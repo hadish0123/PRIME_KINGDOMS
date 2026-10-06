@@ -49,6 +49,26 @@ func run() -> void:
 	game.player.frozen = true
 	for frame in range(80): await process_frame
 	check(game.terrain.nature.grass.size() <= 49 and game.terrain.nature.groves.size() <= 25, "Balanced scenery allocation exceeded its budget")
+	# Two players can render the same global place relative to different homes.
+	# Verify generated instance positions, not just a seed/helper implementation.
+	var original_origin: Vector3 = game.terrain.origin
+	var key = Vector2i.ZERO
+	for candidate in game.terrain.nature.grass:
+		if game.terrain.nature.grass[candidate].multimesh.instance_count > 0:
+			key = candidate
+			break
+	var first = game.terrain.nature.grass[key]
+	var first_world: Vector3 = first.position + first.multimesh.get_instance_transform(0).origin + original_origin
+	var mirror = load("res://scripts/nature.gd").new()
+	mirror.terrain = game.terrain
+	game.world_root.add_child(mirror)
+	game.terrain.origin += Vector3(512, 0, 512)
+	mirror.build_grass(key)
+	var second = mirror.grass[key]
+	var second_world: Vector3 = second.position + second.multimesh.get_instance_transform(0).origin + game.terrain.origin
+	game.terrain.origin = original_origin
+	check(first_world.distance_to(second_world) < 0.001, "Shared-world foliage differs between village origins")
+	mirror.queue_free()
 	camera.position = game.player.position + Vector3(1.10, 1.65, -2.75)
 	camera.look_at(game.player.position + Vector3(0, 1.05, 0))
 	camera.current = true
