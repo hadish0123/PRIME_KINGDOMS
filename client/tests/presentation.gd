@@ -29,6 +29,15 @@ func run() -> void:
 	game.toggle_settings()
 	game.toggle_map()
 	await capture("atlas", game.map_panel)
+	game.toggle_map()
+	game.toggle_residents()
+	await capture("units",game.residents_panel)
+	game.toggle_residents()
+	for action in game.touch_controls.actions:
+		var rectangle = action.get_global_rect()
+		if not root.get_visible_rect().encloses(rectangle):
+			failures.append("Action button does not fit the screen")
+			push_error(failures.back())
 	print("NATIVE_PRESENTATION ", JSON.stringify({"failures": failures, "actual_3d_login": true, "settings": true, "atlas": true}))
 	game.queue_free()
 	await process_frame

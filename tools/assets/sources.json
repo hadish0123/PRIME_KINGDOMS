@@ -458,5 +458,93 @@
     "author": "MakeHuman Community",
     "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
     "archive_member": "clothes/male_casualsuit01/male_casualsuit01_normal.png"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/pine_tree_01/pine_tree_01_twig_diff_1k.jpg",
+    "sha256": "e649f0f9bc74d1af5f1a45eaf2fe7a29adaaddfab251f746b983da301e4b80e1",
+    "destination": "textures/pine_twig_diff.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/pine_tree_01"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/pine_tree_01/pine_tree_01_twig_alpha_1k.jpg",
+    "sha256": "bee10734c529a874570da6e4091758de5cc7dee17a359eeacd9c67fde1cb0947",
+    "destination": "textures/pine_twig_alpha.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/pine_tree_01"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/pine_tree_01/pine_tree_01_twig_nor_gl_1k.jpg",
+    "sha256": "2a02a482a18d20255c800845902d5e0061d2a2d14107d7c4ed0b789414153141",
+    "destination": "textures/pine_twig_normal.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/pine_tree_01"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_moss_set_02/rock_moss_set_02_1k.gltf",
+    "sha256": "c3b992a7622e94f7d8da97a47277a2a5177a513af0312a127ec908d4056c97db",
+    "destination": "nature/rock_moss_set_02/rock_moss_set_02.gltf",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/rock_moss_set_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_02/rock_moss_set_02_nor_gl_1k.jpg",
+    "sha256": "dd2503789089fb72ef469efd14364d393e769c0de8781a251475cac7e0b6f51d",
+    "destination": "nature/rock_moss_set_02/textures/rock_moss_set_02_nor_gl_1k.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/rock_moss_set_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_02/rock_moss_set_02_diff_1k.jpg",
+    "sha256": "91dd2cc77d5198b067d77e5bdb3fa8ee7b8950aeff5aec2c1ccaddb76dcca481",
+    "destination": "nature/rock_moss_set_02/textures/rock_moss_set_02_diff_1k.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/rock_moss_set_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_02/rock_moss_set_02_rough_1k.jpg",
+    "sha256": "12252219a98a560940359973e83af831abdcfab0ead3f0a2a7b135a0143105f1",
+    "destination": "nature/rock_moss_set_02/textures/rock_moss_set_02_rough_1k.jpg",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/rock_moss_set_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/rock_moss_set_02/rock_moss_set_02.bin",
+    "sha256": "2df9d8eaaca4207529b0f613d4886d3962d0b9ffc0cdfd2bc4bf35dbcd391cb5",
+    "destination": "nature/rock_moss_set_02/rock_moss_set_02.bin",
+    "license": "CC0",
+    "source": "https://polyhaven.com/a/rock_moss_set_02"
+  },
+  {
+    "repository": "google/fonts",
+    "ref": "7085eb89a950e85db5b166b7a58d414544b4140c",
+    "path": "ofl/cinzel/Cinzel[wght].ttf",
+    "sha": "d218a0b9c8879fd5a708872cc0ef357e507b35ca",
+    "destination": "fonts/Cinzel.ttf",
+    "license": "SIL-OFL-1.1"
+  },
+  {
+    "repository": "google/fonts",
+    "ref": "7085eb89a950e85db5b166b7a58d414544b4140c",
+    "path": "ofl/cinzel/OFL.txt",
+    "sha": "afdfd1412be934fe7cc40a5a2c5e06e354c44dcf",
+    "destination": "fonts/Cinzel-OFL.txt",
+    "license": "SIL-OFL-1.1"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/macrodetails/caucasian-male-old.target",
+    "sha": "07b1f5526a3139dbd528efe07452d0a454106d0d",
+    "destination": "human/core/targets/macrodetails/caucasian-male-old.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "url": "https://opengameart.org/sites/default/files/riggedHorse.blend",
+    "destination": "horse/riggedHorse.blend",
+    "license": "CC0-1.0",
+    "author": "Lyndon Daniels; rig by ChadM",
+    "page": "https://opengameart.org/content/rigged-horse",
+    "sha256": "9cca670b93a74d50e89263e50d55ab035a6c46aa7d2b21e354bdac6987037f4a"
   }
 ]

@@ -9,6 +9,9 @@ const TouchControls = preload("res://scripts/touch_controls.gd")
 const Atlas = preload("res://scripts/atlas.gd")
 const Preferences = preload("res://scripts/preferences.gd")
 const Contract = preload("res://scripts/contract.gd")
+const Minimap = preload("res://scripts/minimap.gd")
+const Horse = preload("res://scripts/horse.gd")
+const Practice = preload("res://scripts/practice.gd")
 var api: Node
 var terrain: Node3D
 var player: CharacterBody3D
@@ -58,6 +61,11 @@ var auth_camera: Camera3D
 var auth_angle = 0.6
 var auth_scroll: ScrollContainer
 var auth_card: PanelContainer
+var auth_ground: Node3D
+var minimap: Control
+var residents_panel: Control
+var horse: Node3D
+var mount_busy = false
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -91,6 +99,7 @@ func build_auth_stage(force: bool = false) -> void:
 	auth_stage = Node3D.new()
 	add_child(auth_stage)
 	var ground = Terrain.new()
+	auth_ground = ground
 	auth_stage.add_child(ground)
 	var base = Vector3(0, Terrain.raw_height(0, 0, 7331), 0)
 	var preview = {"id": "menu-scenery", "name": "", "position": {"x": 0, "y": base.y, "z": 0}, "npcs": []}
@@ -102,58 +111,60 @@ func build_auth_stage(force: bool = false) -> void:
 	var hero = Actor.new()
 	auth_stage.add_child(hero)
 	hero.setup("player")
-	hero.position = Vector3(-1, 0.1, 22)
-	hero.rotation.y = 0.6
+	hero.position = Vector3(5, 0.1, 25)
+	hero.rotation.y = PI+0.2
 	auth_camera = Camera3D.new()
 	auth_stage.add_child(auth_camera)
-	auth_camera.fov = 55
+	auth_camera.fov = 58
+	auth_camera.far = 6500
 	auth_camera.current = true
 	update_auth_camera(0.0)
 
 func update_auth_camera(delta: float) -> void:
 	if not is_instance_valid(auth_camera): return
-	auth_angle += delta * 0.025
-	auth_camera.position = Vector3(sin(auth_angle) * 35, 13, cos(auth_angle) * 35 + 8)
-	auth_camera.look_at(Vector3(0, 3, -8))
+	auth_angle += delta * 0.08
+	auth_camera.position = Vector3(3.1+sin(auth_angle)*0.3, 1.8, 29)
+	auth_camera.look_at(Vector3(0, 3.4, -19))
+	if is_instance_valid(auth_ground): auth_ground.stream_at(Vector3(5,0,25))
 
 func setup_lighting() -> void:
 	var environment = Environment.new()
 	var sky = Sky.new()
-	var sky_material = PanoramaSkyMaterial.new()
-	sky_material.panorama = load("res://assets/textures/sky.hdr")
-	sky_material.energy_multiplier = 0.8
+	var sky_material = ShaderMaterial.new()
+	sky_material.shader = load("res://shaders/sky.gdshader")
+	sky_material.set_shader_parameter("panorama",load("res://assets/textures/sky.hdr"))
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_energy = 0.28
+	environment.ambient_light_energy = 0.34
 	environment.ambient_light_color = Color(0.76, 0.82, 0.89)
 	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.69, 0.75, 0.80)
-	environment.fog_density = 0.00085
+	environment.fog_density = 0.00012
 	environment.fog_sky_affect = 0.0
 	var world_environment = WorldEnvironment.new()
 	world_environment.environment = environment
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-38, -32, 0)
+	sun.rotation_degrees = Vector3(-34, -24, 0)
 	sun.light_color = Color(1.0, 0.95, 0.86)
-	sun.light_energy = 1.05
+	sun.light_energy = 1.12
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04
 	sun.shadow_normal_bias = 0.6
 	add_child(sun)
 
-func panel_style(color: Color, border: Color = Color(0.47, 0.40, 0.26)) -> StyleBoxFlat:
+func panel_style(color: Color, border: Color = Color(0.60, 0.47, 0.27)) -> StyleBoxFlat:
 	var style = StyleBoxFlat.new()
 	style.bg_color = color
 	style.border_color = border
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
+	style.set_corner_radius_all(2)
 	style.content_margin_left = 22
 	style.content_margin_right = 22
 	style.content_margin_top = 18
@@ -165,6 +176,9 @@ func label(text_value: String, font_size: int = 18, color = Color(0.88, 0.89, 0.
 	item.text = text_value
 	item.add_theme_font_size_override("font_size", font_size)
 	item.add_theme_color_override("font_color", color)
+	item.add_theme_color_override("font_shadow_color",Color(0,0,0,0.75))
+	item.add_theme_constant_override("shadow_offset_y",1)
+	if font_size >= 20: item.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
 	return item
 
 func button(text_value: String, callback: Callable) -> Button:
@@ -172,9 +186,13 @@ func button(text_value: String, callback: Callable) -> Button:
 	item.text = text_value
 	item.custom_minimum_size.y = 46
 	item.add_theme_font_size_override("font_size", 17)
-	item.add_theme_stylebox_override("normal", panel_style(Color(0.10, 0.18, 0.21)))
-	item.add_theme_stylebox_override("hover", panel_style(Color(0.18, 0.28, 0.29), Color(0.83, 0.69, 0.40)))
-	item.add_theme_stylebox_override("pressed", panel_style(Color(0.30, 0.29, 0.20)))
+	item.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	item.add_theme_color_override("font_color",Color(0.94,0.85,0.67))
+	for entry in [["normal",Color(0.065,0.052,0.043,0.88)],["hover",Color(0.18,0.13,0.075,0.94)],["pressed",Color(0.28,0.18,0.07,0.98)]]:
+		var style = panel_style(entry[1])
+		style.content_margin_top = 11
+		style.content_margin_bottom = 11
+		item.add_theme_stylebox_override(entry[0],style)
 	item.pressed.connect(callback)
 	return item
 
@@ -185,7 +203,7 @@ func input_field(placeholder: String, secret: bool = false) -> LineEdit:
 	item.custom_minimum_size.y = 45
 	item.add_theme_font_size_override("font_size", 18)
 	item.max_length = 254 if not secret else 256
-	item.add_theme_stylebox_override("normal", panel_style(Color(0.06, 0.11, 0.14), Color(0.24, 0.32, 0.33)))
+	item.add_theme_stylebox_override("normal", panel_style(Color(0.04, 0.033, 0.028,0.88), Color(0.40, 0.33, 0.24)))
 	return item
 
 func build_ui() -> void:
@@ -195,7 +213,7 @@ func build_ui() -> void:
 	auth_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(auth_panel)
 	var backdrop = ColorRect.new()
-	backdrop.color = Color(0.03, 0.07, 0.10, 0.38)
+	backdrop.color = Color(0.025, 0.022, 0.017, 0.10)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	auth_panel.add_child(backdrop)
 	auth_scroll = ScrollContainer.new()
@@ -203,19 +221,25 @@ func build_ui() -> void:
 	auth_scroll.follow_focus = true
 	auth_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	auth_panel.add_child(auth_scroll)
-	var center = CenterContainer.new()
+	var center = MarginContainer.new()
+	center.add_theme_constant_override("margin_left",42)
+	center.add_theme_constant_override("margin_right",42)
+	center.add_theme_constant_override("margin_top",28)
+	center.add_theme_constant_override("margin_bottom",28)
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	auth_scroll.add_child(center)
 	var card = PanelContainer.new()
 	auth_card = card
 	card.custom_minimum_size.x = 480
-	card.add_theme_stylebox_override("panel", panel_style(Color(0.055, 0.10, 0.13)))
+	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	card.add_theme_stylebox_override("panel", panel_style(Color(0.036, 0.028, 0.022,0.88)))
 	center.add_child(card)
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 13)
 	card.add_child(column)
-	column.add_child(label("P R I M E   K I N G D O M S", 27, Color(0.90, 0.77, 0.48)))
+	column.add_child(label("PRIME KINGDOMS", 32, Color(0.95, 0.80, 0.50)))
 	column.add_child(label("Your story begins with a village.", 17))
 	display_name = input_field("Ruler name · required for a new account")
 	display_name.max_length = 24
@@ -241,7 +265,7 @@ func build_ui() -> void:
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.custom_minimum_size = Vector2(420, 45)
 	column.add_child(status_label)
-	column.add_child(label("PRIME KINGDOMS · 0.3 · Online world", 13, Color(0.47, 0.57, 0.60)))
+	column.add_child(label("PRIME KINGDOMS · %s · Online world" % ProjectSettings.get_setting("application/config/version"), 13, Color(0.63, 0.57, 0.45)))
 
 	hud = Control.new()
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -249,37 +273,56 @@ func build_ui() -> void:
 	hud.visible = false
 	ui.add_child(hud)
 	var info = PanelContainer.new()
-	info.position = Vector2(22, 18)
-	info.custom_minimum_size.x = 315
-	info.add_theme_stylebox_override("panel", panel_style(Color(0.035, 0.07, 0.09, 0.88)))
+	info.position = Vector2(18, 14)
+	info.custom_minimum_size.x = 280
+	var info_style = panel_style(Color(0.025, 0.022, 0.017, 0.82))
+	info_style.content_margin_top = 9
+	info_style.content_margin_bottom = 9
+	info.add_theme_stylebox_override("panel",info_style)
 	hud.add_child(info)
 	var info_column = VBoxContainer.new()
 	info.add_child(info_column)
 	info_column.add_child(label("PRIME KINGDOMS", 20, Color(0.9, 0.78, 0.5)))
 	village_label = label("", 17)
 	info_column.add_child(village_label)
-	info_column.add_child(label("8 SOLDIERS    /    5 VILLAGERS", 13))
 	connection_label = label("Connected", 13, Color(0.62, 0.79, 0.61))
 	info_column.add_child(connection_label)
 	position_label = label("", 12, Color(0.66, 0.71, 0.67))
 	info_column.add_child(position_label)
+	var population = PanelContainer.new()
+	population.position = Vector2(318,14)
+	var population_style = panel_style(Color(0.025,0.022,0.017,0.78))
+	population_style.content_margin_top = 9
+	population_style.content_margin_bottom = 9
+	population.add_theme_stylebox_override("panel",population_style)
+	population.add_child(label("8 SOLDIERS     ·     5 VILLAGERS     ·     65.5 km WORLD",16,Color(0.91,0.82,0.62)))
+	hud.add_child(population)
+	minimap = Minimap.new()
+	minimap.game = self
+	hud.add_child(minimap)
+	minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	minimap.offset_left = -208
+	minimap.offset_right = -24
+	minimap.offset_top = 62
+	minimap.offset_bottom = 246
 	var top_actions = HBoxContainer.new()
-	top_actions.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	top_actions.position = Vector2(-448, 20)
+	top_actions.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	top_actions.position = Vector2(-298,-76)
 	top_actions.add_theme_constant_override("separation", 12)
 	hud.add_child(top_actions)
-	top_actions.add_child(button("MAP", toggle_map))
+	top_actions.add_child(button("UNITS", toggle_residents))
+	top_actions.add_child(button("WORLD", toggle_map))
 	top_actions.add_child(button("SETTINGS", toggle_settings))
 	top_actions.add_child(button("SIGN OUT", sign_out))
-	var hint = label("WASD · Shift run · Space jump · Hold right mouse to look", 14)
+	var hint = label("WASD · Shift run · Space jump · F sword · X lie · E ride · RMB look", 12)
 	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	hint.position = Vector2(26, -38)
 	hud.add_child(hint)
 	if DisplayServer.is_touchscreen_available():
 		hint.text = "Left thumb: move   ·   Right thumb: look"
-		touch_controls = TouchControls.new()
-		hud.add_child(touch_controls)
-		touch_controls.blocked_regions.append_array([info, top_actions])
+	touch_controls = TouchControls.new()
+	hud.add_child(touch_controls)
+	touch_controls.blocked_regions.append_array([info, population, top_actions,minimap])
 	map_panel = PanelContainer.new()
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	map_panel.position = Vector2(-380, -240)
@@ -302,8 +345,79 @@ func build_ui() -> void:
 	map_column.add_child(button("REGION / ENTIRE WORLD", func(): atlas.entire_world = not atlas.entire_world))
 	map_column.add_child(button("RETURN TO WORLD", toggle_map))
 	map_panel.visible = false
+	build_residents()
 	get_viewport().size_changed.connect(update_safe_area)
 	update_safe_area()
+
+func build_residents() -> void:
+	residents_panel = PanelContainer.new()
+	residents_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	residents_panel.position = Vector2(-285,-260)
+	residents_panel.size = Vector2(570,520)
+	residents_panel.add_theme_stylebox_override("panel",panel_style(Color(0.035,0.028,0.022,0.96)))
+	hud.add_child(residents_panel)
+	residents_panel.visible = false
+
+func toggle_residents() -> void:
+	if not in_world: return
+	residents_panel.visible = not residents_panel.visible
+	map_panel.visible = false
+	settings_panel.visible = false
+	for child in residents_panel.get_children(): child.queue_free()
+	var column = VBoxContainer.new()
+	residents_panel.add_child(column)
+	column.add_child(label("YOUR PEOPLE",25,Color(0.94,0.80,0.50)))
+	column.add_child(label(state.village.name,17))
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(520,250)
+	column.add_child(scroll)
+	var list = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	for resident in state.village.npcs:
+		list.add_child(label("%s     ·     %s" % [resident.name,str(resident.role).capitalize()],18))
+	column.add_child(label("Army: %s  ·  Land: %d plots" % [str(state.player.get("armyOrder","guard")).capitalize(),int(state.get("territories",{}).get("owned",1))],16))
+	var orders = HBoxContainer.new()
+	column.add_child(orders)
+	orders.add_child(button("MARCH",func(): command_army("follow")))
+	orders.add_child(button("HOLD",func(): command_army("guard")))
+	orders.add_child(button("CLAIM LAND",claim_ground))
+	column.add_child(button("RETURN TO WORLD",toggle_residents))
+	apply_control_state()
+
+func command_army(order: String) -> void:
+	if not in_world or not network_online: return
+	var epoch = world_epoch
+	var response: Dictionary = await api.call_api("/v1/player/order",{"order":order})
+	if epoch != world_epoch or not in_world: return
+	if not response.ok:
+		connection_label.text = "Army command could not be saved"
+		return
+	state.player.armyOrder = response.data.order
+	connection_label.text = "Army marching with you" if order == "follow" else "Army holding position"
+	update_settlements()
+	if residents_panel.visible:
+		residents_panel.visible = false
+		toggle_residents()
+
+func claim_ground() -> void:
+	if not in_world or not network_online or saving: return
+	var epoch = world_epoch
+	if not await sync_position(): return
+	if epoch != world_epoch or not in_world: return
+	var response: Dictionary = await api.call_api("/v1/territory/claim",{})
+	if epoch != world_epoch or not in_world: return
+	if not response.ok:
+		var reasons = {"army_required":"Choose MARCH before claiming land","army_too_far":"Wait for all eight soldiers to reach you","territory_center_required":"Stand within 90 m of a land center (X/Z multiples of 512)","territory_already_owned":"This land already belongs to you","territory_occupied":"This land belongs to another ruler"}
+		connection_label.text = reasons.get(response.error,"Land claim could not be saved")
+		return
+	state.territories = response.data.territories
+	state.village.stage = response.data.stage
+	village_label.text = str(state.player.displayName)+" · "+str(state.village.stage).capitalize()
+	connection_label.text = "Land secured · %d plots" % int(state.territories.owned)
+	if residents_panel.visible:
+		residents_panel.visible = false
+		toggle_residents()
 
 func update_safe_area() -> void:
 	if OS.get_name() != "Android": return
@@ -415,6 +529,7 @@ func enter_world(game_state: Dictionary) -> void:
 	if is_instance_valid(auth_stage): auth_stage.queue_free()
 	auth_stage = null
 	auth_camera = null
+	auth_ground = null
 	villages.clear()
 	known_villages.clear()
 	remote_players.clear()
@@ -431,6 +546,7 @@ func enter_world(game_state: Dictionary) -> void:
 	player = Player.new()
 	world_root.add_child(player)
 	player.terrain = terrain
+	player.game = self
 	player.half_world = float(state.world.sizeM) / 2.0 - 20.0
 	player.position = decode_position(state.player.position)
 	# Models face +Z, while the orbit camera looks toward -Z.
@@ -438,6 +554,16 @@ func enter_world(game_state: Dictionary) -> void:
 	player.actor.rotation.y = float(state.player.yaw)
 	preferences.apply(self)
 	terrain.ensure_spawn(player.position)
+	horse = Horse.new()
+	world_root.add_child(horse)
+	var mount_state = state.player.get("mount",{"mounted":false,"position":{"x":origin.x+12,"y":origin.y+0.1,"z":origin.z+20}})
+	horse.position = decode_position(mount_state.position)
+	player.apply_mount(mount_state.mounted)
+	state.player.mount = mount_state
+	mount_busy = false
+	var practice = Practice.new()
+	world_root.add_child(practice)
+	practice.position = Vector3(9,0,17)
 	if touch_controls:
 		touch_controls.player = player
 		touch_controls.enabled = true
@@ -456,6 +582,7 @@ func enter_world(game_state: Dictionary) -> void:
 	reconnect_delay = 1.0
 	map_panel.visible = false
 	settings_panel.visible = false
+	residents_panel.visible = false
 	update_settlements()
 	apply_control_state()
 	save_clock = 0
@@ -464,26 +591,35 @@ func enter_world(game_state: Dictionary) -> void:
 	await get_tree().process_frame
 
 func decode_position(p: Dictionary) -> Vector3:
-	return Vector3(float(p.x), float(p.y), float(p.z)) - origin
+	var canonical = Vector3(float(p.x), float(p.y), float(p.z)) - origin
+	return terrain.to_view(canonical) if is_instance_valid(terrain) else canonical
 
 func add_village(data: Dictionary) -> void:
 	if villages.has(data.id): return
 	var settlement = Village.new()
 	world_root.add_child(settlement)
 	settlement.configure(data, origin, data.ownerPlayerId == state.player.id)
+	for npc in settlement.population:
+		npc.terrain = terrain
+		var source = data.npcs.filter(func(n): return n.id == npc.npc_id)[0]
+		npc.home = settlement.to_local(decode_position(source.position))
+		npc.position = npc.home+Vector3(0,0.1,0)
 	villages[data.id] = settlement
 
 func update_settlements() -> void:
 	if not is_instance_valid(player): return
 	for id in villages.keys():
 		var distance: float = villages[id].position.distance_to(player.position)
-		if not known_villages.has(id) or distance > render_distance + 100.0:
+		if id != state.village.id and (not known_villages.has(id) or distance > render_distance + 100.0):
 			villages[id].queue_free()
 			villages.erase(id)
 	for settlement in known_villages.values():
 		if decode_position(settlement.position).distance_to(player.position) < render_distance:
 			add_village(settlement)
 	for settlement in villages.values():
+		for npc in settlement.population:
+			npc.following = settlement.village_id == state.village.id and npc.role == "soldier" and state.player.get("armyOrder","guard") == "follow"
+			npc.follow_target = player
 		settlement.update_population(player.global_position, 80.0 if preferences.quality > 0 else 55.0)
 	for remote in remote_players.values():
 		var active: bool = remote.node.position.distance_to(player.position) < 150.0
@@ -492,8 +628,9 @@ func update_settlements() -> void:
 
 func apply_control_state() -> void:
 	if not in_world or not is_instance_valid(player): return
-	var blocked: bool = not network_online or app_paused or signing_out or quitting or map_panel.visible or settings_panel.visible
+	var blocked: bool = not network_online or app_paused or signing_out or quitting or mount_busy or map_panel.visible or settings_panel.visible or residents_panel.visible
 	if blocked:
+		player.cancel_actions()
 		player.touch_move = Vector2.ZERO
 		player.touch_sprint = false
 		player.jump_requested = false
@@ -508,6 +645,37 @@ func connection_failed(message: String = "Connection lost · reconnecting…") -
 	network_online = false
 	reconnect_clock = 0.0
 	connection_label.text = message
+	apply_control_state()
+
+func toggle_horse() -> void:
+	if not in_world or not network_online or mount_busy or saving: return
+	var occupied: bool = state.player.mount.mounted
+	if not occupied and not player.can_mount_at(horse):
+		connection_label.text = "Clear space around the horse before mounting"
+		return
+	if occupied:
+		var at = player.global_position+Basis(Vector3.UP,player.actor.rotation.y)*Vector3(1.35,0,0)
+		at.y = terrain.height_at(at.x,at.z)+0.1
+		if not player.can_stand(at):
+			connection_label.text = "Move the horse to an open spot before dismounting"
+			return
+	var epoch = world_epoch
+	if not await sync_position(): return
+	if epoch != world_epoch or not in_world: return
+	mount_busy = true
+	apply_control_state()
+	var response: Dictionary = await api.call_api("/v1/player/mount",{"mounted":not occupied})
+	if epoch != world_epoch or not in_world: return
+	mount_busy = false
+	if response.ok:
+		player.apply_mount(response.data.mounted)
+		player.position = decode_position(response.data.playerPosition)
+		if not response.data.mounted: horse.position = decode_position(response.data.horsePosition)
+		state.player.mount = {"mounted":response.data.mounted,"position":response.data.horsePosition}
+		state.player.position = response.data.playerPosition
+		player.velocity = Vector3.ZERO
+		connection_label.text = "Mounted · horse state saved" if response.data.mounted else "Dismounted · horse state saved"
+	else: connection_label.text = "Stand beside your horse to ride" if response.error == "horse_too_far" else "Horse interaction could not be saved"
 	apply_control_state()
 
 func expire_session() -> void:
@@ -551,13 +719,14 @@ func sync_position() -> bool:
 	if not in_world or saving or not network_online: return false
 	var epoch = world_epoch
 	saving = true
-	var p = player.position + origin
+	var p = terrain.to_canonical(player.position) + origin
 	var response: Dictionary = await api.call_api("/v1/player/move", {"position": {"x": p.x, "y": p.y, "z": p.z}, "yaw": player.actor.rotation.y})
 	if epoch != world_epoch or not in_world: return false
 	saving = false
 	if response.ok:
 		state.player.position = response.data.position
 		state.player.yaw = response.data.yaw
+		apply_confirmed_army(response.data.get("army",[]))
 		connection_label.text = "Connected · position saved"
 		apply_control_state()
 		return true
@@ -584,12 +753,17 @@ func recover_connection() -> void:
 		expire_session()
 		return
 	state = response.data
+	var mount_state = state.player.get("mount",{"mounted":false,"position":{"x":origin.x+12,"y":origin.y+0.1,"z":origin.z+20}})
+	state.player.mount = mount_state
+	player.apply_mount(mount_state.mounted)
+	if not mount_state.mounted: horse.position = decode_position(mount_state.position)
 	player.position = decode_position(state.player.position)
 	player.actor.rotation.y = float(state.player.yaw)
 	player.velocity = Vector3.ZERO
 	player.jump_requested = false
 	terrain.ensure_spawn(player.position)
 	known_villages[state.village.id] = state.village
+	apply_confirmed_army(state.village.npcs.filter(func(n): return n.role == "soldier"))
 	network_online = true
 	reconnect_delay = 1.0
 	save_clock = 0.0
@@ -606,13 +780,20 @@ func poll_world() -> void:
 	if epoch != world_epoch or not in_world: return
 	polling = false
 	if response.ok and in_world:
+		if response.data.has("territories"): state.territories = response.data.territories
 		var visible_villages: Array = response.data.villages
 		# Own home stays represented in terrain even while exploring far away.
 		if not visible_villages.any(func(v): return v.id == state.village.id):
 			visible_villages.append(state.village)
 		known_villages.clear()
 		for village in visible_villages: known_villages[village.id] = village
+		var own = visible_villages.filter(func(v): return v.id == state.village.id)
+		if not own.is_empty():
+			state.village.npcs = own[0].npcs
+			apply_confirmed_army(own[0].npcs.filter(func(n): return n.role == "soldier"))
+		var canonical = terrain.to_canonical(player.position)
 		terrain.update_villages(visible_villages)
+		player.position = terrain.to_view(canonical)
 		terrain.ensure_spawn(player.position)
 		var remote_ids = response.data.players.map(func(p): return p.id)
 		for id in remote_players.keys():
@@ -653,17 +834,27 @@ func poll_world() -> void:
 	elif response.status == 401: expire_session()
 	else: connection_failed()
 
+func apply_confirmed_army(units: Array) -> void:
+	if not villages.has(state.village.id): return
+	for unit in units:
+		for npc in villages[state.village.id].population:
+			if npc.npc_id != unit.id: continue
+			npc.home = npc.get_parent().to_local(decode_position(unit.position))
+			if not npc.visible: npc.position = npc.home+Vector3(0,0.1,0)
+
 func toggle_map() -> void:
 	if not in_world: return
+	residents_panel.visible = false
 	map_panel.visible = not map_panel.visible
 	settings_panel.visible = false
 	apply_control_state()
 	var p = player.position + origin
 	var v: Dictionary = state.village.position
-	map_text.text = "65.536 × 65.536 km · shared persistent terrain\n\nYour location:  X %d   /   Z %d\nYour village:   X %d   /   Z %d\nHome distance:  %.0f m\n\nKnown nearby settlements: %d\nBeyond the villages, the world is currently empty." % [p.x, p.z, v.x, v.z, Vector2(p.x - float(v.x), p.z - float(v.z)).length(), known_villages.size()]
+	map_text.text = "65.536 × 65.536 km · shared persistent terrain\n\nYour location:  X %d   /   Z %d\nYour village:   X %d   /   Z %d\nHome distance:  %.0f m\n\nOwned land: %d plots\nLand centers are 512 m apart. March with eight soldiers to claim unoccupied land.\nOccupied homes require a future warfare system." % [p.x, p.z, v.x, v.z, Vector2(p.x - float(v.x), p.z - float(v.z)).length(),int(state.get("territories",{}).get("owned",1))]
 
 func toggle_settings() -> void:
 	if not in_world: return
+	residents_panel.visible = false
 	settings_panel.visible = not settings_panel.visible
 	map_panel.visible = false
 	apply_control_state()
@@ -672,7 +863,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if in_world and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_M or event.keycode == KEY_TAB: toggle_map()
 		elif event.keycode == KEY_ESCAPE:
-			if map_panel.visible: toggle_map()
+			if residents_panel.visible: toggle_residents()
+			elif map_panel.visible: toggle_map()
 			else: toggle_settings()
 
 func sign_out() -> void:
@@ -704,6 +896,8 @@ func sign_out() -> void:
 func leave_world(message: String) -> void:
 	world_epoch += 1
 	in_world = false
+	mount_busy = false
+	residents_panel.visible = false
 	if is_instance_valid(world_root): world_root.queue_free()
 	villages.clear()
 	known_villages.clear()

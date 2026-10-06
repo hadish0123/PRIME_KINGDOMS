@@ -2,9 +2,9 @@
 
 A persistent third-person kingdom game, beginning with a small village and eventually growing into cities, countries and empires.
 
-## Play milestone 0.4
+## Play milestone 0.5
 
-[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.4.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.5.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
 
 Install the APK, choose a ruler name, email and password (at least 10 characters), then select **CREATE ACCOUNT**. Select **ENTER WORLD** for an existing account. The app remembers an unexpired session on the same device.
 
@@ -21,7 +21,7 @@ Install the APK, choose a ruler name, email and password (at least 10 characters
 - A real 3D animated login backdrop, retry for remembered sessions, scrollable account form, safe-area controls, settings and a world atlas.
 - Railway hosts the Node.js/PostgreSQL API. Graphics run on the Android device, not on Railway.
 
-Version 0.4 upgrades this foundation with anatomical humans, textured faces/garments, eight skeletal motions, stone-and-timber architecture and wind-animated foliage/capes. It is a tested graphics milestone, with actual screenshots and animation.mp4 in the release. It does not yet match photorealistic AAA/PUBG art, and Android hardware performance has not been measured; 30/60 FPS are profile targets. NPCs use local presentation patrol/guard/work clips. Combat, economy, growth/conquest, independent server NPC simulation, PRIME powers and seven Legends remain future systems. [Release notes and actual limits](docs/RELEASE_0_4.md).
+Version 0.5 adds a visible draw/sheathe sword, practice strikes, lying/crawling, an anatomical horse with persisted mount/parked state, server-saved follow/hold orders for the same eight soldiers and exclusive claims of unoccupied land. It includes sixteen human clips, five horse clips, armor/cape, a fortified village, photographic foliage/rocks and an actual 3D minimap. Fractional movement saves no longer fail and snap the player back. This remains below the supplied photorealistic reference: full hostile combat, occupied-village conquest, physical-device performance, economy, autonomous NPC brains, PRIME powers and seven Legends are unfinished. [Release notes, controls and actual limits](docs/RELEASE_0_5.md).
 
 ## Controls
 
@@ -31,8 +31,13 @@ Version 0.4 upgrades this foundation with anatomical humans, textured faces/garm
 | Look | Hold right mouse and drag | Drag the right side |
 | Sprint | Shift | RUN toggle |
 | Jump | Space | JUMP |
+| Draw / sheathe | F | SWORD |
+| Practice strike | Left mouse | ATTACK |
+| Lie / stand | X | LIE / UP |
+| Mount / dismount | E | RIDE |
+| Army and land orders | UNITS | UNITS |
 | Camera distance | Mouse wheel | Default third-person distance |
-| World atlas | M / Tab / MAP | MAP |
+| World atlas | M / Tab / WORLD | WORLD |
 | Graphics / camera settings | Escape / SETTINGS | SETTINGS / device Back |
 
 ## Client development

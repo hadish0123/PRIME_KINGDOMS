@@ -1,6 +1,7 @@
 import { ApiError } from './errors.js';
 import { hashPassword, verifyPassword, normalizeEmail, validatePassword, validateDisplayName, createSession } from './auth.js';
 import { villageLocation, settledHeight } from './terrain.js';
+import { LAND_LOCK, territoryState, marchArmy } from './strategy.js';
 
 export async function register(pool, body) {
   const email = normalizeEmail(body.email);
@@ -16,17 +17,25 @@ export async function register(pool, body) {
     `, [email, displayName, passwordHash])).rows[0];
     const world = (await client.query("SELECT id, seed FROM worlds WHERE slug = 'prime-world'")).rows[0];
     if (!world) throw new ApiError(503, 'world_unavailable');
-    const slot = Number((await client.query("SELECT nextval('village_slot_sequence') AS slot")).rows[0].slot);
-    let position;
-    try { position = villageLocation(slot, world.seed); }
-    catch { throw new ApiError(503, 'world_capacity'); }
+    await client.query('SELECT pg_advisory_xact_lock($1)',[LAND_LOCK]);
+    const occupiedCells=new Set((await client.query('SELECT cell_x,cell_z FROM territories WHERE world_id=$1',[world.id])).rows.map(c=>`${c.cell_x},${c.cell_z}`));
+    const firstSlot=Number((await client.query("SELECT nextval('village_slot_sequence') AS slot")).rows[0].slot);
+    let position, slot=firstSlot;
+    for (;slot<16000;slot++) {
+      try { position = villageLocation(slot, world.seed); }
+      catch { throw new ApiError(503, 'world_capacity'); }
+      if (!occupiedCells.has(`${Math.round(position.x/512)},${Math.round(position.z/512)}`)) break;
+    }
+    if (slot>=16000) throw new ApiError(503,'world_capacity');
+    if (slot>firstSlot) await client.query("SELECT nextval('village_slot_sequence') FROM generate_series(1,$1::integer)",[slot-firstSlot]);
     playerId = (await client.query(`
-      INSERT INTO players(account_id, world_id, x, y, z) VALUES ($1,$2,$3,$4,$5) RETURNING id
-    `, [account.id, world.id, position.x, position.y + 0.1, position.z + 12])).rows[0].id;
+      INSERT INTO players(account_id, world_id, x, y, z,horse_x,horse_y,horse_z) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id
+    `, [account.id, world.id, position.x, position.y + 0.1, position.z + 12,position.x+12,position.y+0.1,position.z+20])).rows[0].id;
     const village = (await client.query(`
       INSERT INTO villages(world_id, owner_player_id, slot, name, x, y, z)
       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id
     `, [world.id, playerId, slot, `${displayName}'s Village`, position.x, position.y, position.z])).rows[0];
+    await client.query('INSERT INTO territories(world_id,cell_x,cell_z,owner_player_id,is_home) VALUES($1,$2,$3,$4,true)',[world.id,Math.round(position.x/512),Math.round(position.z/512),playerId]);
     for (const [role, count] of [['soldier', 8], ['villager', 5]]) {
       for (let ordinal = 0; ordinal < count; ordinal++) {
         const x = position.x + (role === 'soldier' ? -23 : 23) + (ordinal % 4) * 3;
@@ -92,9 +101,11 @@ export async function gameState(pool, playerId) {
   const npcs = (await pool.query('SELECT * FROM npcs WHERE village_id = $1 ORDER BY role, ordinal', [village.id])).rows;
   await pool.query('UPDATE players SET last_seen_at = now() WHERE id = $1', [playerId]);
   return {
-    player: { id: player.id, displayName: player.display_name, position: { x: player.x, y: player.y, z: player.z }, yaw: player.yaw },
+    player: { id: player.id, displayName: player.display_name, position: { x: player.x, y: player.y, z: player.z }, yaw: player.yaw, armyOrder:player.army_order,
+      mount:{mounted:player.mounted,position:{x:player.horse_x,y:player.horse_y,z:player.horse_z}} },
     world: { id: player.world_id, name: player.world_name, seed: player.seed, sizeM: player.size_m, terrainVersion: 1 },
     village: villageDTO(village, npcs),
+    territories: await territoryState(pool,player),
   };
 }
 
@@ -107,7 +118,7 @@ export async function movePlayer(pool, identity, body) {
   try {
     await client.query('BEGIN');
     const previous = (await client.query(`
-      SELECT p.x, p.y, p.z, p.position_updated_at, p.movement_credit, w.size_m, w.seed,
+      SELECT p.x, p.y, p.z, p.army_order, p.position_updated_at, p.movement_credit, w.size_m, w.seed,
         extract(epoch FROM (now() - p.position_updated_at))::double precision AS elapsed
       FROM players p JOIN worlds w ON w.id = p.world_id WHERE p.id = $1 FOR UPDATE OF p
     `, [identity.player_id])).rows[0];
@@ -135,10 +146,14 @@ export async function movePlayer(pool, identity, body) {
     const yaw = ((body.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     await client.query(`
       UPDATE players SET x=$2, y=$3, z=$4, yaw=$5, movement_credit=$6, position_updated_at=now(), last_seen_at=now()
+        ,horse_x=CASE WHEN mounted THEN $2 ELSE horse_x END
+        ,horse_y=CASE WHEN mounted THEN $3 ELSE horse_y END
+        ,horse_z=CASE WHEN mounted THEN $4 ELSE horse_z END
       WHERE id=$1
     `, [identity.player_id, pos.x, pos.y, pos.z, yaw, credit]);
+    const army=await marchArmy(client,identity,previous,pos,yaw,villages);
     await client.query('COMMIT');
-    return { position: pos, yaw };
+    return { position: pos, yaw, army };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     throw error;
@@ -146,7 +161,7 @@ export async function movePlayer(pool, identity, body) {
 }
 
 export async function nearbyWorld(pool, identity) {
-  const player = (await pool.query('SELECT x,z FROM players WHERE id = $1', [identity.player_id])).rows[0];
+  const player = (await pool.query('SELECT id,world_id,x,z FROM players WHERE id = $1', [identity.player_id])).rows[0];
   if (!player) throw new ApiError(404, 'player_unavailable');
   const villages = (await pool.query(`
     SELECT * FROM villages WHERE world_id = $1
@@ -163,5 +178,6 @@ export async function nearbyWorld(pool, identity) {
   return {
     villages: villages.map((village) => villageDTO(village, npcs.filter((npc) => npc.village_id === village.id))),
     players: players.map((p) => ({ id: p.id, displayName: p.display_name, position: { x: p.x, y: p.y, z: p.z }, yaw: p.yaw })),
+    territories: await territoryState(pool,player),
   };
 }

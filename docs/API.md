@@ -1,4 +1,4 @@
-# API 0.4
+# API 0.5
 
 Base URL: `https://prime-kingdoms-api-production.up.railway.app`
 
@@ -15,6 +15,9 @@ All responses are JSON. Write requests require `Content-Type: application/json` 
 | `GET /v1/game` | Authenticated | Own player, world and village with persistent NPC identities |
 | `POST /v1/player/move` | Authenticated, `position: {x,y,z}`, `yaw` | Saves only the authenticated player's position; rejects invalid coordinates, world-boundary violations and excessive horizontal travel |
 | `GET /v1/world/nearby` | Authenticated | Nearby villages with residents and nearby other players seen within 15 seconds |
+| `POST /v1/player/order` | Authenticated, `order: "follow"` or `"guard"` | Saves the order for this account's existing eight soldiers |
+| `POST /v1/player/mount` | Authenticated, `mounted: true` or `false` | Range-checked mount/dismount; returns confirmed player and parked horse positions |
+| `POST /v1/territory/claim` | Authenticated, `{}` | Claims unoccupied land at the current saved position with all eight soldiers; returns cell, saved stage and nearby ownership |
 
 Passwords require at least 10 Unicode characters and at most 256 UTF-8 bytes. Ruler names contain 2–24 characters. Emails are normalized to lowercase; email verification and password recovery are not implemented in this milestone. Sessions expire after 14 days and are stored as SHA-256 token hashes. An account retains at most five active sessions; the oldest is revoked when the limit is exceeded. Expired sessions are cleaned when creating a session. Authentication is rate-limited; expensive password hashing has a bounded concurrency limit. Registration and login assemble their game-state response inside the same transaction that creates the session.
 
@@ -22,4 +25,10 @@ Horizontal movement is bounded at 12 metres per second using server time, with a
 
 The world spans coordinates `-32768..32768` metres on X and Z; player movement uses a 20-metre edge margin. Starter village slots follow a unique square spiral at 512-metre spacing. All players share the existing world seed. The same versioned terrain height function is implemented in JavaScript and GDScript and tested against common reference points.
 
-Movement replication uses HTTP snapshots with client interpolation. This milestone does not provide a final authoritative combat or NPC simulation. NPC patrol animation is local presentation; NPC identity, role, home and initial population are persisted by the server. Client-supplied player IDs never select the account being moved.
+Game state includes `player.armyOrder`, `player.mount: {mounted,position}` and `territories: {owned,cells}`. Each nearby cell contains integer `x/z`, `ownerPlayerId` and `home`. A movement save returns eight confirmed army positions when following; mounted saves also update the own horse position. Neither army commands nor repeated saves reset the movement-credit reservoir.
+
+Land cell centers are X/Z multiples of 512 m, indices -63..63. Claims require follow order, the saved player within 90 m of the center and all eight soldiers within 40 m. Occupied cells are never transferred. Home-cell registration and claims share a transaction lock; new registrations skip already owned cells. At 4/12/32 owned plots the saved village stage becomes city/country/empire. This stage is a land-count progression field, not a completed building/economy simulation.
+
+Mounting requires this account's parked horse within 3.2 m. Dismounting places the player 1.35 m to the side at canonical ground height. Client collision checks refuse unsafe dismount space. The server persists mount state and horse coordinates; a client cannot select another account's horse by sending IDs.
+
+Movement replication uses HTTP snapshots with client interpolation. Patrols are local presentation; following soldier positions advance by at most 5.4 m/s on saves. This milestone does not provide final authoritative combat, independent NPC thought or continuous offline army simulation. Client-supplied player IDs never select the account being moved, ordered or granted land.

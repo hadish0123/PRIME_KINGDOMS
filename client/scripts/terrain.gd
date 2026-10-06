@@ -1,6 +1,7 @@
 extends Node3D
 
 const Nature = preload("res://scripts/nature.gd")
+const Landscape = preload("res://scripts/landscape.gd")
 const CHUNK_SIZE = 160.0
 const RADIUS = 6
 var view_radius = 5
@@ -13,6 +14,10 @@ var pending: Array[Vector2i] = []
 var center = Vector2i(100000, 100000)
 var material: ShaderMaterial
 var nature: Node3D
+var horizon: Dictionary = {}
+var pending_horizon: Array[Vector2i] = []
+var horizon_center = Vector2i(100000,100000)
+var horizon_material: ShaderMaterial
 
 func set_radius(value: int) -> void:
 	var next = clampi(value, 4, RADIUS)
@@ -46,7 +51,13 @@ func height_at(x: float, z: float) -> float:
 		var distance = Vector2(wx - float(p.x), wz - float(p.z)).length()
 		if distance < 125.0:
 			y = lerpf(float(p.y), y, smoothstep(78.0, 125.0, distance))
-	return y - origin.y
+	return y + Landscape.relief(wx, wz, seed_value, villages) - origin.y
+
+func to_view(canonical: Vector3) -> Vector3:
+	return canonical + Vector3(0, Landscape.relief(canonical.x + origin.x, canonical.z + origin.z, seed_value, villages), 0)
+
+func to_canonical(visual: Vector3) -> Vector3:
+	return visual - Vector3(0, Landscape.relief(visual.x + origin.x, visual.z + origin.z, seed_value, villages), 0)
 
 func configure(world: Dictionary, base: Vector3, settlements: Array) -> void:
 	seed_value = int(world.seed)
@@ -61,6 +72,12 @@ func configure(world: Dictionary, base: Vector3, settlements: Array) -> void:
 			var suffix = "diff" if map_name == "map" else map_name
 			material.set_shader_parameter(role + "_" + map_name, load("res://assets/textures/%s_%s.jpg" % [asset_name, suffix]))
 	material.set_shader_parameter("village_center", Vector2(float(villages[0].position.x) - origin.x, float(villages[0].position.z) - origin.z))
+	material.set_shader_parameter("global_origin", origin)
+	for map_name in ["map", "normal", "rough"]:
+		var suffix = "diff" if map_name == "map" else map_name
+		material.set_shader_parameter("rock_" + map_name, load("res://assets/textures/rocky_terrain_02_%s.jpg" % suffix))
+	horizon_material = material.duplicate()
+	horizon_material.set_shader_parameter("far_surface", true)
 	nature = Nature.new()
 	nature.terrain = self
 	add_child(nature)
@@ -74,8 +91,12 @@ func update_villages(settlements: Array) -> void:
 	if changed.is_empty(): return
 	villages = settlements
 	if nature: nature.reset()
+	for far_node in horizon.values(): far_node.queue_free()
+	horizon.clear()
+	pending_horizon.clear()
+	horizon_center = Vector2i(100000,100000)
 	for key in chunks.keys():
-		var tile = Rect2(Vector2(key.x * CHUNK_SIZE, key.y * CHUNK_SIZE), Vector2.ONE * CHUNK_SIZE).grow(125.0)
+		var tile = Rect2(Vector2(key.x * CHUNK_SIZE, key.y * CHUNK_SIZE), Vector2.ONE * CHUNK_SIZE).grow(1800.0)
 		if changed.any(func(v): return tile.has_point(Vector2(float(v.position.x) - origin.x, float(v.position.z) - origin.z))):
 			chunks[key].queue_free()
 			chunks.erase(key)
@@ -84,6 +105,7 @@ func update_villages(settlements: Array) -> void:
 
 func stream_at(position_value: Vector3) -> void:
 	if nature: nature.stream_at(position_value)
+	stream_horizon(position_value)
 	var next = Vector2i(int(floor(position_value.x / CHUNK_SIZE)), int(floor(position_value.z / CHUNK_SIZE)))
 	if center.x != 100000:
 		# Keep tiny physics corrections near a tile edge from rebuilding both LOD rings.
@@ -135,7 +157,7 @@ func build_chunk(key: Vector2i) -> void:
 	var visual = MeshInstance3D.new()
 	visual.mesh = mesh
 	visual.material_override = material
-	if distance > 2: visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.add_child(visual)
 	if distance <= 2:
 		var body = StaticBody3D.new()
@@ -157,3 +179,45 @@ func ensure_spawn(position_value: Vector3) -> void:
 			if not chunks.has(key):
 				pending.erase(key)
 				build_chunk(key)
+
+func stream_horizon(viewer: Vector3) -> void:
+	var next = Vector2i(floori((viewer.x + origin.x) / 640.0), floori((viewer.z + origin.z) / 640.0))
+	if next != horizon_center:
+		horizon_center = next
+		pending_horizon.clear()
+		for key in horizon.keys():
+			if maxi(absi(key.x-next.x),absi(key.y-next.y)) > 5:
+				horizon[key].queue_free()
+				horizon.erase(key)
+		for z in range(-5,6):
+			for x in range(-5,6):
+				var key = next + Vector2i(x,z)
+				if not horizon.has(key): pending_horizon.append(key)
+		pending_horizon.sort_custom(func(a,b): return a.distance_squared_to(next) < b.distance_squared_to(next))
+	for i in range(3):
+		if not pending_horizon.is_empty(): build_horizon(pending_horizon.pop_front())
+
+func build_horizon(key: Vector2i) -> void:
+	var surface = SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var corner = Vector2(key.x,key.y) * 640.0 - Vector2(origin.x,origin.z)
+	for z in range(17):
+		for x in range(17):
+			var px = corner.x + x * 40.0
+			var pz = corner.y + z * 40.0
+			var normal = Vector3(height_at(px-3,pz)-height_at(px+3,pz),6,height_at(px,pz-3)-height_at(px,pz+3)).normalized()
+			surface.set_normal(normal)
+			surface.set_uv(Vector2(px,pz))
+			surface.add_vertex(Vector3(x*40.0,height_at(px,pz)-0.2,z*40.0))
+	for z in range(16):
+		for x in range(16):
+			var a = z * 17 + x
+			for index in [a,a+1,a+17,a+1,a+18,a+17]: surface.add_index(index)
+	surface.generate_tangents()
+	var visual = MeshInstance3D.new()
+	visual.mesh = surface.commit()
+	visual.position = Vector3(corner.x,0,corner.y)
+	visual.material_override = horizon_material
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(visual)
+	horizon[key] = visual

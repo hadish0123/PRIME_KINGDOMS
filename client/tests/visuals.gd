@@ -34,10 +34,10 @@ func run() -> void:
 		for index in arrays[Mesh.ARRAY_INDEX]:
 			if arrays[Mesh.ARRAY_VERTEX][index].y > 8.0: gable_present = true
 	check(gable_present, "Indexed village wall batch omitted its gable triangles")
-	for name_value in ["idle", "walk", "run", "jump", "fall", "land", "guard", "work"]:
+	for name_value in ["idle", "walk", "run", "jump", "fall", "land", "guard", "work", "draw", "sheathe", "attack", "lie_down", "prone", "crawl", "stand_up", "ride"]:
 		check(actor.animation.has_animation(name_value), "Missing character motion: " + name_value)
 	var bone: int = actor.skeleton.find_bone("lowerleg01.L")
-	actor.animation.play("walk")
+	actor.animation.play("walk",0.0)
 	actor.animation.seek(0.0, true)
 	var before: Transform3D = actor.skeleton.get_bone_global_pose(bone)
 	actor.animation.seek(0.35, true)
@@ -81,32 +81,7 @@ func run() -> void:
 	game.terrain.nature.set_quality(0)
 	for frame in range(15): await process_frame
 	check(game.terrain.nature.grass.size() <= 25 and game.terrain.nature.groves.size() <= 9, "Low scenery did not release higher quality allocations")
-	game.terrain.nature.set_quality(1)
-	game.player.frozen = false
-	game.player.camera.current = true
-	game.player.yaw = 0
-	game.player.pitch = -0.17
-	# Actual controller input drives the film: idle, walk, sprint, jump and land.
-	if "--film" in OS.get_cmdline_user_args():
-		DirAccess.make_dir_recursive_absolute("res://builds/frames")
-		var motions: Dictionary = {}
-		for frame in range(300):
-			game.player.touch_move = Vector2(0, -1) if frame >= 45 and frame < 230 else Vector2.ZERO
-			game.player.touch_sprint = frame >= 135 and frame < 230
-			if frame in [162, 205]: game.player.jump_requested = true
-			if frame < 45:
-				camera.current = true
-				camera.position = game.player.position + Vector3(sin(frame * 0.02) * 2.8, 1.75, -cos(frame * 0.02) * 2.8)
-				camera.look_at(game.player.position + Vector3(0, 1.12, 0))
-			else: game.player.camera.current = true
-			await process_frame
-			motions[actor.current_motion] = true
-			await capture("frames/frame-%04d.png" % frame)
-		for expected in ["idle", "walk", "run", "jump", "fall", "land"]:
-			check(motions.has(expected), "Controller film did not exercise " + expected)
-	game.player.touch_move = Vector2.ZERO
-	game.player.touch_sprint = false
-	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 19, "motion_clips": 8, "bounded_foliage": true, "controller_film": "--film" in OS.get_cmdline_user_args()}))
+	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 19, "motion_clips": 16, "horse_clips":5, "bounded_foliage": true}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

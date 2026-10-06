@@ -18,6 +18,10 @@ func _draw() -> void:
 	var span = float(game.state.world.sizeM) if entire_world else 2200.0
 	var scale_value = (minf(size.x, size.y) - 36.0) / span
 	var half = size * 0.5
+	for cell in game.state.get("territories",{}).get("cells",[]):
+		var at = half+(Vector2(cell.x*512,cell.z*512)-center)*scale_value
+		var patch = Rect2(at-Vector2.ONE*256*scale_value,Vector2.ONE*512*scale_value).intersection(rectangle.grow(-12))
+		if patch.has_area(): draw_rect(patch,Color(0.46,0.39,0.16,0.32) if cell.ownerPlayerId == game.state.player.id else Color(0.39,0.17,0.16,0.30))
 	for i in range(1, 6):
 		var offset = float(i) / 6.0
 		draw_line(Vector2(size.x * offset, 10), Vector2(size.x * offset, size.y - 10), Color(0.21, 0.30, 0.26), 1)
