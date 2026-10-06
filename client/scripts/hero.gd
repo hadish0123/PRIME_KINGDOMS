@@ -62,6 +62,14 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 	piece(bone,builder.commit(),at,surface,axis)
 	if surface == "steel": ornament.plate(bone,radius,length_value,at,axis,taper,arc)
 
+func armor_axis(direction: Vector3) -> Basis:
+	# Keep the open rear seam behind the limb, including downward arm rests.
+	var up = direction.normalized()
+	var forward = Vector3.BACK-up*Vector3.BACK.dot(up)
+	if forward.length_squared()<0.01: forward = Vector3.RIGHT-up*Vector3.RIGHT.dot(up)
+	forward = forward.normalized()
+	return Basis(up.cross(forward).normalized(),up,forward)
+
 func shoulder_cap(bone: String,radius: float,at: Vector3,axis: Basis) -> void:
 	# Convex crown closes the uppermost pauldron over the shoulder joint.
 	var builder = SurfaceTool.new()
@@ -85,7 +93,7 @@ func limbs(side: String) -> void:
 		var bone: String = names[0]+"."+side
 		var direction = rest(names[1]+"."+side)-rest(bone)
 		var length_value = direction.length()
-		var axis = Basis(Quaternion(Vector3.UP,direction.normalized()))
+		var axis = armor_axis(direction)
 		var leg: bool = str(names[0]).contains("leg")
 		var radius = (0.101 if names[0]=="upperleg01" else 0.078) if leg else (0.078 if names[0]=="upperarm01" else 0.061)
 		shell(bone,radius*0.96,length_value*0.95,direction*0.5,axis,"chain",0.85)
@@ -202,24 +210,31 @@ func cape() -> void:
 	visual.material_override = textile_surface()
 	visual.material_override.set_shader_parameter("cape",true)
 	attach("spine01").add_child(visual)
-	# Pleated red mantle around the shoulders.
-	for i in range(4):
-		var mesh = TorusMesh.new()
-		mesh.inner_radius = 0.068+i*0.009
-		mesh.outer_radius = mesh.inner_radius+0.030
-		mesh.rings = 36
-		mesh.ring_segments = 8
-		var cloth = ShaderMaterial.new()
-		cloth.shader = load("res://shaders/garment.gdshader")
-		cloth.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
-		cloth.set_shader_parameter("normal_map",load("res://assets/textures/rough_linen_normal.jpg"))
-		cloth.set_shader_parameter("tint",Color(0.42,0.024,0.041))
-		var node = MeshInstance3D.new()
-		node.mesh = mesh
-		node.material_override = cloth
-		node.position = Vector3(0,0.25-i*0.018,0.036)
-		node.scale = Vector3(1.65,0.75,1.1)
-		attach("spine01").add_child(node)
+	# One continuous folded mantle, fitted between the neck and shoulder clasps.
+	var folds = SurfaceTool.new()
+	folds.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(16):
+		for col in range(80):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/80.0
+				var v = float(row+pair[0])/16.0
+				var angle = u*TAU
+				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.004+sin(angle*9+v*4)*0.002
+				var radius = lerpf(0.088,0.165,v)+wave
+				folds.set_uv(Vector2(u*3,v))
+				folds.add_vertex(Vector3(sin(angle)*radius*1.48,0.233-v*0.091+sin(angle*2+0.4)*0.010,0.036+cos(angle)*radius*1.08))
+	folds.generate_normals()
+	folds.generate_tangents()
+	folds.index()
+	var cloth = ShaderMaterial.new()
+	cloth.shader = load("res://shaders/hero_mantle.gdshader")
+	cloth.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
+	cloth.set_shader_parameter("normal_map",load("res://assets/textures/rough_linen_normal.jpg"))
+	cloth.set_shader_parameter("tint",Color(0.42,0.024,0.041))
+	var mantle = MeshInstance3D.new()
+	mantle.mesh = folds.commit()
+	mantle.material_override = cloth
+	attach("spine01").add_child(mantle)
 
 func make_weapon() -> void:
 	var direction = Vector3(-0.57,0.77,-0.17).normalized()

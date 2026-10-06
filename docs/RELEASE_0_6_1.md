@@ -4,7 +4,9 @@ The player character remains on the 49-joint 0.6 model, with continuous physical
 sword extraction, hand/finger IK and swept blade collision. This change adds
 original raised gold acanthus ornament and curved plate edges, sculpted lion
 shoulder clasps, separate fleur-de-lis skirt artwork, corrected hair shading,
-neck-length hair shaping and adjusted player skin material. Residents are not
+fitted neck-length hair roots, anatomical jaw stubble, neutral player skin
+texture, continuous folded mantle, closed shoulder crowns and visible interior
+metal faces. The ornament helper uses weak ownership to avoid resource leaks. Residents are not
 given the new player wardrobe. No terrain or production identity/state changes
 are introduced by this iteration.
 

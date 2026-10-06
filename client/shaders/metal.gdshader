@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode diffuse_burley;
+render_mode diffuse_burley, cull_disabled;
 uniform vec3 color : source_color = vec3(0.24,0.27,0.29);
 uniform float gilded = 0.0;
 float grain(vec2 p) { return fract(sin(dot(floor(p),vec2(127.1,311.7))) * 43758.5453); }

@@ -418,6 +418,8 @@ def build(role):
     clothed_faces = []
     for _, face in cf:
         y = sum(cv[v][1] for v, uv in face)/3
+        # The player mantle replaces the casual shirt collar and shoulders.
+        if role == "hero" and y > 1.515: continue
         clothed_faces.append((1 if y < 0.95 else 0, face))
     glb.mesh('Garments', cv, cu, clothed_faces, cw, {0: cloth, 1: trousers})
     skin_faces = []
