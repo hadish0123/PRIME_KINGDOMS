@@ -138,7 +138,7 @@ func setup_lighting() -> void:
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_energy = 0.34
-	environment.ambient_light_color = Color(0.76, 0.82, 0.89)
+	environment.ambient_light_color = Color(0.82, 0.80, 0.77)
 	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
@@ -151,8 +151,8 @@ func setup_lighting() -> void:
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-34, -24, 0)
-	sun.light_color = Color(1.0, 0.95, 0.86)
-	sun.light_energy = 1.12
+	sun.light_color = Color(1.0, 0.92, 0.80)
+	sun.light_energy = 0.82
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04

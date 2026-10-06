@@ -72,7 +72,7 @@ class GLB:
     def __init__(self):
         self.binary = bytearray()
         self.image_ids = {}
-        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.5'},
+        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.6'},
                     'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'name': 'Human', 'children': []}],
                     'bufferViews': [], 'accessors': [], 'meshes': [], 'skins': [], 'materials': [],
                     'images': [], 'textures': [], 'samplers': [{'magFilter': 9729, 'minFilter': 9987}],
@@ -158,18 +158,22 @@ class GLB:
 
 
 def proxy(path, base, weights, transform):
-    original, uvs, faces = load_obj(path.with_suffix('.obj'))
-    mapping, deleted, reading = [], set(), False
+    obj_path = path.with_suffix('.obj')
+    for line in path.read_text().splitlines():
+        fields = line.split()
+        if fields and fields[0]=='obj_file': obj_path = path.parent/fields[1]
+    original, uvs, faces = load_obj(obj_path)
+    mapping, deleted, reading, deleting = [], set(), False, False
     for line in path.read_text().splitlines():
         s = line.split()
         if not s or s[0].startswith('#'): continue
-        if s[0] == 'verts': reading = True; continue
-        if s[0] == 'delete_verts': reading = False; continue
+        if s[0] == 'verts': reading = True; deleting = False; continue
+        if s[0] == 'delete_verts': reading = False; deleting = True; continue
         if s[0][0].isdigit():
             if reading:
                 if len(s) == 1: mapping.append(([int(s[0])], [1.], [0., 0., 0.]))
                 else: mapping.append((list(map(int, s[:3])), list(map(float, s[3:6])), list(map(float, s[6:9]))))
-            else:
+            elif deleting:
                 index = 0
                 while index < len(s):
                     token = s[index]
@@ -181,7 +185,7 @@ def proxy(path, base, weights, transform):
                         a, b = map(int, token.split(':')); deleted.update(range(a, b+1))
                     else: deleted.add(int(token))
                     index += 1
-        elif reading: reading = False
+        # Asset metadata such as material may legally follow the verts header.
     assert len(mapping) == len(original), f'Proxy mapping differs: {path}'
     vertices, influences = [], []
     for ids, blend, offset in mapping:
@@ -212,7 +216,7 @@ def animate(glb, heads, bone_ids):
     identity = [0., 0., 0., 1.]
     clips = [('idle', 3.2), ('walk', 1.0), ('run', 0.68), ('jump', 0.28),
              ('fall', 0.8), ('land', 0.26), ('guard', 4.0), ('work', 2.6),
-             ('draw', 0.85), ('sheathe', 0.85), ('attack', 0.72),
+             ('draw', 1.50), ('sheathe', 1.50), ('attack', 0.90),
              ('lie_down', 0.65), ('prone', 2.8), ('crawl', 1.4),
              ('stand_up', 0.65), ('ride', 1.0)]
     for clip, duration in clips:
@@ -316,6 +320,9 @@ def build(role):
     selected = ['root', 'spine03', 'spine01', 'neck03', 'head']
     for side in ['L', 'R']:
         selected += [s+'.'+side for s in ['clavicle', 'upperarm01', 'lowerarm01', 'wrist', 'upperleg01', 'lowerleg01', 'foot']]
+    if role == 'hero':
+        for side in ['L', 'R']:
+            selected += [f'finger{finger}-{joint}.{side}' for finger in range(1,6) for joint in range(1,4)]
     def parent_of(bone):
         parent = skeleton['bones'][bone]['parent']
         while parent and parent not in selected: parent = skeleton['bones'][parent]['parent']
@@ -349,15 +356,24 @@ def build(role):
     glb.doc['skins'].append({'name': 'HumanRig', 'joints': [bone_ids[b] for b in selected],
                             'skeleton': bone_ids['root'], 'inverseBindMatrices': glb.accessor(inverse, 'MAT4')})
     skin_path = CACHE/'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png'
-    skin = glb.material('Skin', [1., 0.96, 0.92, 1.], 0.62, skin_path)
+    skin_normal = None
+    if role == 'hero':
+        skin_path = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png'
+        skin_normal = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png'
+    skin = glb.material('Skin', [0.78,0.70,0.63,1.] if role=='hero' else [1.,0.96,0.92,1.], 0.70, skin_path, normal=skin_normal)
     cloth_colors = {'player': [0.08,0.14,0.18,1.], 'soldier': [0.28,0.25,0.20,1.], 'villager': [0.46,0.39,0.28,1.]}
     diffuse = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_diffuse.png'
     normal = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_normal.png'
     cloth = glb.material('Fabric', [1.,1.,1.,1.], 0.92, diffuse, normal=normal)
     trousers = glb.material('Trousers', [1.,1.,1.,1.], 0.9, diffuse, normal=normal)
     boots = glb.material('Boots', [0.10,0.065,0.038,1.], 0.8)
+    glove = glb.material('Glove', [0.080,0.035,0.017,1.], 0.74)
     eye = glb.material('Eyes', [1.,1.,1.,1.], 0.24, CACHE/'system/eyes/materials/brown_eye.png')
-    hair = glb.material('Hair', [0.27,0.18,0.10,1.], 0.88, CACHE/'system/hair/short01/short01_diffuse.png', True)
+    hair_name = 'long01' if role == 'hero' else 'short01'
+    hair_folder = CACHE/f'system/hair/{hair_name}'
+    hair_proxy = hair_folder/f'{hair_name}.mhclo'
+    hair_texture = hair_folder/f'{hair_name}_diffuse.png'
+    hair = glb.material('Hair', [0.37,0.25,0.18,1.], 0.72, hair_texture, True)
     brow = glb.material('Brows', [0.32,0.22,0.16,1.], 0.9, CACHE/'system/eyebrows/eyebrow001/eyebrow001.png', True)
     cv, cu, cf, cw, deleted = proxy(CACHE/'system/clothes/male_casualsuit01/male_casualsuit01.mhclo', base, weights, transform)
     clothed_faces = []
@@ -369,18 +385,34 @@ def build(role):
     for _, face in body_faces:
         if any(v in deleted for v, uv in face): continue
         y = sum(transform(base[v])[1] for v, uv in face)/3
-        skin_faces.append((1 if y<0.16 else 0, face))
-    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots})
-    for name, path, mat in [('Eyes', 'eyes/low-poly/low-poly', eye), ('Hair', 'hair/short01/short01', hair), ('Brows', 'eyebrows/eyebrow001/eyebrow001', brow)]:
-        v, uv, faces, w, _ = proxy(CACHE/('system/'+path+'.mhclo'), base, weights, transform)
+        x = abs(sum(transform(base[v])[0] for v, uv in face)/3)
+        skin_faces.append((2 if role=='hero' and x>0.45 and y<1.4 else (1 if y<0.16 else 0), face))
+    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove})
+    for name, path, mat in [('Eyes', CACHE/'system/eyes/low-poly/low-poly.mhclo', eye), ('Hair', hair_proxy, hair), ('Brows', CACHE/'system/eyebrows/eyebrow001/eyebrow001.mhclo', brow)]:
+        v, uv, faces, w, _ = proxy(path, base, weights, transform)
+        if role == 'hero' and name == 'Hair':
+            for point in v:
+                if point[1] < 1.65: point[1] = 1.65+(point[1]-1.65)*0.40
+                point[0] *= 1.10
+                point[0] += 0.009*math.sin(point[1]*49+point[2]*28)
+                point[2] += 0.010*math.sin(point[1]*54+point[0]*31)
         glb.mesh(name, v, uv, [(0, f) for _, f in faces], w, {0: mat})
+    if role == 'hero':
+        beard_folder = CACHE/'detail/bodyparts05/clothes/wdg_scruffy_beard'
+        beard = glb.material('Beard',[0.55,0.45,0.33,1.],0.86,beard_folder/'beard2_texture-SMUDGE2.png',True)
+        v, uv, faces, w, _ = proxy(beard_folder/'wdg_scruffy_beard.mhclo',base,weights,transform)
+        # Trim the longer source's chin fringe to a closely fitted short beard.
+        for point in v:
+            if point[1] < 1.67: point[1] = 1.67+(point[1]-1.67)*0.38
+        glb.mesh('FittedBeard',v,uv,[(0,f) for _,f in faces],w,{0:beard})
     animate(glb, heads, bone_ids)
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    dest = OUTPUT/'human.glb'; glb.save(dest)
+    dest = OUTPUT/('hero.glb' if role == 'hero' else 'human.glb'); glb.save(dest)
     print(f'Clothed human {role}: {sum(len(m["primitives"]) for m in glb.doc["meshes"])} surfaces, {len(selected)} bones, {len(glb.doc["animations"])} animations, {dest.stat().st_size} bytes')
 
 
 if __name__ == '__main__':
     build('player')
+    build('hero')
     for obsolete in ['player', 'soldier', 'villager']:
         (OUTPUT/(obsolete+'.glb')).unlink(missing_ok=True)

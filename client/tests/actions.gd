@@ -46,28 +46,28 @@ func run() -> void:
 	check(p.action_motion.is_empty(),"Sheathed sword could attack")
 	game.touch_controls.actions[0].pressed.emit()
 	check(p.action_motion == "draw","Sword button did not start drawing animation")
-	await ticks(60)
-	check(p.actor.weapon_drawn and p.actor.wardrobe.held_weapon.visible and not p.actor.wardrobe.stowed_weapon.visible,"Draw did not transfer the visible weapon into the hand")
+	await ticks(100)
+	check(p.actor.weapon_drawn and p.actor.wardrobe.sword.visible and p.actor.wardrobe.scabbard.visible,"Draw did not complete with one continuous sword and an open scabbard")
 	var target = get_nodes_in_group("practice_targets")[0]
 	p.position = target.position+Vector3(0,0.1,-1.6)
 	p.actor.rotation.y = PI
 	await ticks(6)
 	p.attack()
-	await ticks(50)
+	await ticks(60)
 	check(target.health==100,"A strike behind the character damaged equipment")
 	p.actor.rotation.y = 0
 	p.attack()
-	await ticks(50)
+	await ticks(60)
 	check(target.health==75,"Sword animation did not hit nearby practice equipment")
 	await capture("sword",p.position+Vector3(2.6,1.65,2.0),p.position+Vector3(0,1.2,0))
 	p.toggle_weapon()
-	await ticks(60)
+	await ticks(100)
 	check(not p.actor.weapon_drawn and p.actor.wardrobe.stowed_weapon.visible,"Sheathing did not restore the visible scabbard")
 	p.position = Vector3(0,0.1,20)
 	p.velocity = Vector3.ZERO
 	await ticks(6)
 	p.toggle_lying()
-	await ticks(50)
+	await ticks(60)
 	check(p.lying and p.collider.shape==p.prone_shape and p.actor.current_motion=="prone","Lying did not change posture and collision shape")
 	var head = p.actor.skeleton.find_bone("head")
 	check(p.actor.skeleton.get_bone_global_pose(head).origin.y<0.7,"Prone clip did not lower the actual skeleton to the ground")
@@ -92,7 +92,7 @@ func run() -> void:
 	ceiling.queue_free()
 	await ticks(2)
 	p.toggle_lying()
-	await ticks(50)
+	await ticks(60)
 	check(not p.lying and p.collider.shape==p.standing_shape,"Standing did not restore full-height collision")
 	# Local fixture exercises the same rider controller; real API persistence
 	# and distance/ownership checks are covered separately by PostgreSQL tests.

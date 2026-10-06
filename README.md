@@ -2,9 +2,9 @@
 
 A persistent third-person kingdom game, beginning with a small village and eventually growing into cities, countries and empires.
 
-## Play milestone 0.5
+## Play milestone 0.6
 
-[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.5.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.6.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
 
 Install the APK, choose a ruler name, email and password (at least 10 characters), then select **CREATE ACCOUNT**. Select **ENTER WORLD** for an existing account. The app remembers an unexpired session on the same device.
 
@@ -21,7 +21,9 @@ Install the APK, choose a ruler name, email and password (at least 10 characters
 - A real 3D animated login backdrop, retry for remembered sessions, scrollable account form, safe-area controls, settings and a world atlas.
 - Railway hosts the Node.js/PostgreSQL API. Graphics run on the Android device, not on Railway.
 
-Version 0.5 adds a visible draw/sheathe sword, practice strikes, lying/crawling, an anatomical horse with persisted mount/parked state, server-saved follow/hold orders for the same eight soldiers and exclusive claims of unoccupied land. It includes sixteen human clips, five horse clips, armor/cape, a fortified village, photographic foliage/rocks and an actual 3D minimap. Fractional movement saves no longer fail and snap the player back. This remains below the supplied photorealistic reference: full hostile combat, occupied-village conquest, physical-device performance, economy, autonomous NPC brains, PRIME powers and seven Legends are unfinished. [Release notes, controls and actual limits](docs/RELEASE_0_5.md).
+Version 0.6 adds a separate 49-bone player with finger joints, red lion tabard and cape, layered steel/gold armor, textured face/beard/hair, and 2K cobblestone with a bounded close-range parallax shader. The single sword moves continuously out of an open scabbard; a post-animation arm modifier keeps the palm at the handle, and blade sweeps damage local practice equipment once per strike. A body-to-contact obstruction check prevents damage through walls. The earlier horse, lying/crawling, saved army orders, empty-land claims and fractional movement save fixes remain available.
+
+**The requested reference-matching final graphics are not complete.** Face likeness, hair/groom detail, sculpted armor, natural animation and physical-device performance still need further work. The generated visual improvements are not an AAA or photorealistic completion claim. Full hostile combat, occupied-village conquest, economy, autonomous NPC brains, PRIME powers and seven Legends remain separate unfinished features. [0.6 release notes, controls, evidence and limits](docs/RELEASE_0_6.md).
 
 ## Controls
 
@@ -48,7 +50,7 @@ npm run --prefix tools/assets prepare:models
 # Open client/project.godot in Godot 4.7.2, then run the project.
 ```
 
-The asset pipeline downloads pinned CC0 data and photographic textures, verifies Git/SHA-256 checksums, fits a clothed human and generates its rig/animations as a shared Godot-compatible GLB. Models are embedded in the APK; no model download is required during gameplay. [Asset credits](client/assets/ATTRIBUTION.md).
+The asset pipeline downloads pinned CC0 data and photographic textures, verifies Git/SHA-256 checksums, fits a clothed human and generates separate NPC/player rigs and animations as Godot-compatible GLBs. Models are embedded in the APK; no model download is required during gameplay. [Asset credits](client/assets/ATTRIBUTION.md).
 
 ```sh
 godot --headless --path client --editor --import
