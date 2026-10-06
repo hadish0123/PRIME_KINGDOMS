@@ -13,8 +13,8 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	skeleton = target
 	role = kind
 	variant = appearance
-	materials.steel = metal(Color(0.52,0.54,0.57) if role == "player" else Color(0.45,0.48,0.49))
-	materials.gold = metal(Color(0.78,0.54,0.16),true)
+	materials.steel = metal(Color(0.68,0.70,0.73) if role == "player" else Color(0.45,0.48,0.49))
+	materials.gold = metal(Color(0.90,0.63,0.15),true)
 	materials.leather = Surfaces.plain(Color(0.082,0.044,0.022),0.83)
 	materials.dark = Surfaces.plain(Color(0.018,0.022,0.028),0.78)
 	materials.hair = Surfaces.plain(Color(0.052,0.030,0.020),0.88)
@@ -210,9 +210,9 @@ func royal_tabard() -> void:
 		for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
 			var v = float(row+pair[0])/18.0
 			var u = float(pair[1])
-			var width = lerpf(0.245,0.345,v)
+			var width = lerpf(0.165,0.245,v)
 			var x = lerpf(-width,width,u)
-			var y = 0.17-v*1.08
+			var y = 0.15-v*0.94
 			var z = 0.270+0.020*v+0.010*sin(v*PI)
 			builder.set_uv(Vector2(u,v))
 			builder.add_vertex(Vector3(x,y,z))
@@ -224,7 +224,7 @@ func royal_tabard() -> void:
 	fabric.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
 	fabric.set_shader_parameter("heraldry",load("res://assets/heraldry/lion.svg"))
 	fabric.set_shader_parameter("royal",true)
-	fabric.set_shader_parameter("tint",Color(0.43,0.018,0.030))
+	fabric.set_shader_parameter("tint",Color(0.62,0.020,0.034))
 	var tabard = MeshInstance3D.new()
 	tabard.mesh = builder.commit()
 	tabard.material_override = fabric
@@ -245,27 +245,26 @@ func belt() -> void:
 
 func headpiece() -> void:
 	if role == "player":
-		# The final PRIME ruler is bare-headed: layered dark wavy hair frames the
-		# face while a trimmed beard keeps the jaw readable at gameplay distance.
-		for layer in range(3):
-			var radius = 0.126+layer*0.008
-			for i in range(24):
-				var a = float(i)*TAU/24.0+layer*0.055
-				var front_arc = cos(a)
-				if front_arc > 0.72 and layer > 0: continue
-				var strand_y = 0.105-layer*0.032-0.015*absf(sin(a))
-				var strand_h = 0.095+layer*0.026+0.025*maxf(-front_arc,0.0)
-				tube("head",0.010+layer*0.0015,strand_h,Vector3(sin(a)*radius,strand_y,cos(a)*radius-0.018),"hair",Basis(Vector3.FORWARD,0.18*sin(a)),0.004)
+		# Bare-headed ruler: a coherent wavy hair mass with a few articulated
+		# side/back locks reads naturally at gameplay distance without the old crown.
+		var hair_cap = SphereMesh.new()
+		hair_cap.radius = 0.132
+		hair_cap.height = 0.235
+		hair_cap.is_hemisphere = true
+		hair_cap.radial_segments = 24
+		hair_cap.rings = 12
+		piece("head",hair_cap,Vector3(0,0.075,-0.018),"hair",Basis.IDENTITY.scaled(Vector3(1.04,0.92,1.05)))
+		for i in range(14):
+			var a = lerpf(PI*0.34,PI*1.66,float(i)/13.0)
+			var side_bias = absf(sin(a))
+			var height = 0.125+0.035*(1.0-side_bias)
+			tube("head",0.012,height,Vector3(sin(a)*0.120,0.005-0.018*(1.0-side_bias),cos(a)*0.120-0.016),"hair",Basis(Vector3.FORWARD,0.20*sin(a)),0.005)
+		# Trimmed jaw beard and moustache, deliberately sparse so the face remains visible.
+		for i in range(13):
+			var a = lerpf(-0.78,0.78,float(i)/12.0)
+			tube("head",0.0085,0.055+0.018*cos(a),Vector3(sin(a)*0.064,-0.050-0.008*absf(sin(a)),0.143+cos(a)*0.008),"hair",Basis.IDENTITY,0.004)
 		for side in [-1,1]:
-			for row in range(4):
-				tube("head",0.010,0.13+row*0.018,Vector3(side*(0.105+row*0.004),0.025-row*0.028,0.020-row*0.018),"hair",Basis(Vector3.FORWARD,side*(0.20+row*0.04)),0.004)
-		for i in range(33):
-			var a = (i-16)*0.066
-			var jaw = 0.070-0.010*absf(sin(a))
-			tube("head",0.0085,0.062+0.020*cos(a),Vector3(sin(a)*jaw,-0.050-absf(sin(a))*0.011,0.139+cos(a)*0.010),"hair",Basis.IDENTITY,0.004)
-		for side in [-1,1]:
-			tube("head",0.009,0.050,Vector3(side*0.027,-0.018,0.151),"hair",Basis(Vector3.FORWARD,side*0.22),0.005)
-		# Two lion clasps pin the crimson mantle at the collar.
+			tube("head",0.0075,0.038,Vector3(side*0.026,-0.018,0.153),"hair",Basis(Vector3.FORWARD,side*0.22),0.004)
 		for side in [-1,1]:
 			sphere("spine01",0.025,Vector3(side*0.155,0.185,0.128),"gold",Vector3(1.0,0.82,0.44))
 	else:
@@ -338,7 +337,7 @@ func cape() -> void:
 	fabric.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
 	fabric.set_shader_parameter("heraldry",load("res://assets/heraldry/lion.svg"))
 	fabric.set_shader_parameter("royal",true)
-	fabric.set_shader_parameter("tint",Color(0.42,0.016,0.028) if role == "player" else Color(0.23,0.075,0.035))
+	fabric.set_shader_parameter("tint",Color(0.56,0.018,0.030) if role == "player" else Color(0.23,0.075,0.035))
 	var visual = MeshInstance3D.new()
 	visual.mesh = builder.commit()
 	visual.material_override = fabric
