@@ -88,6 +88,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	pivot.rotation = Vector3(pitch, yaw, 0.0)
 	if frozen:
+		if horse:
+			horse.rotation.y = actor.rotation.y
+			collider.rotation.y = actor.rotation.y
 		velocity = Vector3.ZERO
 		jump_buffer = 0.0
 		jump_requested = false
@@ -231,9 +234,10 @@ func apply_mount(value: bool) -> void:
 		horse.set_occupied(true)
 		horse.reparent(self,true)
 		horse.position = Vector3.ZERO
-		horse.rotation = Vector3.ZERO
+		horse.rotation = Vector3(0,actor.rotation.y,0)
 		actor.set_weapon_drawn(false)
 		actor.position.y = 0.57
 		collider.shape = mounted_shape
 		collider.position.y = 1.425
+		collider.rotation.y = actor.rotation.y
 		actor.play_motion("ride")

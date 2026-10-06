@@ -98,6 +98,13 @@ func run() -> void:
 	# and distance/ownership checks are covered separately by PostgreSQL tests.
 	p.position = game.horse.position
 	p.apply_mount(true)
+	# Use the anatomical front/hind leg rests to check the visible horse's
+	# direction before a physics tick, including frozen/menu-mounted entry.
+	var front = game.horse.skeleton.get_bone_global_rest(game.horse.skeleton.find_bone("Bone_L.002")).origin
+	var hind = game.horse.skeleton.get_bone_global_rest(game.horse.skeleton.find_bone("Bone_L.005")).origin
+	var heading: Vector3 = game.horse.skeleton.global_basis*(front-hind)
+	heading.y = 0
+	check(heading.normalized().dot(p.actor.global_basis.z)>0.8,"Rider was seated against the horse's anatomical direction")
 	await ticks(5)
 	check(p.horse==game.horse and game.horse.occupied and game.horse.collider.disabled,"Riding did not release the parked horse collider")
 	check(p.actor.current_motion=="ride","Mounted player did not select the riding pose")

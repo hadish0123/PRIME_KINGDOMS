@@ -31,8 +31,13 @@ Version 0.5 adds a visible draw/sheathe sword, practice strikes, lying/crawling,
 | Look | Hold right mouse and drag | Drag the right side |
 | Sprint | Shift | RUN toggle |
 | Jump | Space | JUMP |
+| Draw / sheathe | F | SWORD |
+| Practice strike | Left mouse | ATTACK |
+| Lie / stand | X | LIE / UP |
+| Mount / dismount | E | RIDE |
+| Army and land orders | UNITS | UNITS |
 | Camera distance | Mouse wheel | Default third-person distance |
-| World atlas | M / Tab / MAP | MAP |
+| World atlas | M / Tab / WORLD | WORLD |
 | Graphics / camera settings | Escape / SETTINGS | SETTINGS / device Back |
 
 ## Client development
