@@ -4,6 +4,7 @@ import { ApiError } from './errors.js';
 import { authenticate } from './auth.js';
 import { register, login, gameState, movePlayer, nearbyWorld } from './game.js';
 import { readJSON, createAuthLimiter } from './http.js';
+import { commandArmy, claimTerritory, mountHorse } from './strategy.js';
 
 function json(res, status, value, requestId, headers = {}) {
   res.writeHead(status, {
@@ -23,6 +24,8 @@ export function createApplication({ pool, config, logger = console }) {
     ['/', ['GET','HEAD']], ['/health', ['GET','HEAD']], ['/ready', ['GET','HEAD']], ['/v1/world', ['GET','HEAD']],
     ['/v1/auth/register', ['POST']], ['/v1/auth/login', ['POST']], ['/v1/auth/logout', ['POST']],
     ['/v1/game', ['GET']], ['/v1/player/move', ['POST']], ['/v1/world/nearby', ['GET']],
+    ['/v1/player/order',['POST']], ['/v1/territory/claim',['POST']],
+    ['/v1/player/mount',['POST']],
   ]);
   const server = createServer(async (req, res) => {
     const requestId = randomUUID();
@@ -81,6 +84,13 @@ export function createApplication({ pool, config, logger = console }) {
           json(res, 200, await gameState(pool, identity.player_id), requestId);
         } else if (path === '/v1/player/move') {
           json(res, 200, await movePlayer(pool, identity, await readJSON(req)), requestId);
+        } else if (path === '/v1/player/order') {
+          json(res,200,await commandArmy(pool,identity,await readJSON(req)),requestId);
+        } else if (path === '/v1/territory/claim') {
+          await readJSON(req);
+          json(res,200,await claimTerritory(pool,identity),requestId);
+        } else if (path === '/v1/player/mount') {
+          json(res,200,await mountHorse(pool,identity,await readJSON(req)),requestId);
         } else {
           json(res, 200, await nearbyWorld(pool, identity), requestId);
         }
