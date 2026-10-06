@@ -1,0 +1,52 @@
+name: Production read-only verification
+
+on:
+  push:
+    branches: ['ops/production-check-05']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    env:
+      PRIME_CHECK_VERSION: '0.4.0'
+      PRIME_CHECK_COMMIT: 'e9acd51be8f812a165685c58e763a3c5f2a45221'
+    steps:
+      - name: Verify public readiness and preserve the existing world
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json,time,os
+          from concurrent.futures import ThreadPoolExecutor
+          base='https://prime-kingdoms-api-production.up.railway.app'
+          def read(path):
+              with urllib.request.urlopen(base+path,timeout=8) as response:
+                  return path,{'status':response.status,'data':json.load(response)}
+          for attempt in range(18):
+              try:
+                  data=dict(ThreadPoolExecutor(max_workers=3).map(read,['/','/ready','/v1/world']))
+                  assert all(v['status']==200 for v in data.values())
+                  assert data['/ready']['data']=={'status':'ready','database':'connected'}
+                  assert data['/']['data']['version']==os.environ['PRIME_CHECK_VERSION']
+                  assert data['/']['data']['commit']==os.environ['PRIME_CHECK_COMMIT']
+                  world=data['/v1/world']['data']['world']
+                  assert world['id']=='1e31354f-9d2a-407d-9dd0-9305406aa06f'
+                  assert world['seed']==541652784 and world['sizeM']==65536
+                  assert world['terrainVersion']==1
+                  break
+              except Exception as error:
+                  print('Read-only verification retry',attempt+1,type(error).__name__,flush=True)
+                  if attempt==17:raise
+                  time.sleep(4)
+          with open('production.json','w') as output:json.dump(data,output,indent=2)
+          print(json.dumps(data))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-${{ env.PRIME_CHECK_VERSION }}-verified
+          path: production.json
+          if-no-files-found: error
+          retention-days: 30
