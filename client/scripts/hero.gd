@@ -18,8 +18,8 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	skeleton = target
 	role = kind
 	variant = appearance
-	materials.steel = hero_metal(Color(0.53,0.56,0.58))
-	materials.gold = hero_metal(Color(0.72,0.49,0.17),true)
+	materials.steel = hero_metal(Color(0.36,0.38,0.40))
+	materials.gold = hero_metal(Color(0.64,0.43,0.16),true)
 	materials.leather = ShaderMaterial.new()
 	materials.leather.shader = load("res://shaders/leather.gdshader")
 	materials.dark = Surfaces.plain(Color(0.03,0.022,0.017),0.93)
@@ -50,8 +50,9 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 	# Profiled metal shells with a rolled edge and an embossed central ridge.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rows = 12
-	var columns = 40
+	builder.set_smooth_group(0)
+	var rows = 8
+	var columns = 32
 	for y in range(rows):
 		for x in range(columns):
 			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
@@ -90,6 +91,7 @@ func boots(side: String) -> void:
 	for layer in range(5):
 		var builder = SurfaceTool.new()
 		builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+		builder.set_smooth_group(0)
 		var center_z = 0.199-layer*0.040
 		var width_value = 0.051+sin(float(layer)/4.0*PI)*0.010
 		for row in range(6):
@@ -121,6 +123,7 @@ func boots(side: String) -> void:
 func joint_guard(bone: String,radius: float) -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for row in range(12):
 		for col in range(40):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
@@ -152,6 +155,7 @@ func shoulder_cap(bone: String,radius: float,at: Vector3,axis: Basis) -> void:
 	# Convex crown closes the uppermost pauldron over the shoulder joint.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for row in range(10):
 		for col in range(40):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
@@ -207,7 +211,7 @@ func cuirass() -> void:
 	textile_panel("TabardChest",1.53,1.015,0.116,0.170,0.24,false)
 	textile_panel("TabardSkirt",1.03,0.40,0.157,0.168,0.20,true)
 	# Cross-body strap, double belts, loops, buckles and suspended leather pouch.
-	beam("spine01",Vector3(-0.20,0.16,0.218),Vector3(0.17,-0.15,0.235),0.036,"leather")
+	beam("spine01",Vector3(-0.20,0.16,0.275),Vector3(0.17,-0.15,0.287),0.043,"leather")
 	for y in [-0.11,-0.15]:
 		ring("spine03",0.195,0.021,Vector3(0,y,0.024),"leather",Basis.IDENTITY.scaled(Vector3(1,1,1.12)))
 	for x in [-0.10,0.10]:
@@ -224,7 +228,7 @@ func cuirass() -> void:
 			sphere("spine03",0.0015,Vector3(sin(a)*0.197,row,0.024+cos(a)*0.221),"gold")
 	for i in range(7):
 		var t = float(i)/6.0
-		sphere("spine01",0.0020,Vector3(lerpf(-0.188,0.16,t),lerpf(0.151,-0.14,t),lerpf(0.228,0.245,t)),"gold")
+		sphere("spine01",0.0020,Vector3(lerpf(-0.188,0.16,t),lerpf(0.151,-0.14,t),lerpf(0.285,0.297,t)),"gold")
 	for side in [-1,1]:
 		ornament.lion("spine01",Vector3(side*0.174,0.149,0.247))
 
@@ -240,6 +244,7 @@ func textile_surface(skirt: bool = false) -> ShaderMaterial:
 func textile_panel(name_value: String,top: float,bottom: float,top_width: float,bottom_width: float,depth: float,skirt: bool) -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	var hips = skeleton.find_bone("spine03")
 	var chest = skeleton.find_bone("spine01")
 	var left = skeleton.find_bone("upperleg01.L")
@@ -281,6 +286,7 @@ func headpiece() -> void:
 func cape() -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for y in range(26):
 		for x in range(24):
 			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
@@ -300,16 +306,17 @@ func cape() -> void:
 	# One continuous folded mantle, fitted between the neck and shoulder clasps.
 	var folds = SurfaceTool.new()
 	folds.begin(Mesh.PRIMITIVE_TRIANGLES)
+	folds.set_smooth_group(0)
 	for row in range(16):
 		for col in range(80):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
 				var u = float(col+pair[1])/80.0
 				var v = float(row+pair[0])/16.0
 				var angle = u*TAU
-				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.006+sin(angle*9+v*4)*0.0025
-				var radius = lerpf(0.080,0.152,v)+wave
+				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.010+sin(angle*9+v*4)*0.0025
+				var radius = lerpf(0.072,0.182,v)+wave
 				folds.set_uv(Vector2(u*3,v))
-				folds.add_vertex(Vector3(sin(angle)*radius*1.38,0.236-v*0.102+sin(angle*2+0.4)*0.014,0.038+cos(angle)*radius*1.02))
+				folds.add_vertex(Vector3(sin(angle)*radius*1.34,0.254-v*0.106+sin(angle*2+0.4)*0.014,0.045+cos(angle)*radius*1.08))
 	folds.generate_normals()
 	folds.generate_tangents()
 	folds.index()
@@ -333,6 +340,7 @@ func make_weapon() -> void:
 	# Hollow elliptical sleeve: its mouth stays open and its walls hide the blade.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for row in range(12):
 		for col in range(24):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:

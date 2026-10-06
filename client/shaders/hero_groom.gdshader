@@ -1,7 +1,7 @@
 shader_type spatial;
 render_mode diffuse_burley;
-uniform vec3 dark : source_color = vec3(0.11,0.058,0.026);
-uniform vec3 highlight : source_color = vec3(0.25,0.15,0.065);
+uniform vec3 dark : source_color = vec3(0.12,0.068,0.037);
+uniform vec3 highlight : source_color = vec3(0.27,0.17,0.10);
 void vertex() {
     float loose = pow(UV.y,3.0);
     VERTEX.x += loose*sin(TIME*1.8+floor(UV.x*0.5)*2.4)*0.0014;
@@ -13,8 +13,8 @@ void fragment() {
     float fade = 1.0-smoothstep(0.15,0.6,length(fwidth(UV))*220.0);
     float fibers = sin(fract(UV.x)*330.0+sin(UV.y*31.0+clump)*0.7);
     ALBEDO = mix(dark,highlight,0.16+variation*0.28)*(0.93+fibers*0.075*fade);
-    ROUGHNESS = 0.69+variation*0.09;
-    SPECULAR = 0.24;
+    ROUGHNESS = 0.48+variation*0.12;
+    SPECULAR = 0.46;
     NORMAL_MAP = vec3(0.5+fibers*0.045*fade,0.5,1.0);
     NORMAL_MAP_DEPTH = 0.32;
 }

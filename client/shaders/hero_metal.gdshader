@@ -10,9 +10,10 @@ void fragment() {
     float border = 1.0-smoothstep(0.012,0.036,min(UV.y,1.0-UV.y));
     float scroll = sin(UV.x*150.0+sin(UV.y*90.0)*2.5)*sin(UV.y*110.0);
     float etch = smoothstep(0.91,0.99,scroll)*(1.0-border)*0.12;
-    ALBEDO = color * (0.90+n*0.12+polish-etch);
+    float patina = grain(UV*28.0)*grain(UV*63.0);
+    ALBEDO = color * (0.88+n*0.12+polish-etch-patina*0.10);
     METALLIC = mix(0.90,0.94,gilded);
-    ROUGHNESS = mix(0.28,0.25,gilded)+n*0.08+etch;
+    ROUGHNESS = mix(0.30,0.33,gilded)+n*0.065+etch+patina*0.08;
     NORMAL_MAP = vec3(0.5+polish*2.0,0.5+(n-0.5)*0.045*attenuation,1.0);
     NORMAL_MAP_DEPTH = 0.4;
 }

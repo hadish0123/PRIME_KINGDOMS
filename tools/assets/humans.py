@@ -399,7 +399,7 @@ def build(role):
         h = heads[bone]; inverse.append([1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,-h[0],-h[1],-h[2],1.])
     glb.doc['skins'].append({'name': 'HumanRig', 'joints': [bone_ids[b] for b in selected],
                             'skeleton': bone_ids['root'], 'inverseBindMatrices': glb.accessor(inverse, 'MAT4')})
-    skin_path = CACHE/'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png'
+    skin_path = CACHE/('detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png' if role == 'hero' else 'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png')
     skin_normal = None
     if role == 'hero':
         skin_normal = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png'
@@ -424,8 +424,9 @@ def build(role):
     clothed_faces = []
     for _, face in cf:
         y = sum(cv[v][1] for v, uv in face)/3
-        # The player mantle replaces the casual shirt collar and shoulders.
-        if role == "hero" and y > 1.515: continue
+        # The mail neck opening stays under the folded mantle; remove only
+        # the protruding casual-shirt collar, retaining shoulder coverage.
+        if role == 'hero' and y > 1.566: continue
         clothed_faces.append((1 if y < 0.95 else 0, face))
     glb.mesh('Garments', cv, cu, clothed_faces, cw, {0: cloth, 1: trousers})
     skin_faces = []
@@ -434,9 +435,6 @@ def build(role):
         y = sum(transform(base[v])[1] for v, uv in face)/3
         x = abs(sum(transform(base[v])[0] for v, uv in face)/3)
         material = 2 if role=='hero' and x>0.45 and y<1.4 else (1 if y<0.16 else 0)
-        # A fitted opaque scalp closes tiny root gaps between the source cards;
-        # it is the actual skinned head surface, never a floating hair sphere.
-        if role=='hero' and all(transform(base[v])[1]>1.79 for v, uv in face): material = 3
         skin_faces.append((material, face))
     transformed = list(map(transform, base))
     if role == 'hero':
@@ -445,6 +443,7 @@ def build(role):
         head_faces = [(m, f) for m, f in skin_faces if all(transformed[v][1] > 1.525 for v, uv in f)]
         lower_faces = [(m, f) for m, f in skin_faces if not all(transformed[v][1] > 1.525 for v, uv in f)]
         hv, hu, hf, hw = hero_sculpt.subdivide(transformed, uvs, head_faces, weights)
+        hv, hu, hf, hw = hero_sculpt.refine_face(hv, hu, hf, hw)
         glb.mesh('Anatomy', transformed, uvs, lower_faces, weights, {0:skin, 1:boots, 2:glove, 3:scalp}, [[0.,0.,0.,1.] for _ in transformed])
         # Vertex masks deform with the rig, so prone/riding never changes where
         # the beard grows. No shading classification uses animated positions.
@@ -453,7 +452,10 @@ def build(role):
         glb.mesh('Anatomy', transformed, uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove, 3: scalp})
     for name, path, mat in [('Eyes', CACHE/'system/eyes/low-poly/low-poly.mhclo', eye), ('Hair', hair_proxy, hair), ('Brows', CACHE/'system/eyebrows/eyebrow001/eyebrow001.mhclo', brow)]:
         v, uv, faces, w, _ = proxy(path, base, weights, transform)
-        if role == 'hero' and name == 'Hair': continue
+        if role == 'hero' and name == 'Hair':
+            # The fitted licensed alpha cards provide a continuous root layer
+            # below the authored waves. Crop the long source at the nape.
+            faces = [(m, f) for m, f in faces if all(v[i][1] > 1.620 for i, uv_index in f)]
         if role == 'hero' and name == 'Eyes':
             v, uv, eye_faces, w = hero_sculpt.subdivide(v, uv, [(0, f) for _, f in faces], w)
             # Source eye UVs and fitted sockets are preserved through smoothing.

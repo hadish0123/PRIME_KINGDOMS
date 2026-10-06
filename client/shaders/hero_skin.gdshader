@@ -5,9 +5,9 @@ uniform sampler2D normal_map : hint_normal, filter_linear_mipmap_anisotropic;
 void fragment() {
     vec3 skin = texture(albedo_map,UV).rgb;
     float beard = COLOR.r;
-    ALBEDO = mix(skin*vec3(0.91,0.86,0.79),skin*vec3(0.32,0.25,0.21),beard*0.75);
+    ALBEDO = mix(skin*vec3(0.98,0.95,0.91),skin*vec3(0.34,0.29,0.25),beard*0.70);
     NORMAL_MAP = texture(normal_map,UV).rgb;
-    NORMAL_MAP_DEPTH = 0.18;
-    ROUGHNESS = mix(0.59,0.83,beard);
-    SPECULAR = 0.26;
+    NORMAL_MAP_DEPTH = 0.11;
+    ROUGHNESS = mix(0.53,0.75,beard);
+    SPECULAR = 0.32;
 }

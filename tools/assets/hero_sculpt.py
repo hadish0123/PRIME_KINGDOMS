@@ -8,14 +8,14 @@ import random
 
 
 FACE_TARGETS = {
-    'head/head-square': 0.28,
-    'chin/chin-width-incr': 0.20,
+    'head/head-square': 0.18,
+    'chin/chin-width-incr': 0.42,
     'chin/chin-prominent-incr': 0.18,
     'cheek/l-cheek-bones-incr': 0.28,
     'cheek/r-cheek-bones-incr': 0.28,
-    'cheek/l-cheek-volume-decr': 0.15,
-    'cheek/r-cheek-volume-decr': 0.15,
-    'nose/nose-greek-incr': 0.12,
+    'cheek/l-cheek-volume-decr': 0.08,
+    'cheek/r-cheek-volume-decr': 0.08,
+    'nose/nose-greek-incr': 0.07,
     'nose/nose-width1-decr': 0.10,
     'eyes/l-eye-eyefold-down': 0.18,
     'eyes/r-eye-eyefold-down': 0.18,
@@ -102,6 +102,32 @@ def subdivide(vertices, uvs, faces, weights):
     return out, texcoords, triangles, blend
 
 
+def refine_face(vertices, uvs, faces, weights):
+    """Spend the second smoothing step on facial landmarks, not the skull.
+
+    Subdivision fixes boundary vertices and creates collinear boundary edges.
+    Reuse equal boundary positions so shading stays continuous at the join.
+    """
+    def visible(face):
+        return all(1.630 < vertices[v][1] < 1.748 and vertices[v][2] > .132 and abs(vertices[v][0]) < .047
+                   for v, uv in face)
+    fine = [(m, f) for m, f in faces if visible(f)]
+    rest = [(m, f) for m, f in faces if not visible(f)]
+    fv, fu, ff, fw = subdivide(vertices, uvs, fine, weights)
+    points, influence = list(vertices), list(weights)
+    lookup = {tuple(round(x, 8) for x in p): i for i, p in enumerate(points)}
+    mapping = {}
+    for i, p in enumerate(fv):
+        key = tuple(round(x, 8) for x in p)
+        if key not in lookup:
+            lookup[key] = len(points)
+            points.append(p); influence.append(fw[i])
+        mapping[i] = lookup[key]
+    offset = len(uvs)
+    rest.extend((m, [(mapping[v], uv + offset) for v, uv in f]) for m, f in ff)
+    return points, list(uvs) + fu, rest, influence
+
+
 def add(a, b): return [a[i] + b[i] for i in range(3)]
 def sub(a, b): return [a[i] - b[i] for i in range(3)]
 def mul(a, amount): return [v * amount for v in a]
@@ -160,9 +186,9 @@ def groom(glb, head_joint):
             controls = [[.014, y, z], [side*.046, y+.006, z+.006],
                         [side*.088, 1.804+(y-1.82)*.22, z+.006],
                         [side*(.106+front*.005), 1.755, z-.006],
-                        [side*.106, 1.701+front*.046, z-.020],
-                        [side*(.090+front*.009), 1.624+front*.100, z-.012]]
-            lock(controls, .007+rng.random()*.0045, number, wave=.0035+front*.002)
+                        [side*.106, 1.701+front*.046+rng.uniform(-.008,.008), z-.020],
+                        [side*(.090+front*.009), 1.641+front*.090+rng.uniform(-.01,.01), z-.012]]
+            lock(controls, .007+rng.random()*.0045, number, wave=.009+front*.004)
             number += 1
     # Nape curls cover the rear scalp; they never grow through the cheek.
     for i in range(22):
@@ -181,6 +207,18 @@ def groom(glb, head_joint):
                     [-.094+d*.012, 1.764-d*.012, .147-d*.008]]
         lock(controls, .007+rng.random()*.003, number, wave=.006)
         number += 1
+    # Overlapping crown waves cover actual roots instead of exposing a broad
+    # opaque scalp band. The entire groom remains a single skinned surface.
+    for side in [-1., 1.]:
+        for i in range(12):
+            z = -.006 + i * .012
+            controls = [[.010, 1.847 + math.sin(i*.23)*.013, z],
+                        [side*.038, 1.859, z+.020],
+                        [side*.071, 1.829, z+.029],
+                        [side*.087, 1.797, z+.019],
+                        [side*.094, 1.763, z+.006]]
+            lock(controls, .0075+rng.random()*.002, number, depth=.28, wave=.004)
+            number += 1
     # Fine loose strands at the silhouette, authored into one bounded draw surface.
     for i in range(18):
         side = -1. if i % 2 else 1.
@@ -206,7 +244,7 @@ def beard(glb, vertices, body_faces, head_joint):
         if not (1.627 < center[1] < 1.727 and center[2] > .057 and normal[2] > .05): continue
         tangent = unit(cross(normal, [0., 1., 0.]))
         bitangent = unit(cross(normal, tangent))
-        for _ in range(min(10, round(area * 85000))):
+        for _ in range(min(10, round(area * 45000))):
             u, v = rng.random(), rng.random()
             if u+v>1.: u,v=1.-u,1.-v
             root = add(a, add(mul(sub(b, a), u), mul(sub(c, a), v)))

@@ -198,18 +198,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.6.2.apk 2>&1 | tee client/builds/export.log
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.6.3.apk 2>&1 | tee client/builds/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/export.log; then exit 1; fi
-          test -s client/builds/PRIME-KINGDOMS-0.6.2.apk
-          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.6.2.apk
-          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.6.2.apk > client/builds/apk-metadata.log
+          test -s client/builds/PRIME-KINGDOMS-0.6.3.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.6.3.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.6.3.apk > client/builds/apk-metadata.log
           sed -n '1,15p' client/builds/apk-metadata.log
-          (cd client/builds && sha256sum PRIME-KINGDOMS-0.6.2.apk village.png human.png sword.png prone.png horse.png units.png animation.mp4 login.png settings.png atlas.png hero-front.png hero-back.png hero-face.png hero-draw-21.png hero-draw-45.png hero-draw-65.png hero-sword.png ground-detail.png character-front.png character-face.png character-profile.png character-back.png character-sword.png character-review.mp4 > SHA256SUMS.txt)
+          (cd client/builds && sha256sum PRIME-KINGDOMS-0.6.3.apk village.png human.png sword.png prone.png horse.png units.png animation.mp4 login.png settings.png atlas.png hero-front.png hero-back.png hero-face.png hero-draw-21.png hero-draw-45.png hero-draw-65.png hero-sword.png ground-detail.png character-front.png character-face.png character-profile.png character-back.png character-sword.png character-review.mp4 > SHA256SUMS.txt)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-Android-0.6.2
+          name: PRIME-KINGDOMS-Android-0.6.3
           path: |
-            client/builds/PRIME-KINGDOMS-0.6.2.apk
+            client/builds/PRIME-KINGDOMS-0.6.3.apk
             client/builds/SHA256SUMS.txt
             client/builds/village.png
             client/builds/human.png
@@ -240,7 +240,7 @@ jobs:
       - name: Save separately downloadable runtime images and movie
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-0.6.2-evidence
+          name: PRIME-KINGDOMS-0.6.3-evidence
           path: |
             client/builds/hero-front.png
             client/builds/hero-back.png
@@ -267,8 +267,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view v0.6.2 >/dev/null 2>&1; then
-            prime_released_head=$(gh release view v0.6.2 --json targetCommitish --jq .targetCommitish)
+          if gh release view v0.6.3 >/dev/null 2>&1; then
+            prime_released_head=$(gh release view v0.6.3 --json targetCommitish --jq .targetCommitish)
             if test "$prime_released_head" = "$GITHUB_SHA"; then
               echo 'The release for this exact source commit is already published; existing downloads stay unchanged.'
             else
@@ -277,7 +277,7 @@ jobs:
               echo 'Server-only patch verified. Installed clients receive the API fix; the existing APK release stays unchanged.'
             fi
           else
-            gh release create v0.6.2 client/builds/PRIME-KINGDOMS-0.6.2.apk client/builds/village.png client/builds/human.png client/builds/sword.png client/builds/prone.png client/builds/horse.png client/builds/units.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/hero-front.png client/builds/hero-back.png client/builds/hero-face.png client/builds/hero-draw-21.png client/builds/hero-draw-45.png client/builds/hero-draw-65.png client/builds/hero-sword.png client/builds/ground-detail.png client/builds/character-front.png client/builds/character-face.png client/builds/character-profile.png client/builds/character-back.png client/builds/character-sword.png client/builds/character-review.mp4 client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.6.2 — Player sculpt and groom review' --notes-file docs/RELEASE_0_6_2.md
+            gh release create v0.6.3 client/builds/PRIME-KINGDOMS-0.6.3.apk client/builds/village.png client/builds/human.png client/builds/sword.png client/builds/prone.png client/builds/horse.png client/builds/units.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/hero-front.png client/builds/hero-back.png client/builds/hero-face.png client/builds/hero-draw-21.png client/builds/hero-draw-45.png client/builds/hero-draw-65.png client/builds/hero-sword.png client/builds/ground-detail.png client/builds/character-front.png client/builds/character-face.png client/builds/character-profile.png client/builds/character-back.png client/builds/character-sword.png client/builds/character-review.mp4 client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.6.3 — Character materials and fitted wardrobe review' --notes-file docs/RELEASE_0_6_3.md
           fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

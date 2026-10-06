@@ -10,8 +10,13 @@ func triangles(node: Node) -> int:
 	if node is MeshInstance3D:
 		for surface in range(node.mesh.get_surface_count()):
 			var arrays = node.mesh.surface_get_arrays(surface)
-			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-			total += indices.size()/3 if not indices.is_empty() else arrays[Mesh.ARRAY_VERTEX].size()/3
+			var indices = arrays[Mesh.ARRAY_INDEX]
+			# SurfaceTool may emit an unindexed surface (ARRAY_INDEX is Nil).
+			# A typed assignment aborted this traversal and undercounted armor.
+			if indices is PackedInt32Array and not indices.is_empty():
+				total += indices.size()/3
+			else:
+				total += arrays[Mesh.ARRAY_VERTEX].size()/3
 	for child in node.get_children(): total += triangles(child)
 	return total
 
@@ -30,6 +35,16 @@ func capture(name_value: String,at: Vector3,target: Vector3) -> void:
 		check(root.get_texture().get_image().save_png("res://builds/"+name_value+".png")==OK,"Character render failed")
 
 func run() -> void:
+	# Regression: a valid unindexed triangle must not disappear from the
+	# geometry budget when ARRAY_INDEX is absent.
+	var unindexed = MeshInstance3D.new()
+	unindexed.mesh = ArrayMesh.new()
+	var triangle_arrays = []
+	triangle_arrays.resize(Mesh.ARRAY_MAX)
+	triangle_arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3.ZERO,Vector3.RIGHT,Vector3.UP])
+	unindexed.mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,triangle_arrays)
+	check(triangles(unindexed)==1,"Unindexed geometry was omitted from the player budget")
+	unindexed.free()
 	var scene = Node3D.new()
 	root.add_child(scene)
 	var world = WorldEnvironment.new()

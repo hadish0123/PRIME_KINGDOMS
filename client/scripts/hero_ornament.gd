@@ -9,6 +9,7 @@ func _init(owner: RefCounted) -> void: owner_ref = weakref(owner)
 func cord(bone: String,points: PackedVector3Array,radius: float,at: Vector3 = Vector3.ZERO,axis: Basis = Basis.IDENTITY,surface: String = "gold") -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	var rings: Array[PackedVector3Array] = []
 	for i in range(points.size()):
 		var tangent = (points[mini(i+1,points.size()-1)]-points[maxi(i-1,0)]).normalized()
@@ -52,16 +53,69 @@ func plate(bone: String,radius: float,length_value: float,at: Vector3,axis: Basi
 				curl.append(plate_point(side*(0.35+0.26*sin(t*TAU*0.88)*(1.0-t*0.78)),0.28+branch*0.20+0.065*cos(t*TAU*0.88)*(1.0-t*0.78),radius,length_value,taper))
 			cord(bone,curl,0.0010,at,axis)
 
+func relief_height(x: float,y: float) -> float:
+	var r = sqrt(x*x+y*y)
+	var dome = sqrt(maxf(0.0,1.0-r*r))*0.075
+	var brow = exp(-pow((absf(x)-0.23)/0.17,2)-pow((y-0.22)/0.10,2))*0.090
+	var sockets = exp(-pow((absf(x)-0.24)/0.12,2)-pow((y-0.10)/0.055,2))*0.070
+	var bridge = exp(-pow(x/0.13,2)-pow((y-0.08)/0.27,2))*0.13
+	var muzzle = exp(-pow((absf(x)-0.16)/0.20,2)-pow((y+0.19)/0.14,2))*0.13
+	var chin = exp(-pow(x/0.23,2)-pow((y+0.37)/0.12,2))*0.06
+	var mouth = exp(-pow(x/0.22,2)-pow((y+0.285)/0.022,2))*0.06
+	return 0.07+dome+brow-sockets+bridge+muzzle+chin-mouth
+
 func lion(bone: String,at: Vector3,size_value: float = 0.044) -> void:
-	wardrobe.sphere(bone,size_value,at,"steel",Vector3(1,1,0.21))
-	wardrobe.ring(bone,size_value*0.98,size_value*0.065,at+Vector3(0,0,size_value*0.16),"gold",Basis(Vector3.RIGHT,PI*0.5))
-	for i in range(16):
-		var a = i*TAU/16.0
-		wardrobe.sphere(bone,size_value*0.22,at+Vector3(sin(a),cos(a),0.29)*size_value*0.70,"gold",Vector3(0.65,1.6,0.35))
-	wardrobe.sphere(bone,size_value*0.54,at+Vector3(0,0.05,0.30)*size_value,"gold",Vector3(0.88,1.13,0.42))
-	for side in [-1.0,1.0]:
-		wardrobe.sphere(bone,size_value*0.16,at+Vector3(side*0.38,0.42,0.35)*size_value,"gold",Vector3(1,1.15,0.5))
-		wardrobe.sphere(bone,size_value*0.065,at+Vector3(side*0.20,0.12,0.53)*size_value,"dark",Vector3(1.2,0.55,0.4))
-		wardrobe.sphere(bone,size_value*0.20,at+Vector3(side*0.13,-0.13,0.54)*size_value,"gold",Vector3(1,0.80,0.55))
-	wardrobe.sphere(bone,size_value*0.12,at+Vector3(0,-0.02,0.64)*size_value,"dark",Vector3(1.1,0.65,0.40))
-	wardrobe.sphere(bone,size_value*0.22,at+Vector3(0,-0.34,0.40)*size_value,"gold",Vector3(0.75,0.65,0.45))
+	# A continuous carved relief: brows, recessed eyes, muzzle and a pointed
+	# radiating mane. Its silhouette and shading do not rely on stacked balls.
+	wardrobe.sphere(bone,size_value,at,"steel",Vector3(1,1,0.10))
+	wardrobe.ring(bone,size_value*0.97,size_value*0.040,at+Vector3(0,0,size_value*0.13),"gold",Basis(Vector3.RIGHT,PI*0.5))
+	var mane = SurfaceTool.new()
+	mane.begin(Mesh.PRIMITIVE_TRIANGLES)
+	mane.set_smooth_group(0)
+	for leaf in range(18):
+		var angle = float(leaf)/18.0*TAU
+		for row in range(5):
+			for col in range(3):
+				for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
+					var t = float(row+pair[0])/5.0
+					var u = float(col+pair[1])/3.0
+					var curl = angle+sin(t*PI)*0.13*(1.0 if leaf%2 else -1.0)
+					var r = lerpf(0.34,0.90,t)
+					var width_value = sin(t*PI)*0.10
+					var lateral = (u-0.5)*2.0*width_value
+					mane.set_uv(Vector2(float(leaf)/18.0+u/18.0,t))
+					mane.add_vertex(Vector3(sin(curl)*r+cos(curl)*lateral,cos(curl)*r-sin(curl)*lateral,0.12+sin(t*PI)*0.075*sin(u*PI))*size_value)
+	mane.generate_normals()
+	mane.generate_tangents()
+	mane.index()
+	wardrobe.piece(bone,mane.commit(),at,"gold")
+	var face = SurfaceTool.new()
+	face.begin(Mesh.PRIMITIVE_TRIANGLES)
+	face.set_smooth_group(0)
+	for row in range(18):
+		for col in range(18):
+			var x_center = (float(col)+0.5)/18.0*1.08-0.54
+			var y_center = (float(row)+0.5)/18.0*1.05-0.49
+			if pow(x_center/0.54,2)+pow((y_center-0.035)/0.525,2)>1.0: continue
+			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
+				var x = float(col+pair[1])/18.0*1.08-0.54
+				var y = float(row+pair[0])/18.0*1.05-0.49
+				var h = relief_height(x,y)
+				face.set_uv(Vector2((x+0.54)/1.08,(y+0.49)/1.05))
+				face.add_vertex(Vector3(x,y,h)*size_value)
+	face.generate_normals()
+	face.generate_tangents()
+	face.index()
+	wardrobe.piece(bone,face.commit(),at,"gold")
+	for direction in [-1.0,1.0]:
+		var eye = SurfaceTool.new()
+		eye.begin(Mesh.PRIMITIVE_TRIANGLES)
+		eye.set_smooth_group(0)
+		for point in [Vector2(-0.10,0),Vector2(0,0.029),Vector2(0.10,0),Vector2(-0.10,0),Vector2(0.10,0),Vector2(0,-0.019)]:
+			var x = direction*(0.24+point.x)
+			var y = 0.10+point.y
+			eye.set_uv(Vector2.ZERO)
+			eye.add_vertex(Vector3(x,y,relief_height(x,y)+0.001)*size_value)
+		eye.generate_normals()
+		eye.index()
+		wardrobe.piece(bone,eye.commit(),at,"dark")
