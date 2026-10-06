@@ -1,7 +1,8 @@
 extends SceneTree
 
-# Separate software recording from the headless rig/LOW/BALANCED/HIGH checks.
-# This changes only the test fixture's quality, never saved user preferences.
+# Final release evidence film. It records the actual Godot character, armor,
+# sword, cape, locomotion and mount from this source tree; no prerendered
+# character footage is substituted. Saved user preferences are never changed.
 var failures: Array[String] = []
 
 func _initialize() -> void: run.call_deferred()
@@ -19,9 +20,9 @@ func run() -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixture.json"))
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
-	game.preferences.quality = 0
+	game.preferences.quality = 1
 	await game.enter_world(fixture.state.duplicate(true))
-	game.connection_label.text = "LOCAL TEST · LOW graphics · controller recording"
+	game.connection_label.text = "FINAL CHARACTER · BALANCED graphics · native Godot recording"
 	var p = game.player
 	var actor = p.actor
 	p.frozen = true
@@ -33,6 +34,7 @@ func run() -> void:
 	# 420. Real account mount range, clearance and saves are tested separately.
 	game.horse.position = Vector3(0,0.1,20)
 	var camera = Camera3D.new()
+	camera.fov = 50.0
 	game.world_root.add_child(camera)
 	var target = get_nodes_in_group("practice_targets")[0]
 	p.position = target.position+Vector3(0,0.1,-1.7)
@@ -61,14 +63,20 @@ func run() -> void:
 			p.apply_mount(false)
 			p.position.x += 1.35
 		if frame < 155:
+			# Slow three-quarter hero orbit keeps the final lion regalia, hair,
+			# breastplate, tabard, sword and cape readable during the action demo.
 			camera.current = true
-			camera.position = p.position + Vector3(2.2,1.8,3.2)
-			camera.look_at(p.position + Vector3(0,1.1,0))
+			var orbit = -0.34+float(frame)/154.0*0.68
+			var offset = Vector3(2.65,1.92,3.75).rotated(Vector3.UP,orbit)
+			camera.position = p.position+offset
+			camera.look_at(p.position+Vector3(0,1.06,0))
 		elif frame >= 420:
 			camera.current = true
-			camera.position = p.position+Vector3(4.4,2.8,3.5)
-			camera.look_at(p.position+Vector3(0,1.3,0))
-		else: p.camera.current = true
+			var mounted_orbit = -0.18+float(frame-420)/180.0*0.36
+			camera.position = p.position+Vector3(4.7,2.95,3.75).rotated(Vector3.UP,mounted_orbit)
+			camera.look_at(p.position+Vector3(0,1.32,0))
+		else:
+			p.camera.current = true
 		await process_frame
 		motions[actor.current_motion] = true
 		if p.horse: horse_motions[game.horse.motion] = true
@@ -86,7 +94,7 @@ func run() -> void:
 	check(p.position.z>53.0,"Mounted recording did not travel through the village gate")
 	p.touch_move = Vector2.ZERO
 	p.touch_sprint = false
-	print("NATIVE_FILM ",JSON.stringify({"failures":failures,"frames":600,"capture_fps":30,"quality":"LOW","phone_benchmark":false,"human_motions":motions.keys(),"horse_motions":horse_motions.keys()}))
+	print("NATIVE_FILM ",JSON.stringify({"failures":failures,"frames":600,"capture_fps":30,"quality":"BALANCED","phone_benchmark":false,"human_motions":motions.keys(),"horse_motions":horse_motions.keys()}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)
