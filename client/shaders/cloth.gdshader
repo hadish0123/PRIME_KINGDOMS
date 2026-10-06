@@ -7,6 +7,10 @@ uniform bool royal = false;
 uniform sampler2D heraldry : source_color, filter_linear_mipmap;
 void vertex() {
     float free_edge = UV.y * UV.y;
+    if (vertical && royal) {
+        vec3 down_in_mesh = normalize(transpose(mat3(MODEL_MATRIX))*vec3(0.0,-1.0,0.0));
+        VERTEX += (down_in_mesh-vec3(0.0,-1.0,0.0))*free_edge*0.50;
+    }
     float wave = free_edge * (0.035 * sin(TIME * 2.7 + UV.x * 4.0) + 0.016 * sin(TIME * 5.1 + UV.y * 5.0));
     if (vertical) { VERTEX.z += wave; } else { VERTEX.y += wave; }
     VERTEX.x += free_edge * 0.018 * sin(TIME * 2.2 + UV.y * 4.0);

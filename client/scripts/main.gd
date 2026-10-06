@@ -650,6 +650,9 @@ func connection_failed(message: String = "Connection lost · reconnecting…") -
 func toggle_horse() -> void:
 	if not in_world or not network_online or mount_busy or saving: return
 	var occupied: bool = state.player.mount.mounted
+	if not occupied and not player.can_mount_at(horse):
+		connection_label.text = "Clear space around the horse before mounting"
+		return
 	if occupied:
 		var at = player.global_position+Basis(Vector3.UP,player.actor.rotation.y)*Vector3(1.35,0,0)
 		at.y = terrain.height_at(at.x,at.z)+0.1

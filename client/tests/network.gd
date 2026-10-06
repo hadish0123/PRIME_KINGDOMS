@@ -46,6 +46,23 @@ func run() -> void:
 	check(confirmed.ok and confirmed.data.player.position==saved,"Movement was rolled back by the server")
 	await game.command_army("follow")
 	check(game.state.player.armyOrder=="follow","Native march order did not persist")
+	var approach: Vector3 = game.player.position
+	var parked: Vector3 = game.horse.position
+	for step in range(1,7):
+		await create_timer(0.45).timeout
+		game.player.position = approach.lerp(parked,float(step)/6.0)
+		game.player.velocity = Vector3.ZERO
+		check(await game.sync_position(),"Native approach to the parked horse could not be saved")
+	await game.toggle_horse()
+	check(game.state.player.mount.mounted and game.player.horse==game.horse,"Native mount response did not restore the rider controller")
+	game.player.position.z += 0.3417304
+	check(await game.sync_position(),"Native mounted fractional position save failed")
+	var mounted_state = await game.api.call_api("/v1/game")
+	check(mounted_state.ok and mounted_state.data.player.mount.mounted and mounted_state.data.player.mount.position==mounted_state.data.player.position,"Mounted horse did not follow the saved server position")
+	await game.toggle_horse()
+	check(not game.state.player.mount.mounted and not game.player.horse,"Native dismount failed")
+	check(await game.sync_position(),"Native dismounted position save failed")
+	saved = game.state.player.position.duplicate()
 	var nearby: Dictionary = await game.api.call_api("/v1/world/nearby")
 	check(nearby.ok and nearby.data.villages.any(func(v): return v.id == initial.village.id), "Native account is missing from the shared map")
 	var logout: Dictionary = await game.api.call_api("/v1/auth/logout", {})

@@ -20,6 +20,7 @@ var half_world: float = 32748.0
 var collider: CollisionShape3D
 var standing_shape: CapsuleShape3D
 var prone_shape: BoxShape3D
+var mounted_shape: BoxShape3D
 var lying = false
 var action_motion = ""
 var action_clock = 0.0
@@ -38,6 +39,8 @@ func _ready() -> void:
 	standing_shape = capsule
 	prone_shape = BoxShape3D.new()
 	prone_shape.size = Vector3(0.58,0.52,1.9)
+	mounted_shape = BoxShape3D.new()
+	mounted_shape.size = Vector3(0.92,2.85,2.8)
 	collider.shape = capsule
 	collider.position.y = 0.9
 	add_child(collider)
@@ -134,7 +137,7 @@ func _physics_process(delta: float) -> void:
 	elif lying: actor.play_motion("crawl" if horizontal_speed > 0.1 else "prone")
 	else: actor.locomotion(horizontal_speed, is_on_floor(), velocity.y, delta)
 	pivot.position.y = lerpf(pivot.position.y,2.4 if horse else (0.75 if lying else 1.55),minf(1,delta*8))
-	if lying: collider.rotation.y = actor.rotation.y
+	if lying or horse: collider.rotation.y = actor.rotation.y
 	if terrain:
 		# Newly streamed chunks and terrain edges cannot strand the character beneath the ground.
 		var ground: float = terrain.height_at(position.x, position.z)
@@ -187,6 +190,14 @@ func can_stand(at: Vector3) -> bool:
 	query.exclude = [get_rid()]
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
+func can_mount_at(mount: Node3D) -> bool:
+	var query = PhysicsShapeQueryParameters3D.new()
+	query.shape = mounted_shape
+	query.transform = Transform3D(Basis(Vector3.UP,actor.rotation.y),mount.global_position+Vector3(0,1.425,0))
+	query.collision_mask = collision_mask
+	query.exclude = [get_rid(),mount.body.get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
+
 func toggle_lying() -> void:
 	if frozen or horse or not action_motion.is_empty() or not is_on_floor(): return
 	if lying and not can_stand(global_position): return
@@ -202,19 +213,17 @@ func toggle_mount() -> void:
 	game.toggle_horse()
 
 func apply_mount(value: bool) -> void:
+	if value and horse: return
 	lying = false
 	cancel_actions()
 	collider.shape = standing_shape
 	collider.rotation = Vector3.ZERO
 	if horse:
-		if value: return
 		var released = horse
 		horse = null
 		released.reparent(game.world_root,true)
 		released.set_occupied(false)
 		actor.position.y = 0.0
-		standing_shape.height = 1.8
-		standing_shape.radius = 0.32
 		collider.position.y = 0.9
 	else:
 		if not value: return
@@ -225,7 +234,6 @@ func apply_mount(value: bool) -> void:
 		horse.rotation = Vector3.ZERO
 		actor.set_weapon_drawn(false)
 		actor.position.y = 0.57
-		standing_shape.radius = 0.50
-		standing_shape.height = 2.85
+		collider.shape = mounted_shape
 		collider.position.y = 1.425
 		actor.play_motion("ride")

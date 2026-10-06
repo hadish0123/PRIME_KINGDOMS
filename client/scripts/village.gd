@@ -101,7 +101,7 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		cloth.set_shader_parameter("tint",Color(0.33,0.025,0.040))
 		cloth.set_shader_parameter("heraldry",load("res://assets/heraldry/lion.svg"))
 		cloth.set_shader_parameter("royal",true)
-		cloth.set_shader_parameter("vertical",true)
+		cloth.set_shader_parameter("vertical",false)
 		var flag = MeshInstance3D.new()
 		flag.mesh = banner
 		flag.material_override = cloth

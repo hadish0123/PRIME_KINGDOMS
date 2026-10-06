@@ -34,6 +34,7 @@ func run() -> void:
 	var p = game.player
 	await ticks(12)
 	check(p.is_on_floor(),"Actions need actual ground contact")
+	check(p.can_mount_at(game.horse),"An unobstructed parked horse could not be mounted")
 	check(game.horse.skeleton.get_bone_count()==19,"Horse anatomical rig failed to load")
 	for motion in ["idle","walk","trot","gallop","jump"]:
 		check(game.horse.animation.has_animation(motion),"Missing horse motion: "+motion)

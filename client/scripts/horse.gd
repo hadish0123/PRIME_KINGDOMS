@@ -6,6 +6,7 @@ var model: Node3D
 var animation: AnimationPlayer
 var skeleton: Skeleton3D
 var collider: CollisionShape3D
+var body: StaticBody3D
 var title: Label3D
 var motion = ""
 var occupied = false
@@ -19,7 +20,7 @@ func _ready() -> void:
 	helper.free()
 	for clip in animation.get_animation_list():
 		animation.get_animation(clip).loop_mode = Animation.LOOP_NONE if clip == "jump" else Animation.LOOP_LINEAR
-	var body = StaticBody3D.new()
+	body = StaticBody3D.new()
 	add_child(body)
 	collider = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
