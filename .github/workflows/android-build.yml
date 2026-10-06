@@ -198,8 +198,14 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view v0.4.0 >/dev/null 2>&1; then
-            test "$(gh release view v0.4.0 --json targetCommitish --jq .targetCommitish)" = "$GITHUB_SHA"
-            echo 'The release for this exact source commit is already published; existing downloads stay unchanged.'
+            prime_released_head=$(gh release view v0.4.0 --json targetCommitish --jq .targetCommitish)
+            if test "$prime_released_head" = "$GITHUB_SHA"; then
+              echo 'The release for this exact source commit is already published; existing downloads stay unchanged.'
+            else
+              git fetch --depth=1 origin "$prime_released_head"
+              git diff --exit-code "$prime_released_head" "$GITHUB_SHA" -- client/project.godot client/export_presets.cfg client/scripts client/shaders client/assets tools/assets
+              echo 'Server-only patch verified. Installed clients receive the API fix; the existing APK release stays unchanged.'
+            fi
           else
             gh release create v0.4.0 client/builds/PRIME-KINGDOMS-0.4.apk client/builds/village.png client/builds/human.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.4 — Human proportions and PBR world' --notes-file docs/RELEASE_0_4.md
           fi

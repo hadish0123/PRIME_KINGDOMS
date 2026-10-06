@@ -123,7 +123,8 @@ export async function movePlayer(pool, identity, body) {
     }
     const villages = (await client.query(`
       SELECT x,y,z FROM villages WHERE world_id=$1
-        AND x BETWEEN $2-125 AND $2+125 AND z BETWEEN $3-125 AND $3+125
+        AND x BETWEEN $2::double precision-125 AND $2::double precision+125
+        AND z BETWEEN $3::double precision-125 AND $3::double precision+125
       ORDER BY slot
     `, [identity.world_id, pos.x, pos.z])).rows;
     const ground = settledHeight(pos.x, pos.z, previous.seed, villages);
@@ -148,14 +149,16 @@ export async function nearbyWorld(pool, identity) {
   const player = (await pool.query('SELECT x,z FROM players WHERE id = $1', [identity.player_id])).rows[0];
   if (!player) throw new ApiError(404, 'player_unavailable');
   const villages = (await pool.query(`
-    SELECT * FROM villages WHERE world_id = $1 AND x BETWEEN $2-1024 AND $2+1024
-      AND z BETWEEN $3-1024 AND $3+1024 ORDER BY slot LIMIT 25
+    SELECT * FROM villages WHERE world_id = $1
+      AND x BETWEEN $2::double precision-1024 AND $2::double precision+1024
+      AND z BETWEEN $3::double precision-1024 AND $3::double precision+1024 ORDER BY slot LIMIT 25
   `, [identity.world_id, player.x, player.z])).rows;
   const npcs = villages.length ? (await pool.query('SELECT * FROM npcs WHERE village_id = ANY($1::uuid[]) ORDER BY role,ordinal', [villages.map((v) => v.id)])).rows : [];
   const players = (await pool.query(`
     SELECT p.id,a.display_name,p.x,p.y,p.z,p.yaw FROM players p JOIN accounts a ON a.id=p.account_id
     WHERE p.world_id=$1 AND p.id<>$2 AND p.last_seen_at > now() - interval '15 seconds'
-      AND p.x BETWEEN $3-800 AND $3+800 AND p.z BETWEEN $4-800 AND $4+800 LIMIT 50
+      AND p.x BETWEEN $3::double precision-800 AND $3::double precision+800
+      AND p.z BETWEEN $4::double precision-800 AND $4::double precision+800 LIMIT 50
   `, [identity.world_id, identity.player_id, player.x, player.z])).rows;
   return {
     villages: villages.map((village) => villageDTO(village, npcs.filter((npc) => npc.village_id === village.id))),

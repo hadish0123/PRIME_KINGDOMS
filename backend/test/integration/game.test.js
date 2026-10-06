@@ -47,6 +47,21 @@ test('real PostgreSQL: register once, rejoin the same village, own movement and 
     const second = await api('/v1/auth/register', { ...credentials, email: 'settler@example.com', displayName: 'Settler' });
     assert.equal(second.status, 201);
     assert.notDeepEqual(second.body.state.village.position, state.village.position);
+    // Real controllers continuously produce fractional coordinates, including
+    // negative values. Integer range literals must not make PostgreSQL infer
+    // these parameters as integer: that used to cause 503 and snap-back.
+    for (const [dx, dz] of [[-2.146629571914673, 0.34905490279197693], [0.3417304456233978, -1.5233107805252075]]) {
+      const fractional = { ...state.player.position, x: state.player.position.x + dx, z: state.player.position.z + dz };
+      await pool.query("UPDATE players SET movement_credit=4, position_updated_at=now()-interval '2 seconds' WHERE id=$1", [state.player.id]);
+      const moved = await api('/v1/player/move', { position: fractional, yaw: -0.2345 }, token);
+      assert.equal(moved.status, 200, JSON.stringify(moved.body));
+      assert.deepEqual(moved.body.position, fractional);
+      const vicinity = await api('/v1/world/nearby', undefined, token);
+      assert.equal(vicinity.status, 200, JSON.stringify(vicinity.body));
+      assert.ok(vicinity.body.villages.some(v => v.id === state.village.id));
+      assert.ok(vicinity.body.players.some(p => p.id === second.body.state.player.id));
+      assert.deepEqual((await api('/v1/game', undefined, token)).body.player.position, fractional);
+    }
     const target = { ...state.player.position, x: state.player.position.x + 24 };
     await pool.query("UPDATE players SET position_updated_at=now()-interval '5 seconds' WHERE id=$1", [state.player.id]);
     assert.equal((await api('/v1/player/move', { position: target, yaw: 0.5, playerId: second.body.state.player.id }, token)).status, 200);
