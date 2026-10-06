@@ -17,7 +17,7 @@ This milestone turns the approved lion-emblem knight reference into the native i
 
 ## Real runtime evidence
 
-GitHub Actions records 600 frames from the actual Godot client at a fixed 30 fps while exercising draw/sheathe, practice attack, lying/crawling, walking/running/jumping and mounted movement. The final character sequence uses a slow three-quarter hero orbit and BALANCED graphics.
+GitHub Actions records 300 frames (10 seconds) from the actual Godot client at a fixed 30 fps. Gameplay correctness remains covered by the separate action/physics/pose tests; the final movie is a clean full-body character presentation with the HUD and practice prop hidden, a slow three-quarter hero orbit, warm royal key light, draw/strike/walk/recovery motions and BALANCED graphics.
 
 The workflow encodes:
 
