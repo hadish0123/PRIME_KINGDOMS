@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Terrain = preload("res://scripts/terrain.gd")
+const TouchControls = preload("res://scripts/touch_controls.gd")
 var failures: Array[String] = []
 
 func _initialize() -> void:
@@ -48,6 +49,24 @@ func run() -> void:
 	check(game.player.is_on_floor(), "Player failed to land after jumping")
 	game.player.look(Vector2(130, 20))
 	check(game.player.yaw < -0.4, "Orbit camera failed")
+	var touch = TouchControls.new()
+	game.hud.add_child(touch)
+	touch.player = game.player
+	var press = InputEventScreenTouch.new()
+	press.index = 3
+	press.position = Vector2(140, root.size.y - 160)
+	press.pressed = true
+	touch._input(press)
+	var drag = InputEventScreenDrag.new()
+	drag.index = 3
+	drag.position = press.position + Vector2(40, -30)
+	drag.relative = Vector2(40, -30)
+	touch._input(drag)
+	check(game.player.touch_move.length() > 0.5, "Android stick failed")
+	press.pressed = false
+	touch._input(press)
+	check(game.player.touch_move == Vector2.ZERO, "Android stick did not release")
+	touch.queue_free()
 	var count_before: int = game.terrain.chunks.size()
 	game.terrain.stream_at(Vector3(960, 0, 960))
 	check(game.terrain.pending.size() > 0, "New terrain does not stream when moving")

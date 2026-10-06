@@ -68,19 +68,20 @@ func setup_lighting() -> void:
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.75
+	environment.ambient_light_energy = 0.42
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.70, 0.75, 0.70)
 	environment.fog_density = 0.0015
+	environment.fog_sky_affect = 0.12
 	var world_environment = WorldEnvironment.new()
 	world_environment.environment = environment
 	add_child(world_environment)
 	var sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-38, -32, 0)
 	sun.light_color = Color(1.0, 0.89, 0.72)
-	sun.light_energy = 1.35
+	sun.light_energy = 1.1
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04
@@ -303,7 +304,7 @@ func _process(delta: float) -> void:
 	if not in_world: return
 	terrain.stream_at(player.position)
 	var p = player.position + origin
-	position_label.text = "X %d   Z %d   ·   %d FPS" % [p.x, p.z, Engine.get_frames_per_second()]
+	position_label.text = "X %d   Z %d" % [p.x, p.z]
 	for remote in remote_players.values():
 		var distance: float = remote.node.position.distance_to(remote.target)
 		remote.node.position = remote.node.position.lerp(remote.target, minf(delta * 4.0, 1.0))

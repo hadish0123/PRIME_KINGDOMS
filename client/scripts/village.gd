@@ -61,7 +61,9 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	village_id = str(data.id)
 	var p: Dictionary = data.position
 	position = Vector3(float(p.x), float(p.y), float(p.z)) - origin
-	palette.road = material(Color(0.49, 0.42, 0.31))
+	var road = ShaderMaterial.new()
+	road.shader = load("res://shaders/road.gdshader")
+	palette.road = road
 	palette.wood = material(Color(0.23, 0.14, 0.08))
 	palette.gold = material(Color(0.66, 0.47, 0.20), 0.48)
 	palette.soil = material(Color(0.25, 0.20, 0.13))
