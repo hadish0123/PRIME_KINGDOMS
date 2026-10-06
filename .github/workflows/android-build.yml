@@ -41,6 +41,13 @@ jobs:
           cache-dependency-path: tools/assets/package-lock.json
       - name: Restore pinned CC0 humans and photographic PBR assets
         run: npm ci --prefix tools/assets --ignore-scripts && npm run --prefix tools/assets prepare:models
+      - name: Install animation capture encoder
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          ffmpeg -version
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
