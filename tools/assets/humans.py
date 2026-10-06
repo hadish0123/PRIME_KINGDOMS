@@ -72,7 +72,7 @@ class GLB:
     def __init__(self):
         self.binary = bytearray()
         self.image_ids = {}
-        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.4'},
+        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.5'},
                     'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'name': 'Human', 'children': []}],
                     'bufferViews': [], 'accessors': [], 'meshes': [], 'skins': [], 'materials': [],
                     'images': [], 'textures': [], 'samplers': [{'magFilter': 9729, 'minFilter': 9987}],
@@ -211,7 +211,10 @@ def solve_limb(head, middle, end, target, bend):
 def animate(glb, heads, bone_ids):
     identity = [0., 0., 0., 1.]
     clips = [('idle', 3.2), ('walk', 1.0), ('run', 0.68), ('jump', 0.28),
-             ('fall', 0.8), ('land', 0.26), ('guard', 4.0), ('work', 2.6)]
+             ('fall', 0.8), ('land', 0.26), ('guard', 4.0), ('work', 2.6),
+             ('draw', 0.85), ('sheathe', 0.85), ('attack', 0.72),
+             ('lie_down', 0.65), ('prone', 2.8), ('crawl', 1.4),
+             ('stand_up', 0.65), ('ride', 1.0)]
     for clip, duration in clips:
         count = int(duration*30)+1
         times = [i*duration/(count-1) for i in range(count)]
@@ -227,6 +230,17 @@ def animate(glb, heads, bone_ids):
             poses = {bone: identity[:] for bone in bone_ids}
             poses['spine03'] = axis(0, -0.1 if running else 0.015*math.sin(cycle*math.tau))
             poses['head'] = axis(1, 0.14*math.sin(cycle*math.tau) if clip == 'guard' else 0.018*math.sin(cycle*math.tau))
+            lying = clip in ('lie_down', 'prone', 'crawl', 'stand_up')
+            if lying:
+                amount = cycle if clip == 'lie_down' else (1-cycle if clip == 'stand_up' else 1.)
+                amount = amount*amount*(3-2*amount)
+                poses['root'] = axis(0, math.pi*0.5*amount)
+                displacement = [0., -0.72*amount, 0.]
+                poses['head'] = axis(0, -0.25*amount)
+            elif clip == 'attack':
+                poses['spine03'] = quat_mul(axis(1, -0.30*math.sin(cycle*math.tau)), axis(0, -0.07*math.sin(cycle*math.pi)))
+            elif clip == 'ride':
+                displacement = [0., 0.012*math.sin(cycle*math.tau), 0.]
             for side, sign in [('L', 1), ('R', -1)]:
                 phase = (cycle+(0 if side == 'L' else 0.5))%1
                 stance = 0.50 if running else 0.62
@@ -239,8 +253,12 @@ def animate(glb, heads, bone_ids):
                 if moving: target = add(target, [0., lift-bob, z])
                 elif clip in ('jump', 'fall'):
                     target = add(target, [0., 0.10 if side=='L' else 0.06, 0.14 if side=='L' else -0.06])
+                elif lying:
+                    target = add(target, [sign*0.015, 0.04, 0.07*math.sin(phase*math.tau) if clip == 'crawl' else 0.])
+                elif clip == 'ride':
+                    target = add(heads[thigh], [sign*0.29, -0.57, 0.15])
                 else: target = sub(target, displacement)
-                poses[thigh], poses[calf], poses[foot] = solve_limb(heads[thigh], heads[calf], heads[foot], target, [0., 0., 1.])
+                poses[thigh], poses[calf], poses[foot] = solve_limb(heads[thigh], heads[calf], heads[foot], target, [sign*0.25 if clip == 'ride' else 0., 0., 1.])
                 arm, forearm, hand = ['upperarm01.'+side, 'lowerarm01.'+side, 'wrist.'+side]
                 shoulder = heads[arm]
                 target = add(shoulder, [sign*0.05, -0.50, 0.025])
@@ -251,7 +269,24 @@ def animate(glb, heads, bone_ids):
                     target = add(shoulder, [sign*0.12, -0.30, 0.22])
                 elif clip == 'work':
                     target = add(shoulder, [-sign*0.06, -0.29+0.035*math.sin(cycle*math.tau), 0.23])
+                elif clip in ('draw', 'sheathe') and side == 'R':
+                    phase_value = cycle if clip == 'draw' else 1-cycle
+                    start = add(shoulder, [-0.05, -0.50, 0.025])
+                    grip = [0.16, 1.03, 0.22]
+                    finish = add(shoulder, [-0.10, -0.37, 0.25])
+                    a, b, blend = (start, grip, phase_value/0.46) if phase_value < 0.46 else (grip, finish, (phase_value-0.46)/0.54)
+                    blend = blend*blend*(3-2*blend)
+                    target = add(mul(a,1-blend),mul(b,blend))
+                elif clip == 'attack' and side == 'R':
+                    target = add(shoulder, [-0.08-0.20*math.sin(cycle*math.pi), -0.18+0.23*math.sin(cycle*math.tau), 0.37+0.13*math.sin(cycle*math.pi)])
+                elif lying:
+                    target = add(shoulder,[sign*0.11,-0.25+0.10*math.sin(phase*math.tau) if clip == 'crawl' else -0.38,0.19])
+                elif clip == 'ride':
+                    target = add(shoulder,[-sign*0.045,-0.28,0.30])
                 poses[arm], poses[forearm], poses[hand] = solve_limb(heads[arm], heads[forearm], heads[hand], target, [sign*0.25, 0., -1.])
+                # Feet counter-rotate to keep their soles flat; wrists follow the
+                # forearms. Counter-rotating hands froze them in the original T pose.
+                poses[hand] = identity[:]
             for bone in bone_ids: tracks[bone].append(poses[bone])
             root_positions.append(add(heads['root'], displacement))
         animation = {'name': clip, 'samplers': [], 'channels': []}
@@ -267,10 +302,11 @@ def animate(glb, heads, bone_ids):
 
 def build(role):
     base, uvs, all_faces = load_obj(CACHE/'core/3dobjs/base.obj')
-    target = CACHE/'core/targets/macrodetails/caucasian-male-young.target'
-    for line in target.read_text().splitlines():
-        v = line.split()
-        if len(v)==4 and v[0].isdigit(): base[int(v[0])] = add(base[int(v[0])], list(map(float, v[1:])))
+    for name, weight in [('caucasian-male-young', 0.68), ('caucasian-male-old', 0.32)]:
+        target = CACHE/('core/targets/macrodetails/'+name+'.target')
+        for line in target.read_text().splitlines():
+            v = line.split()
+            if len(v)==4 and v[0].isdigit(): base[int(v[0])] = add(base[int(v[0])], mul(list(map(float, v[1:])), weight))
     body_faces = [(0, face) for group, face in all_faces if group == 'body']
     used = {v for _, face in body_faces for v, uv in face}
     bottom, top = min(base[v][1] for v in used), max(base[v][1] for v in used)
@@ -341,7 +377,7 @@ def build(role):
     animate(glb, heads, bone_ids)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     dest = OUTPUT/'human.glb'; glb.save(dest)
-    print(f'Clothed human {role}: {sum(len(m["primitives"]) for m in glb.doc["meshes"])} surfaces, {len(selected)} bones, 8 animations, {dest.stat().st_size} bytes')
+    print(f'Clothed human {role}: {sum(len(m["primitives"]) for m in glb.doc["meshes"])} surfaces, {len(selected)} bones, {len(glb.doc["animations"])} animations, {dest.stat().st_size} bytes')
 
 
 if __name__ == '__main__':

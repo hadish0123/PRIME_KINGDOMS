@@ -14,6 +14,7 @@ var grass_center = Vector2i(99999, 99999)
 var grove_center = Vector2i(99999, 99999)
 static var blade_mesh: ArrayMesh
 static var leaf_mesh: QuadMesh
+static var rock_scenes: Array[PackedScene] = []
 static var grass_material: ShaderMaterial
 static var leaf_material: ShaderMaterial
 static var tree_mesh: ArrayMesh
@@ -22,23 +23,31 @@ func _ready() -> void:
 	if not grass_material:
 		grass_material = ShaderMaterial.new()
 		grass_material.shader = load("res://shaders/foliage.gdshader")
+		grass_material.set_shader_parameter("meadow",load("res://assets/textures/meadow_alpha.png"))
 		leaf_material = ShaderMaterial.new()
-		leaf_material.shader = grass_material.shader
-		leaf_material.set_shader_parameter("leaves", true)
-		leaf_material.set_shader_parameter("wind_strength", 0.025)
-		leaf_material.set_shader_parameter("base_color", Vector3(0.22, 0.30, 0.10))
+		leaf_material.shader = load("res://shaders/pine.gdshader")
+		leaf_material.set_shader_parameter("needles", load("res://assets/textures/pine_twig_diff.jpg"))
+		leaf_material.set_shader_parameter("mask", load("res://assets/textures/pine_twig_alpha.jpg"))
+		leaf_material.set_shader_parameter("normal_map", load("res://assets/textures/pine_twig_normal.jpg"))
 		leaf_mesh = QuadMesh.new()
-		leaf_mesh.size = Vector2(0.95, 0.95)
+		leaf_mesh.size = Vector2(1.05, 1.95)
 		blade_mesh = make_blades()
 		var trunk = Architecture.new()
 		trunk.begin()
-		trunk.cylinder(0.27, 5.5, Vector3(0, 2.75, 0), "wood")
-		trunk.cylinder(0.16, 2.7, Vector3(0.1, 6.25, 0), "wood", Vector3(0.12, 0.05, 0.08))
-		for i in range(9):
-			var a = i * TAU / 9.0
-			trunk.beam(Vector3(0, 3.5 + i * 0.23, 0), Vector3(sin(a) * 2.1, 5.9 + i * 0.19, cos(a) * 2.1), 0.10 - i * 0.005)
+		for level in range(8):
+			trunk.cylinder(lerpf(0.30,0.045,level / 7.0), 1.25, Vector3(0,0.62+level*1.18,0), "wood")
+		for tier in range(7):
+			var y = 2.9 + tier * 0.87
+			for branch in range(7):
+				var a = branch * TAU / 7.0 + tier * 0.72
+				var radius = 3.5 - tier * 0.43
+				var middle = Vector3(sin(a)*radius*0.55,y-0.12,cos(a)*radius*0.55)
+				var tip = Vector3(sin(a)*radius,y+0.36,cos(a)*radius)
+				trunk.beam(Vector3(0,y,0),middle,0.06-tier*0.006)
+				trunk.beam(middle,tip,0.028-tier*0.002)
 		tree_mesh = trunk.batches.wood.commit()
 		trunk.free()
+		for i in range(7): rock_scenes.append(load("res://assets/nature/rock-%d.glb" % i))
 
 func set_quality(value: int) -> void:
 	if value == quality: return
@@ -102,15 +111,14 @@ func stream_at(viewer: Vector3) -> void:
 static func make_blades() -> ArrayMesh:
 	var surface = SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for angle in [0.0, PI / 3.0, PI * 2.0 / 3.0]:
+	for angle in [0.0, PI * 0.5]:
 		var basis = Basis(Vector3.UP, angle)
-		for segment in range(3):
+		for segment in range(1):
 			for pair in [[0, 0], [0, 1], [1, 0], [0, 1], [1, 1], [1, 0]]:
-				var y = float(segment + pair[0]) / 3.0
-				var width = sin((y * 0.85 + 0.15) * PI) * 0.018
-				surface.set_normal(basis * Vector3(0, 0.25, 1).normalized())
-				surface.set_uv(Vector2(pair[1], y))
-				surface.add_vertex(basis * Vector3((float(pair[1]) - 0.5) * width * 2.0, y * 0.30, y * y * 0.045))
+				var y = float(segment + pair[0])
+				surface.set_normal(basis * Vector3(0, 0.78, 0.62).normalized())
+				surface.set_uv(Vector2(pair[1], 1.0-y))
+				surface.add_vertex(basis * Vector3((float(pair[1]) - 0.5) * 0.44, y * 0.65-0.02, y * y * 0.04))
 	return surface.commit()
 
 func seeded(key: Vector2i, salt: int) -> RandomNumberGenerator:
@@ -125,12 +133,12 @@ func build_grass(key: Vector2i) -> void:
 	var colors: Array[Color] = []
 	var corner = Vector2(key.x, key.y) * GRASS_TILE - Vector2(terrain.origin.x, terrain.origin.z)
 	var base = Vector3(corner.x, terrain.height_at(corner.x + 12, corner.y + 12), corner.y)
-	for i in range([256, 640, 960][quality]):
+	for i in range([160, 260, 420][quality]):
 		var p = corner + Vector2(rng.randf_range(0, GRASS_TILE), rng.randf_range(0, GRASS_TILE))
 		if not clear_at(p, false): continue
 		var basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.65, 1.4))
 		transforms.append(Transform3D(basis, Vector3(p.x, terrain.height_at(p.x, p.y), p.y) - base))
-		colors.append(Color(rng.randf(), 0, 0, 0))
+		colors.append(Color(rng.randf(), rng.randf(), 0, 0))
 	var mesh = MultiMesh.new()
 	mesh.transform_format = MultiMesh.TRANSFORM_3D
 	mesh.use_custom_data = true
@@ -154,42 +162,82 @@ func build_grove(key: Vector2i) -> void:
 	add_child(node)
 	groves[key] = node
 	var corner = Vector2(key.x, key.y) * GROVE_TILE - Vector2(terrain.origin.x, terrain.origin.z)
-	for i in range(3):
-		var p = corner + Vector2(rng.randf_range(8, 72), rng.randf_range(8, 72))
-		if not clear_at(p, true): continue
-		var tree = Node3D.new()
-		node.add_child(tree)
-		tree.position = Vector3(p.x, terrain.height_at(p.x, p.y), p.y)
-		tree.rotation.y = rng.randf() * TAU
-		tree.scale = Vector3.ONE * rng.randf_range(0.85, 1.45)
-		var trunk = MeshInstance3D.new()
-		trunk.mesh = tree_mesh
-		trunk.material_override = Surfaces.pbr("bark_brown_02", Color(0.78, 0.76, 0.69), 0.9)
-		trunk.visibility_range_end = 290.0
-		tree.add_child(trunk)
-		var leaves_mesh = MultiMesh.new()
-		leaves_mesh.transform_format = MultiMesh.TRANSFORM_3D
-		leaves_mesh.use_custom_data = true
-		leaves_mesh.mesh = leaf_mesh
-		leaves_mesh.instance_count = [150, 240, 360][quality]
-		for leaf in range(leaves_mesh.instance_count):
-			var direction = Vector3(rng.randfn(), rng.randfn(), rng.randfn()).normalized()
-			var at = Vector3(0, 6.5, 0) + direction * rng.randf_range(0.4, 2.7)
-			var basis = Basis.from_euler(Vector3(rng.randf() * PI, rng.randf() * TAU, rng.randf() * TAU))
-			leaves_mesh.set_instance_transform(leaf, Transform3D(basis, at))
-			leaves_mesh.set_instance_custom_data(leaf, Color(rng.randf(), 0, 0, 0))
-		var canopy = MultiMeshInstance3D.new()
-		canopy.multimesh = leaves_mesh
-		canopy.material_override = leaf_material
-		canopy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if quality == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		canopy.visibility_range_end = 260.0
-		tree.add_child(canopy)
+	node.position = Vector3(corner.x,0,corner.y)
+	var trees: Array[Transform3D] = []
+	var needles: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	for i in range([4,8,12][quality]):
+		var p = corner + Vector2(rng.randf_range(4,76),rng.randf_range(4,76))
+		if not clear_at(p,true): continue
+		var at = Vector3(p.x-corner.x,terrain.height_at(p.x,p.y),p.y-corner.y)
+		var scale_value = rng.randf_range(1.1,1.9)
+		var tree_transform = Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*scale_value),at)
+		trees.append(tree_transform)
+		for leaf in range([90,144,196][quality]):
+			var tier = leaf % 7
+			var a = rng.randf() * TAU
+			var radius = rng.randf_range(0.18,3.25-tier*0.42)
+			var local = Vector3(sin(a)*radius,3.0+tier*0.86+rng.randf_range(-0.24,0.30),cos(a)*radius)
+			var basis = Basis.from_euler(Vector3(rng.randf_range(-0.70,0.70),a+PI*0.5,rng.randf_range(-0.22,0.22)))
+			basis = basis.scaled(Vector3.ONE * lerpf(1.0,0.48,tier/6.0))
+			needles.append(tree_transform * Transform3D(basis,local))
+			colors.append(Color(rng.randf(),0,0,0))
 		var body = StaticBody3D.new()
 		var collider = CollisionShape3D.new()
 		var shape = CylinderShape3D.new()
-		shape.radius = 0.28
-		shape.height = 5.5
+		shape.radius = 0.30 * scale_value
+		shape.height = 8.0 * scale_value
 		collider.shape = shape
-		collider.position.y = 2.75
+		collider.position.y = shape.height * 0.5
+		body.position = at
 		body.add_child(collider)
-		tree.add_child(body)
+		node.add_child(body)
+	instance_batch(node,tree_mesh,trees,Surfaces.pbr("bark_brown_02",Color(0.68,0.63,0.54),0.65),[],true,1300.0)
+	instance_batch(node,leaf_mesh,needles,leaf_material,colors,false,1100.0)
+	# Real photogrammetry rocks sit on the rendered surface, with reusable materials.
+	for i in range([1,2,3][quality]):
+		var p = corner + Vector2(rng.randf_range(8,72),rng.randf_range(8,72))
+		if not clear_at(p,true): continue
+		var rock = rock_scenes[rng.randi_range(0,6)].instantiate()
+		var bounds: AABB = ActorBounds(rock,Transform3D.IDENTITY)
+		var scale_value = rng.randf_range(0.8,2.6)
+		rock.scale = Vector3.ONE * scale_value
+		rock.position = Vector3(p.x-corner.x,terrain.height_at(p.x,p.y)-bounds.position.y*scale_value-0.06,p.y-corner.y)
+		rock.rotation.y = rng.randf() * TAU
+		node.add_child(rock)
+		dress_rock(rock)
+
+func instance_batch(parent: Node3D, mesh: Mesh, transforms: Array[Transform3D], surface: Material, colors: Array[Color], shadows: bool, distance_value: float) -> void:
+	var instances = MultiMesh.new()
+	instances.transform_format = MultiMesh.TRANSFORM_3D
+	instances.use_custom_data = not colors.is_empty()
+	instances.mesh = mesh
+	instances.instance_count = transforms.size()
+	for i in range(transforms.size()):
+		instances.set_instance_transform(i,transforms[i])
+		if not colors.is_empty(): instances.set_instance_custom_data(i,colors[i])
+	var visual = MultiMeshInstance3D.new()
+	visual.multimesh = instances
+	visual.material_override = surface
+	visual.visibility_range_end = distance_value
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(visual)
+
+func ActorBounds(node: Node3D, transform_value: Transform3D) -> AABB:
+	var transform_next = transform_value * node.transform
+	var value = AABB()
+	if node is MeshInstance3D: value = transform_next * node.get_aabb()
+	for child in node.get_children():
+		if child is Node3D:
+			var child_bounds = ActorBounds(child,transform_next)
+			if child_bounds.size.length() > 0:
+				value = value.merge(child_bounds) if value.size.length() > 0 else child_bounds
+	return value
+
+func dress_rock(node: Node3D) -> void:
+	if node is MeshInstance3D:
+		node.material_override = Surfaces.pbr("rock_moss",Color.WHITE,1.0,false)
+		node.visibility_range_end = 700.0
+		node.create_trimesh_collision()
+	for child in node.get_children():
+		if child is Node3D and child is not StaticBody3D: dress_rock(child)

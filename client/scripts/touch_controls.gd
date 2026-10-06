@@ -1,5 +1,7 @@
 extends Control
 
+const ActionButton = preload("res://scripts/action_button.gd")
+
 var player: Node
 var move_finger = -1
 var look_finger = -1
@@ -8,35 +10,59 @@ var stick = Vector2.ZERO
 var enabled = true:
 	set(value):
 		enabled = value
-		if is_instance_valid(jump): jump.disabled = not value
-		if is_instance_valid(sprint): sprint.disabled = not value
+		for action in actions:
+			if is_instance_valid(action): action.disabled = not value
 		if not value: release_input()
 var sprint: Button
 var jump: Button
+var actions: Array[Button] = []
 var blocked_regions: Array[Control] = []
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	jump = Button.new()
-	jump.text = "JUMP"
-	jump.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	jump.position = Vector2(-120, -110)
-	jump.size = Vector2(96, 76)
+	var sword = add_action("SWORD","sword",Vector2(-112,-302))
+	sword.pressed.connect(func():
+		if player and enabled: player.toggle_weapon())
+	var ride = add_action("RIDE","ride",Vector2(-202,-256))
+	ride.pressed.connect(func():
+		if player and enabled: player.toggle_mount())
+	var strike = add_action("ATTACK","attack",Vector2(-112,-210))
+	strike.pressed.connect(func():
+		if player and enabled: player.attack())
+	jump = add_action("JUMP","jump",Vector2(-202,-164))
 	jump.pressed.connect(func():
 		if player and enabled: player.jump_requested = true)
-	add_child(jump)
-	sprint = Button.new()
-	sprint.text = "RUN"
+	var lie = add_action("LIE / UP","lie",Vector2(-112,-118))
+	lie.pressed.connect(func():
+		if player and enabled: player.toggle_lying())
+	sprint = add_action("RUN","run",Vector2(-292,-210))
 	sprint.toggle_mode = true
-	sprint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	sprint.position = Vector2(-240, -110)
-	sprint.size = Vector2(96, 76)
 	sprint.toggled.connect(func(value):
 		if player and enabled: player.touch_sprint = value)
-	add_child(sprint)
-	blocked_regions.append_array([jump, sprint])
 	enabled = enabled
+
+func add_action(caption: String, icon: String, offset: Vector2) -> Button:
+	var action = ActionButton.new()
+	action.action_icon = icon
+	action.text = "\n\n"+caption
+	action.add_theme_font_size_override("font_size",12)
+	for state in ["normal","hover","pressed","disabled"]:
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.055,0.041,0.025,0.72 if state != "pressed" else 0.95)
+		style.border_color = Color(0.79,0.66,0.43,0.38 if state == "disabled" else 0.8)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(41)
+		action.add_theme_stylebox_override(state,style)
+	add_child(action)
+	action.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	action.offset_left = offset.x
+	action.offset_top = offset.y
+	action.offset_right = offset.x+82
+	action.offset_bottom = offset.y+82
+	actions.append(action)
+	blocked_regions.append(action)
+	return action
 
 func _input(event: InputEvent) -> void:
 	if not enabled or not is_visible_in_tree() or not is_instance_valid(player): return

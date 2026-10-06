@@ -18,7 +18,7 @@ concurrency:
 jobs:
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
     services:
       postgres:
         image: postgres:18
@@ -156,6 +156,10 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/smoke.log; then exit 1; fi
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/presentation.gd -- --smoke 2>&1 | tee client/builds/presentation.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/presentation.log; then exit 1; fi
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --fixed-fps 60 --script res://tests/actions.gd -- --smoke 2>&1 | tee client/builds/actions.log
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/actions.log; then exit 1; fi
+          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/poses.gd -- --smoke 2>&1 | tee client/builds/poses.log
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/poses.log; then exit 1; fi
       - name: Validate anatomical rig, scenery budgets and actual movement film
         shell: bash
         env:
@@ -169,18 +173,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.4.apk 2>&1 | tee client/builds/export.log
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.5.apk 2>&1 | tee client/builds/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/export.log; then exit 1; fi
-          test -s client/builds/PRIME-KINGDOMS-0.4.apk
-          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.4.apk
-          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.4.apk > client/builds/apk-metadata.log
+          test -s client/builds/PRIME-KINGDOMS-0.5.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.5.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.5.apk > client/builds/apk-metadata.log
           sed -n '1,15p' client/builds/apk-metadata.log
-          (cd client/builds && sha256sum PRIME-KINGDOMS-0.4.apk village.png human.png animation.mp4 login.png settings.png atlas.png > SHA256SUMS.txt)
+          (cd client/builds && sha256sum PRIME-KINGDOMS-0.5.apk village.png human.png animation.mp4 login.png settings.png atlas.png > SHA256SUMS.txt)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-Android-0.4
+          name: PRIME-KINGDOMS-Android-0.5
           path: |
-            client/builds/PRIME-KINGDOMS-0.4.apk
+            client/builds/PRIME-KINGDOMS-0.5.apk
             client/builds/SHA256SUMS.txt
             client/builds/village.png
             client/builds/human.png
@@ -197,8 +201,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view v0.4.0 >/dev/null 2>&1; then
-            prime_released_head=$(gh release view v0.4.0 --json targetCommitish --jq .targetCommitish)
+          if gh release view v0.5.0 >/dev/null 2>&1; then
+            prime_released_head=$(gh release view v0.5.0 --json targetCommitish --jq .targetCommitish)
             if test "$prime_released_head" = "$GITHUB_SHA"; then
               echo 'The release for this exact source commit is already published; existing downloads stay unchanged.'
             else
@@ -207,7 +211,7 @@ jobs:
               echo 'Server-only patch verified. Installed clients receive the API fix; the existing APK release stays unchanged.'
             fi
           else
-            gh release create v0.4.0 client/builds/PRIME-KINGDOMS-0.4.apk client/builds/village.png client/builds/human.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.4 — Human proportions and PBR world' --notes-file docs/RELEASE_0_4.md
+            gh release create v0.5.0 client/builds/PRIME-KINGDOMS-0.5.apk client/builds/village.png client/builds/human.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.5 — Rider, sword and persistent army' --notes-file docs/RELEASE_0_5.md
           fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

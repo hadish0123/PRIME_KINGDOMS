@@ -26,7 +26,7 @@ def download(item):
             return
     url = (f"https://raw.githubusercontent.com/{item['repository']}/{item['ref']}/{item['path']}"
            if 'repository' in item else item['url'])
-    headers = {'User-Agent': 'PRIME-KINGDOMS-asset-build/0.4 (+https://github.com/hadish0123/PRIME_KINGDOMS)'}
+    headers = {'User-Agent': 'PRIME-KINGDOMS-asset-build/0.5 (+https://github.com/hadish0123/PRIME_KINGDOMS)'}
     if 'range' in item:
         headers['Range'] = f"bytes={item['range'][0]}-{item['range'][1]}"
     for attempt in range(3):

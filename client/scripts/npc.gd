@@ -9,6 +9,10 @@ var role: String = "villager"
 var clock: float = 0.0
 var title: Label3D
 var simulating = true
+var following = false
+var follow_target: Node3D
+var ordinal = 0
+var terrain: Node3D
 
 func setup(data: Dictionary, local_position: Vector3) -> void:
 	collision_layer = 2
@@ -18,6 +22,7 @@ func setup(data: Dictionary, local_position: Vector3) -> void:
 	home = local_position
 	position = home + Vector3(0, 0.1, 0)
 	phase = float(data.ordinal) * 1.7
+	ordinal = int(data.ordinal)
 	var collider = CollisionShape3D.new()
 	var capsule = CapsuleShape3D.new()
 	capsule.radius = 0.28
@@ -27,7 +32,7 @@ func setup(data: Dictionary, local_position: Vector3) -> void:
 	add_child(collider)
 	actor = Actor.new()
 	add_child(actor)
-	actor.setup(role, 1.8)
+	actor.setup(role,1.76 + float(int(data.ordinal) % 4) * 0.025,int(data.ordinal))
 	title = Label3D.new()
 	title.text = str(data.name)
 	title.font_size = 28
@@ -55,13 +60,17 @@ func _physics_process(delta: float) -> void:
 	# Presentation patrols only. Identity, population and home are owned by the server.
 	clock += delta
 	var target = home + Vector3(sin(clock * 0.18 + phase) * 1.5, 0, cos(clock * 0.22 + phase) * 1.5)
+	if following and is_instance_valid(follow_target):
+		var offset = Vector3((ordinal%2-0.5)*3.0,0,-4.0-floorf(ordinal/2.0)*1.8)
+		target = to_local(follow_target.global_position+Basis(Vector3.UP,follow_target.actor.rotation.y)*offset)+position
 	var direction = target - position
 	direction.y = 0
-	var moving = direction.length() > 0.35 and fmod(clock + phase, 13.0) < 8.0
+	var moving = direction.length() > 0.35 and (following or fmod(clock + phase, 13.0) < 8.0)
 	if moving:
 		direction = direction.normalized()
-		velocity.x = direction.x * 1.0
-		velocity.z = direction.z * 1.0
+		var speed = minf(5.4,maxf(1.0,(target-position).length())) if following else 1.0
+		velocity.x = direction.x * speed
+		velocity.z = direction.z * speed
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), delta * 5.0)
 	else:
 		velocity.x = 0
@@ -69,6 +78,7 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 20.0 * delta
 	move_and_slide()
 	actor.locomotion(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, delta, "work" if role == "villager" else "idle")
-	if position.y < home.y - 0.25:
-		position.y = home.y + 0.1
+	var floor_height = terrain.height_at(global_position.x,global_position.z)-get_parent().global_position.y if is_instance_valid(terrain) else home.y
+	if position.y < floor_height - 0.25:
+		position.y = floor_height + 0.1
 		velocity.y = 0.0

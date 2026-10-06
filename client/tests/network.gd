@@ -32,9 +32,20 @@ func run() -> void:
 	await game.enter_world(initial)
 	check(game.villages[initial.village.id].population.size() == 13, "Native registered village does not contain 13 people")
 	var saved: Dictionary = initial.player.position.duplicate()
-	saved.x = float(saved.x) + 2.0
+	saved.x = float(saved.x) + 2.1466295719
+	saved.z = float(saved.z) - 0.3490549028
 	var movement: Dictionary = await game.api.call_api("/v1/player/move", {"position": saved, "yaw": 0.5})
 	check(movement.ok, "Native position save failed")
+	game.player.position = game.decode_position(saved)
+	game.player.frozen = true
+	for i in range(3):
+		game.player.position.x += 0.125
+		check(await game.sync_position(),"Continuous fractional movement lost its saved position")
+	saved = game.state.player.position.duplicate()
+	var confirmed = await game.api.call_api("/v1/game")
+	check(confirmed.ok and confirmed.data.player.position==saved,"Movement was rolled back by the server")
+	await game.command_army("follow")
+	check(game.state.player.armyOrder=="follow","Native march order did not persist")
 	var nearby: Dictionary = await game.api.call_api("/v1/world/nearby")
 	check(nearby.ok and nearby.data.villages.any(func(v): return v.id == initial.village.id), "Native account is missing from the shared map")
 	var logout: Dictionary = await game.api.call_api("/v1/auth/logout", {})
@@ -52,6 +63,7 @@ func run() -> void:
 		check(restored.player.id == initial.player.id, "Re-entry created a second player")
 		check(restored.village.soldierCount == 8 and restored.village.villagerCount == 5, "Re-entry changed the starter population")
 		check(restored.player.position == saved, "Native saved position was not restored")
+		check(restored.player.armyOrder=="follow" and restored.territories.owned==1,"Re-entry did not preserve army order and land")
 		check(restored.village.npcs.map(func(n): return n.id) == initial.village.npcs.map(func(n): return n.id), "Re-entry replaced NPC identities")
 		await game.enter_world(restored)
 		game.api.token = str(joined.data.session.token)
