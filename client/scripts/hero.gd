@@ -18,8 +18,8 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	skeleton = target
 	role = kind
 	variant = appearance
-	materials.steel = metal(Color(0.53,0.56,0.58))
-	materials.gold = metal(Color(0.72,0.49,0.17),true)
+	materials.steel = hero_metal(Color(0.53,0.56,0.58))
+	materials.gold = hero_metal(Color(0.72,0.49,0.17),true)
 	materials.leather = ShaderMaterial.new()
 	materials.leather.shader = load("res://shaders/leather.gdshader")
 	materials.dark = Surfaces.plain(Color(0.03,0.022,0.017),0.93)
@@ -38,6 +38,13 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	rig = SwordRig.new()
 	rig.wardrobe = self
 	skeleton.add_child(rig)
+
+func hero_metal(color_value: Color,gilded: bool = false) -> ShaderMaterial:
+	var surface = ShaderMaterial.new()
+	surface.shader = load("res://shaders/hero_metal.gdshader")
+	surface.set_shader_parameter("color",color_value)
+	surface.set_shader_parameter("gilded",1.0 if gilded else 0.0)
+	return surface
 
 func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: Basis, surface: String, taper: float = 0.82, arc: float = TAU) -> void:
 	# Profiled metal shells with a rolled edge and an embossed central ridge.
