@@ -41,8 +41,8 @@ func dress(node: Node) -> void:
 			var surface: Material = node.mesh.surface_get_material(index)
 			if not surface: continue
 			if surface.resource_name in ["Fabric", "Trousers"]:
-				var tint = Vector3(0.21, 0.15, 0.14) if role == "player" else (Vector3(0.31, 0.29, 0.24) if role == "soldier" else Vector3(0.44, 0.36, 0.24))
-				if surface.resource_name == "Trousers": tint = Vector3(0.21, 0.17, 0.12)
+				var tint = Vector3(0.055,0.062,0.073) if role == "player" else (Vector3(0.31,0.29,0.24) if role == "soldier" else Vector3(0.44,0.36,0.24))
+				if surface.resource_name == "Trousers": tint = Vector3(0.050,0.042,0.036) if role == "player" else Vector3(0.21,0.17,0.12)
 				var key = "garment:%s:%s" % [role, surface.resource_name]
 				if not Surfaces.cache.has(key):
 					var tailored = ShaderMaterial.new()
