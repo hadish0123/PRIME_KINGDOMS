@@ -1,6 +1,8 @@
 extends "res://scripts/regalia.gd"
 
 const SwordRig = preload("res://scripts/sword_rig.gd")
+const Ornament = preload("res://scripts/hero_ornament.gd")
+var ornament: RefCounted
 var actor: Node3D
 var sword: Node3D
 var scabbard: Node3D
@@ -24,6 +26,7 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	materials.chain = ShaderMaterial.new()
 	materials.chain.shader = load("res://shaders/chainmail.gdshader")
 	materials.hair = Surfaces.plain(Color(0.038,0.022,0.015),0.85)
+	ornament = Ornament.new(self)
 	for side in ["L","R"]:
 		boots(side)
 		limbs(side)
@@ -57,6 +60,7 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 	builder.generate_tangents()
 	builder.index()
 	piece(bone,builder.commit(),at,surface,axis)
+	if surface == "steel": ornament.plate(bone,radius,length_value,at,axis,taper,arc)
 
 func limbs(side: String) -> void:
 	for names in [["upperarm01","lowerarm01"],["lowerarm01","wrist"],["upperleg01","lowerleg01"],["lowerleg01","foot"]]:
@@ -110,16 +114,15 @@ func cuirass() -> void:
 	box("spine03",Vector3(0.091,0.123,0.055),Vector3(0.21,-0.224,0.073),"leather",Basis(Vector3.UP,0.33))
 	box("spine03",Vector3(0.080,0.021,0.061),Vector3(0.21,-0.174,0.073),"leather",Basis(Vector3.UP,0.33))
 	for side in [-1,1]:
-		sphere("spine01",0.037,Vector3(side*0.174,0.149,0.180),"gold",Vector3(1,1,0.30))
-		ring("spine01",0.035,0.003,Vector3(side*0.174,0.149,0.191),"steel",Basis(Vector3.RIGHT,PI/2))
+		ornament.lion("spine01",Vector3(side*0.174,0.149,0.180))
 
 func beam(bone: String,a: Vector3,b: Vector3,width: float,surface: String) -> void:
 	box(bone,Vector3(width,a.distance_to(b),0.011),(a+b)*0.5,surface,Basis(Quaternion(Vector3.UP,(b-a).normalized())))
 
-func textile_surface() -> ShaderMaterial:
+func textile_surface(skirt: bool = false) -> ShaderMaterial:
 	var material = ShaderMaterial.new()
 	material.shader = load("res://shaders/royal_textile.gdshader")
-	material.set_shader_parameter("albedo_map",load("res://assets/heraldry/royal-textile.png"))
+	material.set_shader_parameter("albedo_map",load("res://assets/heraldry/royal-skirt.svg" if skirt else "res://assets/heraldry/royal-textile.png"))
 	return material
 
 func textile_panel(name_value: String,top: float,bottom: float,top_width: float,bottom_width: float,depth: float,skirt: bool) -> void:
@@ -153,7 +156,7 @@ func textile_panel(name_value: String,top: float,bottom: float,top_width: float,
 	var visual = MeshInstance3D.new()
 	visual.name = name_value
 	visual.mesh = builder.commit()
-	visual.material_override = textile_surface()
+	visual.material_override = textile_surface(skirt)
 	visual.skin = skeleton.create_skin_from_rest_transforms()
 	visual.skeleton = NodePath("..")
 	skeleton.add_child(visual)
@@ -269,7 +272,7 @@ func make_weapon() -> void:
 	visual.mesh = blade.commit()
 	visual.material_override = materials.steel
 	sword.add_child(visual)
-	for item in [[Vector3(0.028,0.135,0.027),Vector3(0,-0.005,0),"leather"],[Vector3(0.26,0.022,0.025),Vector3(0,-0.09,0),"gold"]]:
+	for item in [[Vector3(0.028,0.135,0.027),Vector3(0,-0.005,0),"leather"]]:
 		var mesh = BoxMesh.new()
 		mesh.size = item[0]
 		var node = MeshInstance3D.new()
@@ -277,6 +280,19 @@ func make_weapon() -> void:
 		node.position = item[1]
 		node.material_override = materials[item[2]]
 		sword.add_child(node)
+	# Ornament is geometry on the same sword; no detached or swapped prop.
+	for side in [-1.0,1.0]:
+		var curve = PackedVector3Array()
+		for i in range(17):
+			var t = float(i)/16.0
+			curve.append(Vector3(side*(0.015+t*0.126),-0.087-0.030*sin(t*PI*0.9),0))
+		ornament.cord("wrist.R",curve,0.009)
+	ornament.lion("wrist.R",Vector3(0,-0.086,0.011),0.018)
+	var guard_attachment: Node3D = flush()["wrist.R"]
+	var guard_mesh: Node3D = guard_attachment.get_child(0)
+	guard_mesh.reparent(sword,false)
+	guard_mesh.name = "SculptedCrossguard"
+	guard_attachment.queue_free()
 	for y in [0.075,-0.089]:
 		var pommel = SphereMesh.new()
 		pommel.radius = 0.024 if y>0 else 0.016

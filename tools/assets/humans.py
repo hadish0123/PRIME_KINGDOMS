@@ -360,7 +360,7 @@ def build(role):
     if role == 'hero':
         skin_path = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png'
         skin_normal = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png'
-    skin = glb.material('Skin', [0.78,0.70,0.63,1.] if role=='hero' else [1.,0.96,0.92,1.], 0.70, skin_path, normal=skin_normal)
+    skin = glb.material('Skin', [0.88,0.79,0.72,1.] if role=='hero' else [1.,0.96,0.92,1.], 0.52 if role=='hero' else 0.70, skin_path, normal=skin_normal)
     cloth_colors = {'player': [0.08,0.14,0.18,1.], 'soldier': [0.28,0.25,0.20,1.], 'villager': [0.46,0.39,0.28,1.]}
     diffuse = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_diffuse.png'
     normal = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_normal.png'
@@ -392,8 +392,8 @@ def build(role):
         v, uv, faces, w, _ = proxy(path, base, weights, transform)
         if role == 'hero' and name == 'Hair':
             for point in v:
-                if point[1] < 1.65: point[1] = 1.65+(point[1]-1.65)*0.40
-                point[0] *= 1.10
+                if point[1] < 1.65: point[1] = 1.65+(point[1]-1.65)*0.58
+                point[0] *= 1.04
                 point[0] += 0.009*math.sin(point[1]*49+point[2]*28)
                 point[2] += 0.010*math.sin(point[1]*54+point[0]*31)
         glb.mesh(name, v, uv, [(0, f) for _, f in faces], w, {0: mat})

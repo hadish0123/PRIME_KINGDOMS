@@ -46,7 +46,9 @@ func dress(node: Node) -> void:
 				var strands = ShaderMaterial.new()
 				strands.shader = load("res://shaders/hair.gdshader")
 				strands.set_shader_parameter("albedo_map",surface.albedo_texture)
-				strands.set_shader_parameter("tint",Color(0.12,0.075,0.042) if surface.resource_name == "Hair" else Color(0.10,0.065,0.035))
+				# source_color converts this multiplier to linear space. Near-black
+				# sRGB values erased every strand in the already dark source texture.
+				strands.set_shader_parameter("tint",Color(0.66,0.54,0.40) if surface.resource_name == "Hair" else Color(0.59,0.48,0.36))
 				node.set_surface_override_material(index,strands)
 				continue
 			if role == "player" and surface.resource_name == "Glove":
