@@ -5,6 +5,16 @@ var failures: Array[String] = []
 var player: CharacterBody3D
 var camera: Camera3D
 
+func triangles(node: Node) -> int:
+	var total = 0
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var arrays = node.mesh.surface_get_arrays(surface)
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			total += indices.size()/3 if not indices.is_empty() else arrays[Mesh.ARRAY_VERTEX].size()/3
+	for child in node.get_children(): total += triangles(child)
+	return total
+
 func _initialize() -> void: run.call_deferred()
 func check(value: bool,message: String) -> void:
 	if not value:
@@ -60,9 +70,12 @@ func run() -> void:
 	scene.add_child(camera)
 	for i in range(30): await physics_frame
 	check(player.actor.skeleton.get_bone_count()==49,"Production player rig missing")
+	var triangle_count = triangles(player.actor)
+	check(triangle_count<250000,"Player mesh exceeded the authored mobile geometry budget")
 	var identity: int = player.actor.wardrobe.sword.get_instance_id()
 	await capture("character-front",Vector3(1.0,1.32,3.30),Vector3(0,1.0,0))
 	await capture("character-face",Vector3(0.26,1.79,0.93),Vector3(0,1.69,0))
+	await capture("character-profile",Vector3(-0.83,1.79,0.28),Vector3(0,1.69,0))
 	await capture("character-back",Vector3(-1.0,1.32,-3.30),Vector3(0,1.0,0))
 	player.toggle_weapon()
 	for i in range(100): await physics_frame
@@ -86,7 +99,7 @@ func run() -> void:
 			await process_frame
 			await RenderingServer.frame_post_draw
 			check(root.get_texture().get_image().save_png("res://builds/character-frames/%04d.png"%frame)==OK,"Character recording frame failed")
-	print("CHARACTER_REVIEW ",JSON.stringify({"failures":failures,"actual_production_player":true,"reference_match":"not_certified"}))
+	print("CHARACTER_REVIEW ",JSON.stringify({"failures":failures,"actual_production_player":true,"triangles":triangle_count,"reference_match":"not_certified"}))
 	scene.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

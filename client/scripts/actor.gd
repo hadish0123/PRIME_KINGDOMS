@@ -42,6 +42,18 @@ func dress(node: Node) -> void:
 		for index in range(node.mesh.get_surface_count()):
 			var surface: Material = node.mesh.surface_get_material(index)
 			if not surface: continue
+			if role == "player" and surface.resource_name == "Skin":
+				var skin = ShaderMaterial.new()
+				skin.shader = load("res://shaders/hero_skin.gdshader")
+				skin.set_shader_parameter("albedo_map",surface.albedo_texture)
+				skin.set_shader_parameter("normal_map",surface.normal_texture)
+				node.set_surface_override_material(index,skin)
+				continue
+			if role == "player" and surface.resource_name == "Groom":
+				var groom = ShaderMaterial.new()
+				groom.shader = load("res://shaders/hero_groom.gdshader")
+				node.set_surface_override_material(index,groom)
+				continue
 			if role == "player" and surface.resource_name in ["Hair","Beard"]:
 				var strands = ShaderMaterial.new()
 				strands.shader = load("res://shaders/hair.gdshader")

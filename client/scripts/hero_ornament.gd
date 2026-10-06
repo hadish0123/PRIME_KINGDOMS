@@ -16,41 +16,39 @@ func cord(bone: String,points: PackedVector3Array,radius: float,at: Vector3 = Ve
 		if normal.length_squared()<0.1: normal = tangent.cross(Vector3.RIGHT).normalized()
 		var binormal = tangent.cross(normal).normalized()
 		var ring_points = PackedVector3Array()
-		for j in range(6):
-			var angle = j*TAU/6.0
+		for j in range(4):
+			var angle = j*TAU/4.0
 			ring_points.append(points[i]+(normal*cos(angle)+binormal*sin(angle))*radius)
 		rings.append(ring_points)
 	for i in range(rings.size()-1):
-		for j in range(6):
+		for j in range(4):
 			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
-				builder.set_uv(Vector2(float(j+pair[1])/6.0,float(i+pair[0])/float(rings.size()-1)))
-				builder.add_vertex(rings[i+pair[0]][(j+pair[1])%6])
+				builder.set_uv(Vector2(float(j+pair[1])/4.0,float(i+pair[0])/float(rings.size()-1)))
+				builder.add_vertex(rings[i+pair[0]][(j+pair[1])%4])
 	builder.generate_normals()
 	builder.generate_tangents()
 	builder.index()
 	wardrobe.piece(bone,builder.commit(),at,surface,axis)
 
 func plate_point(angle: float,v: float,radius: float,length_value: float,taper: float) -> Vector3:
-	var r = radius*lerpf(1.0,taper,v)+pow(absf(v-0.5)*2.0,12.0)*0.0025
-	var ridge = pow(maxf(cos(angle),0.0),16.0)*radius*0.09
-	return Vector3(sin(angle)*r,(v-0.5)*length_value,cos(angle)*r*0.86+ridge)+Vector3(sin(angle),0,cos(angle))*0.0018
+	return wardrobe.shell_point(angle,v,radius,length_value,taper)+Vector3(sin(angle),0,cos(angle))*0.0018
 
 func plate(bone: String,radius: float,length_value: float,at: Vector3,axis: Basis,taper: float,arc: float) -> void:
 	for v in [0.045,0.955]:
 		var edge = PackedVector3Array()
-		for i in range(49): edge.append(plate_point((float(i)/48.0-0.5)*arc,v,radius,length_value,taper))
+		for i in range(33): edge.append(plate_point((float(i)/32.0-0.5)*arc,v,radius,length_value,taper))
 		cord(bone,edge,0.0016,at,axis)
 	if length_value<0.10: return
 	for side in [-1.0,1.0]:
 		var stem = PackedVector3Array()
-		for i in range(25):
-			var t = float(i)/24.0
+		for i in range(17):
+			var t = float(i)/16.0
 			stem.append(plate_point(side*(0.13+sin(t*PI)*0.20),lerpf(0.14,0.86,t),radius,length_value,taper))
 		cord(bone,stem,0.0010,at,axis)
 		for branch in range(3):
 			var curl = PackedVector3Array()
-			for i in range(21):
-				var t = float(i)/20.0
+			for i in range(15):
+				var t = float(i)/14.0
 				curl.append(plate_point(side*(0.35+0.26*sin(t*TAU*0.88)*(1.0-t*0.78)),0.28+branch*0.20+0.065*cos(t*TAU*0.88)*(1.0-t*0.78),radius,length_value,taper))
 			cord(bone,curl,0.0010,at,axis)
 

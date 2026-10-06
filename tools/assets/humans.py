@@ -12,6 +12,7 @@ import json
 import math
 from pathlib import Path
 import struct
+import hero_sculpt
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / 'tools/assets/cache/human'
@@ -116,7 +117,7 @@ class GLB:
         self.doc['materials'].append(item)
         return len(self.doc['materials'])-1
 
-    def mesh(self, name, vertices, uvs, faces, weights, materials):
+    def mesh(self, name, vertices, uvs, faces, weights, materials, colors=None):
         normals = [[0., 0., 0.] for _ in vertices]
         for _, face in faces:
             a, b, c = (vertices[v] for v, uv in face)
@@ -128,21 +129,25 @@ class GLB:
         primitives = []
         for material, triangles in grouped.items():
             unique, positions, normal, texcoords, joints, influence, indices = {}, [], [], [], [], [], []
+            vertex_colors = []
             for face in triangles:
                 for v, uv in face:
                     key = (v, uv)
                     if key not in unique:
                         unique[key] = len(positions)
                         positions.append(vertices[v]); normal.append(normals[v]); texcoords.append(uvs[uv] if uvs else [0., 0.])
+                        if colors is not None: vertex_colors.append(colors[v])
                         w = sorted(weights[v].items(), key=lambda x: x[1], reverse=True)[:4]
                         w += [(0, 0.)]*(4-len(w))
                         total = max(sum(x[1] for x in w), 1e-9)
                         joints.append([x[0] for x in w]); influence.append([max(0., x[1])/total for x in w])
                     indices.append(unique[key])
-            primitives.append({'attributes': {'POSITION': self.accessor(positions, 'VEC3', bounds=True),
+            primitive = {'attributes': {'POSITION': self.accessor(positions, 'VEC3', bounds=True),
                 'NORMAL': self.accessor(normal, 'VEC3'), 'TEXCOORD_0': self.accessor(texcoords, 'VEC2'),
                 'JOINTS_0': self.accessor(joints, 'VEC4', 5123), 'WEIGHTS_0': self.accessor(influence, 'VEC4')},
-                'indices': self.accessor(indices, 'SCALAR', 5125), 'material': materials[material]})
+                'indices': self.accessor(indices, 'SCALAR', 5125), 'material': materials[material]}
+            if vertex_colors: primitive['attributes']['COLOR_0'] = self.accessor(vertex_colors, 'VEC4')
+            primitives.append(primitive)
         self.doc['meshes'].append({'name': name, 'primitives': primitives})
         self.doc['nodes'].append({'name': name, 'mesh': len(self.doc['meshes'])-1, 'skin': 0})
         self.doc['nodes'][0]['children'].append(len(self.doc['nodes'])-1)
@@ -349,6 +354,7 @@ def build(role):
         for line in target.read_text().splitlines():
             v = line.split()
             if len(v)==4 and v[0].isdigit(): base[int(v[0])] = add(base[int(v[0])], mul(list(map(float, v[1:])), weight))
+    if role == 'hero': hero_sculpt.sculpt(base, CACHE)
     body_faces = [(0, face) for group, face in all_faces if group == 'body']
     used = {v for _, face in body_faces for v, uv in face}
     bottom, top = min(base[v][1] for v in used), max(base[v][1] for v in used)
@@ -432,19 +438,31 @@ def build(role):
         # it is the actual skinned head surface, never a floating hair sphere.
         if role=='hero' and all(transform(base[v])[1]>1.79 for v, uv in face): material = 3
         skin_faces.append((material, face))
-    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove, 3: scalp})
+    transformed = list(map(transform, base))
+    if role == 'hero':
+        # Smooth the face, ears and neck at build time, keeping the resident
+        # topology and the 49 existing joint names/animation tracks intact.
+        head_faces = [(m, f) for m, f in skin_faces if all(transformed[v][1] > 1.525 for v, uv in f)]
+        lower_faces = [(m, f) for m, f in skin_faces if not all(transformed[v][1] > 1.525 for v, uv in f)]
+        hv, hu, hf, hw = hero_sculpt.subdivide(transformed, uvs, head_faces, weights)
+        glb.mesh('Anatomy', transformed, uvs, lower_faces, weights, {0:skin, 1:boots, 2:glove, 3:scalp}, [[0.,0.,0.,1.] for _ in transformed])
+        # Vertex masks deform with the rig, so prone/riding never changes where
+        # the beard grows. No shading classification uses animated positions.
+        glb.mesh('SculptedHead', hv, hu, hf, hw, {0:skin, 3:scalp}, [[hero_sculpt.beard_mask(p),0.,0.,1.] for p in hv])
+    else:
+        glb.mesh('Anatomy', transformed, uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove, 3: scalp})
     for name, path, mat in [('Eyes', CACHE/'system/eyes/low-poly/low-poly.mhclo', eye), ('Hair', hair_proxy, hair), ('Brows', CACHE/'system/eyebrows/eyebrow001/eyebrow001.mhclo', brow)]:
         v, uv, faces, w, _ = proxy(path, base, weights, transform)
-        if role == 'hero' and name == 'Hair':
-            for point in v:
-                if point[1] < 1.65: point[1] = 1.65+(point[1]-1.65)*0.58
-                loose = max(0., min(1., (1.76-point[1])/0.12))
-                point[0] *= 1.+0.04*loose
-                point[0] += loose*0.005*math.sin(point[1]*49+point[2]*28)
-                point[2] += loose*0.005*math.sin(point[1]*54+point[0]*31)
+        if role == 'hero' and name == 'Hair': continue
+        if role == 'hero' and name == 'Eyes':
+            v, uv, eye_faces, w = hero_sculpt.subdivide(v, uv, [(0, f) for _, f in faces], w)
+            # Source eye UVs and fitted sockets are preserved through smoothing.
+            glb.mesh(name, v, uv, eye_faces, w, {0:mat})
+            continue
         glb.mesh(name, v, uv, [(0, f) for _, f in faces], w, {0: mat})
     if role == 'hero':
-        stubble(glb,list(map(transform,base)),body_faces,selected.index('head'))
+        hero_sculpt.groom(glb, selected.index('head'))
+        hero_sculpt.beard(glb, hv, hf, selected.index('head'))
     animate(glb, heads, bone_ids)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     dest = OUTPUT/('hero.glb' if role == 'hero' else 'human.glb'); glb.save(dest)

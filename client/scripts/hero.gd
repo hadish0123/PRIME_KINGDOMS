@@ -50,24 +50,95 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 	# Profiled metal shells with a rolled edge and an embossed central ridge.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rows = 8
-	var columns = 32
+	var rows = 12
+	var columns = 40
 	for y in range(rows):
 		for x in range(columns):
 			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
 				var u = float(x+pair[1])/columns
 				var v = float(y+pair[0])/rows
 				var angle = (u-0.5)*arc
-				var edge = pow(absf(v-0.5)*2.0,12.0)*0.0025
-				var r = radius*lerpf(1.0,taper,v)+edge
-				var ridge = pow(maxf(cos(angle),0),16)*radius*0.09
 				builder.set_uv(Vector2(u,v))
-				builder.add_vertex(Vector3(sin(angle)*r,(v-0.5)*length_value,cos(angle)*r*0.86+ridge))
+				builder.add_vertex(shell_point(angle,v,radius,length_value,taper,surface=="steel"))
 	builder.generate_normals()
 	builder.generate_tangents()
 	builder.index()
 	piece(bone,builder.commit(),at,surface,axis)
 	if surface == "steel": ornament.plate(bone,radius,length_value,at,axis,taper,arc)
+
+func shell_point(angle: float,v: float,radius: float,length_value: float,taper: float,sculpted: bool = true) -> Vector3:
+	var rolled = pow(absf(v-0.5)*2.0,16.0)*0.0030
+	var swell = sin(v*PI)*radius*0.035 if sculpted else 0.0
+	var r = radius*lerpf(1.0,taper,v)+rolled+swell
+	var front = maxf(cos(angle),0.0)
+	var ridge = pow(front,18.0)*radius*0.10
+	var flute = cos(angle*8.0)*sin(v*PI)*front*0.0015 if sculpted else 0.0
+	# Shoulder lames curve into a pointed centre instead of a cylindrical cuff.
+	var scallop = pow(front,4.0)*(v-0.5)*0.018 if sculpted and length_value<0.10 else 0.0
+	return Vector3(sin(angle)*r,(v-0.5)*length_value+scallop,cos(angle)*r*0.86+ridge+flute)
+
+func boots(side: String) -> void:
+	var bone = "foot."+side
+	var foot = CapsuleMesh.new()
+	foot.radius = 0.058
+	foot.height = 0.276
+	foot.radial_segments = 32
+	foot.rings = 10
+	piece(bone,foot,Vector3(0,-0.025,0.082),"leather",Basis(Vector3.RIGHT,PI*0.5))
+	tube(bone,0.068,0.17,Vector3(0,0.051,0),"leather",Basis.IDENTITY,0.062)
+	# Curved overlapping sabatons follow the instep and toe, with rolled rims.
+	for layer in range(5):
+		var builder = SurfaceTool.new()
+		builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var center_z = 0.199-layer*0.040
+		var width_value = 0.051+sin(float(layer)/4.0*PI)*0.010
+		for row in range(6):
+			for col in range(24):
+				for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
+					var u = float(col+pair[1])/24.0
+					var v = float(row+pair[0])/6.0
+					var angle = (u-0.5)*PI
+					builder.set_uv(Vector2(u,v))
+					builder.add_vertex(Vector3(sin(angle)*width_value,-0.041+cos(angle)*(0.034+layer*0.004)+pow(absf(v-0.5)*2,14)*0.0018,center_z+(v-0.5)*0.055))
+		builder.generate_normals()
+		builder.generate_tangents()
+		builder.index()
+		piece(bone,builder.commit(),Vector3.ZERO,"steel")
+		var edge = PackedVector3Array()
+		for i in range(25):
+			var a = (float(i)/24.0-0.5)*PI
+			edge.append(Vector3(sin(a)*width_value,-0.038+cos(a)*(0.034+layer*0.004),center_z+0.027))
+		ornament.cord(bone,edge,0.0016)
+		for direction in [-1,1]: sphere(bone,0.0025,Vector3(direction*width_value,-0.029,center_z),"gold")
+	# A bevelled rounded sole closes the toe without a rectangular block.
+	var sole = CapsuleMesh.new()
+	sole.radius = 0.064
+	sole.height = 0.30
+	sole.radial_segments = 32
+	sole.rings = 10
+	piece(bone,sole,Vector3(0,-0.066,0.080),"dark",Basis(Vector3.RIGHT,PI*0.5).scaled(Vector3(1,1,0.16)))
+
+func joint_guard(bone: String,radius: float) -> void:
+	var builder = SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(12):
+		for col in range(40):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/40.0
+				var v = float(row+pair[0])/12.0
+				var a = u*TAU
+				builder.set_uv(Vector2(u,v))
+				builder.add_vertex(Vector3(sin(a)*radius*v,cos(a)*radius*v*(0.83+maxf(-cos(a),0)*0.35),0.024+radius*0.97+cos(v*PI*0.5)*radius*0.25))
+	builder.generate_normals()
+	builder.generate_tangents()
+	builder.index()
+	piece(bone,builder.commit(),Vector3.ZERO,"steel")
+	var border = PackedVector3Array()
+	for i in range(41):
+		var a = float(i)/40.0*TAU
+		border.append(Vector3(sin(a)*radius,cos(a)*radius*(0.83+maxf(-cos(a),0)*0.35),0.025+radius*0.97))
+	ornament.cord(bone,border,0.002)
+	ornament.lion(bone,Vector3(0,0,0.025+radius*1.23),radius*0.36)
 
 func armor_axis(direction: Vector3) -> Basis:
 	# Keep the open rear seam behind the limb, including downward arm rests.
@@ -117,8 +188,8 @@ func limbs(side: String) -> void:
 		else:
 			shell(bone,radius*1.12,length_value*0.74,direction*0.49,axis,"steel",0.81)
 			for t in [0.12,0.84]: ring(bone,radius*(1.10-t*0.2),0.0035,direction*t,"gold",axis.scaled(Vector3(1,1,0.87)))
-			# Flared elbow/knee couter plus gold perimeter and rivets.
-			sphere(bone,radius*1.24,Vector3(0,0,0.025),"steel",Vector3(1.12,0.90,0.92))
+			# Convex pointed couters, relief lions, rolled edges and rivets.
+			joint_guard(bone,radius*1.13)
 			for i in range(7):
 				var a = (i-3)*0.34
 				sphere(bone,0.0035,Vector3(sin(a)*radius*1.15,-0.008,0.028+cos(a)*radius*1.08),"gold")
@@ -146,6 +217,14 @@ func cuirass() -> void:
 	for i in range(13): sphere("spine03",0.0024,Vector3(-0.16+i*0.026,-0.15,0.199),"gold")
 	box("spine03",Vector3(0.091,0.123,0.055),Vector3(0.21,-0.224,0.073),"leather",Basis(Vector3.UP,0.33))
 	box("spine03",Vector3(0.080,0.021,0.061),Vector3(0.21,-0.174,0.073),"leather",Basis(Vector3.UP,0.33))
+	# Leather edges, brass stitches and embossed waist fittings.
+	for row in [-0.131,-0.172]:
+		for i in range(24):
+			var a = (float(i)/23.0-0.5)*PI*0.83
+			sphere("spine03",0.0015,Vector3(sin(a)*0.197,row,0.024+cos(a)*0.221),"gold")
+	for i in range(7):
+		var t = float(i)/6.0
+		sphere("spine01",0.0020,Vector3(lerpf(-0.188,0.16,t),lerpf(0.151,-0.14,t),lerpf(0.228,0.245,t)),"gold")
 	for side in [-1,1]:
 		ornament.lion("spine01",Vector3(side*0.174,0.149,0.247))
 
@@ -173,7 +252,8 @@ func textile_panel(name_value: String,top: float,bottom: float,top_width: float,
 				var width_value = lerpf(top_width,bottom_width,v) if skirt else (lerpf(top_width,0.220,smoothstep(0,0.25,v)) if v < 0.25 else lerpf(0.220,bottom_width,(v-0.25)/0.75))
 				var px = (u-0.5)*2.0*width_value
 				var center_depth = depth if skirt else (lerpf(0.135,depth,smoothstep(0,0.25,v)) if v < 0.25 else lerpf(depth,0.192,(v-0.25)/0.75))
-				var pz = center_depth-(0.065 if not skirt else 0.0)*pow(absf(u-0.5)*2,2)+sin(u*TAU*3)*0.009*(v if skirt else 0.3)
+				var fold = sin(u*TAU*3.0+v*1.7)*0.011+sin(u*TAU*6.0-v*1.5)*0.003
+				var pz = center_depth-(0.065 if not skirt else 0.0)*pow(absf(u-0.5)*2,2)+fold*(v if skirt else 0.45)
 				builder.set_uv(Vector2(u,v))
 				if skirt:
 					var leg_weight = v*0.42
@@ -226,10 +306,10 @@ func cape() -> void:
 				var u = float(col+pair[1])/80.0
 				var v = float(row+pair[0])/16.0
 				var angle = u*TAU
-				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.004+sin(angle*9+v*4)*0.002
-				var radius = lerpf(0.088,0.165,v)+wave
+				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.006+sin(angle*9+v*4)*0.0025
+				var radius = lerpf(0.080,0.152,v)+wave
 				folds.set_uv(Vector2(u*3,v))
-				folds.add_vertex(Vector3(sin(angle)*radius*1.48,0.233-v*0.091+sin(angle*2+0.4)*0.010,0.036+cos(angle)*radius*1.08))
+				folds.add_vertex(Vector3(sin(angle)*radius*1.38,0.236-v*0.102+sin(angle*2+0.4)*0.014,0.038+cos(angle)*radius*1.02))
 	folds.generate_normals()
 	folds.generate_tangents()
 	folds.index()
