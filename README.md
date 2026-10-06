@@ -2,9 +2,9 @@
 
 A persistent third-person kingdom game, beginning with a small village and eventually growing into cities, countries and empires.
 
-## Play milestone 0.5
+## Play milestone 0.6
 
-[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.5.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.6.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
 
 Install the APK, choose a ruler name, email and password (at least 10 characters), then select **CREATE ACCOUNT**. Select **ENTER WORLD** for an existing account. The app remembers an unexpired session on the same device.
 
@@ -21,7 +21,7 @@ Install the APK, choose a ruler name, email and password (at least 10 characters
 - A real 3D animated login backdrop, retry for remembered sessions, scrollable account form, safe-area controls, settings and a world atlas.
 - Railway hosts the Node.js/PostgreSQL API. Graphics run on the Android device, not on Railway.
 
-Version 0.5 adds a visible draw/sheathe sword, practice strikes, lying/crawling, an anatomical horse with persisted mount/parked state, server-saved follow/hold orders for the same eight soldiers and exclusive claims of unoccupied land. It includes sixteen human clips, five horse clips, armor/cape, a fortified village, photographic foliage/rocks and an actual 3D minimap. Fractional movement saves no longer fail and snap the player back. This remains below the supplied photorealistic reference: full hostile combat, occupied-village conquest, physical-device performance, economy, autonomous NPC brains, PRIME powers and seven Legends are unfinished. [Release notes, controls and actual limits](docs/RELEASE_0_5.md).
+Version 0.6 keeps the complete 0.5 rider/army/land systems and finishes the PRIME ruler's in-engine lion-king presentation around the approved reference direction: brighter articulated steel, deeper engraved gold, a crimson lion tabard and longer royal cape, layered dark hair and trimmed beard, dark woven under-armor, stronger belts/pouches and a longer ornate sword. The final evidence movie is rendered from this exact Godot source at BALANCED quality and is packaged beside the APK as `PRIME-KINGDOMS-character-final.mp4`; `animation.mp4` remains as a compatibility copy. This is the game's native real-time interpretation, not prerendered replacement footage. Full hostile combat, occupied-village conquest, economy, autonomous NPC brains, PRIME powers and seven Legends remain future systems. [0.6 release notes and evidence](docs/RELEASE_0_6.md).
 
 ## Controls
 
@@ -56,7 +56,7 @@ godot --headless --path client --script res://tests/smoke.gd -- --smoke
 godot --headless --path client --script res://tests/resilience.gd -- --smoke
 ```
 
-The native smoke test checks terrain agreement with the server, actual rigged animations, village models, the exact 8/5 population, walking, jumping, landing, camera orbit, touch release and terrain streaming. Resilience checks exercise lost connections, stale responses, Android resume and distant NPC processing. GitHub Actions supplies a disposable PostgreSQL API for the native account/save/sign-out contract, renders village/human/login/settings/atlas screenshots and a real controller-driven motion video, exports the APK and verifies its signature. Export presets are in `client/export_presets.cfg`; the workflow uses verified official engine binaries and OpenJDK 17.
+The native smoke test checks terrain agreement with the server, actual rigged animations, village models, the exact 8/5 population, walking, jumping, landing, camera orbit, touch release and terrain streaming. Resilience checks exercise lost connections, stale responses, Android resume and distant NPC processing. GitHub Actions supplies a disposable PostgreSQL API for the native account/save/sign-out contract, renders village/human/sword/horse/login/settings/atlas screenshots and the final controller-driven character movie from the same runtime, packages that movie beside the APK, exports the APK and verifies its signature. Export presets are in `client/export_presets.cfg`; the workflow uses verified official engine binaries and OpenJDK 17.
 
 Production APK signing accepts `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` as **private repository secrets**. The keystore and key passwords must match. Without these, the workflow clearly exports a development APK. Never commit a production keystore or password. Existing release downloads are immutable; a code change requiring a new APK receives a new version.
 
