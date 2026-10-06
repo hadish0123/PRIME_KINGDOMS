@@ -61,6 +61,11 @@ func update_villages(settlements: Array) -> void:
 
 func stream_at(position_value: Vector3) -> void:
 	var next = Vector2i(int(floor(position_value.x / CHUNK_SIZE)), int(floor(position_value.z / CHUNK_SIZE)))
+	if center.x != 100000:
+		# Keep tiny physics corrections near a tile edge from rebuilding both LOD rings.
+		var previous_center = Vector2((center.x + 0.5) * CHUNK_SIZE, (center.y + 0.5) * CHUNK_SIZE)
+		if absf(position_value.x - previous_center.x) < CHUNK_SIZE * 0.65: next.x = center.x
+		if absf(position_value.z - previous_center.y) < CHUNK_SIZE * 0.65: next.y = center.y
 	if next != center:
 		center = next
 		pending.clear()

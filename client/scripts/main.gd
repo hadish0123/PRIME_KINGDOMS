@@ -392,7 +392,7 @@ func toggle_map() -> void:
 	map_text.text = "65.536 × 65.536 km · shared persistent terrain\n\nYour location:  X %d   /   Z %d\nYour village:   X %d   /   Z %d\nHome distance:  %.0f m\n\nNearby settlements: %d\nBeyond the villages, the world is currently empty." % [p.x, p.z, v.x, v.z, Vector2(p.x - float(v.x), p.z - float(v.z)).length(), villages.size()]
 
 func _unhandled_input(event: InputEvent) -> void:
-	if in_world and event is InputEventKey and event.pressed:
+	if in_world and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_M or event.keycode == KEY_TAB: toggle_map()
 
 func sign_out() -> void:
