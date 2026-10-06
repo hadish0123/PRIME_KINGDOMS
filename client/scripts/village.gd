@@ -105,7 +105,7 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		box(Vector3(11, 0.08, 0.35), Vector3(31, 0.04, 29 + index * 1.7), palette.soil)
 	var name_label = Label3D.new()
 	name_label.text = str(data.name) + ("  •  YOUR VILLAGE" if owner else "")
-	name_label.position = Vector3(0, 10, -27)
+	name_label.position = Vector3(0, 14, -27)
 	name_label.font_size = 48
 	name_label.pixel_size = 0.011
 	name_label.modulate = Color(0.90, 0.83, 0.61)
