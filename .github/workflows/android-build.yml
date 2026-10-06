@@ -160,14 +160,20 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/actions.log; then exit 1; fi
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/poses.gd -- --smoke 2>&1 | tee client/builds/poses.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/poses.log; then exit 1; fi
-      - name: Validate anatomical rig, scenery budgets and actual movement film
+      - name: Validate anatomical rig and all three scenery budgets
+        shell: bash
+        run: |
+          set -euo pipefail
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --script res://tests/visuals.gd -- --smoke 2>&1 | tee client/builds/visuals.log
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/visuals.log; then exit 1; fi
+      - name: Record actual controller movement with LOW software rendering
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/visuals.gd -- --smoke --film 2>&1 | tee client/builds/visuals.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/visuals.log; then exit 1; fi
+          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/film.gd -- --smoke 2>&1 | tee client/builds/film.log
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/film.log; then exit 1; fi
           ffmpeg -y -framerate 30 -i client/builds/frames/frame-%04d.png -c:v libx264 -threads 4 -crf 21 -pix_fmt yuv420p -movflags +faststart client/builds/animation.mp4
       - name: Export and verify installable Android APK
         shell: bash
@@ -179,7 +185,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.5.apk
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.5.apk > client/builds/apk-metadata.log
           sed -n '1,15p' client/builds/apk-metadata.log
-          (cd client/builds && sha256sum PRIME-KINGDOMS-0.5.apk village.png human.png animation.mp4 login.png settings.png atlas.png > SHA256SUMS.txt)
+          (cd client/builds && sha256sum PRIME-KINGDOMS-0.5.apk village.png human.png sword.png prone.png horse.png units.png animation.mp4 login.png settings.png atlas.png > SHA256SUMS.txt)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: PRIME-KINGDOMS-Android-0.5
@@ -188,6 +194,10 @@ jobs:
             client/builds/SHA256SUMS.txt
             client/builds/village.png
             client/builds/human.png
+            client/builds/sword.png
+            client/builds/prone.png
+            client/builds/horse.png
+            client/builds/units.png
             client/builds/animation.mp4
             client/builds/login.png
             client/builds/settings.png
@@ -211,7 +221,7 @@ jobs:
               echo 'Server-only patch verified. Installed clients receive the API fix; the existing APK release stays unchanged.'
             fi
           else
-            gh release create v0.5.0 client/builds/PRIME-KINGDOMS-0.5.apk client/builds/village.png client/builds/human.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.5 — Rider, sword and persistent army' --notes-file docs/RELEASE_0_5.md
+            gh release create v0.5.0 client/builds/PRIME-KINGDOMS-0.5.apk client/builds/village.png client/builds/human.png client/builds/sword.png client/builds/prone.png client/builds/horse.png client/builds/units.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.5 — Rider, sword and persistent army' --notes-file docs/RELEASE_0_5.md
           fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

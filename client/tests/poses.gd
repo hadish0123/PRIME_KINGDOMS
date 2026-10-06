@@ -27,6 +27,8 @@ func run() -> void:
 	game.world_root.add_child(camera)
 	camera.current = true
 	for i in range(60): await process_frame
+	pose(p.actor,"idle",0.35)
+	await take("human",camera,p.position+Vector3(1.1,1.65,-2.75),p.position+Vector3(0,1.05,0))
 	p.actor.set_weapon_drawn(true)
 	pose(p.actor,"attack",0.35)
 	await take("sword",camera,p.position+Vector3(2.5,1.65,2.8),p.position+Vector3(0,1.15,0))
