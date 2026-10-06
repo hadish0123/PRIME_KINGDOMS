@@ -13,11 +13,12 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	skeleton = target
 	role = kind
 	variant = appearance
-	materials.steel = metal(Color(0.47,0.49,0.50) if role == "player" else Color(0.45,0.48,0.49))
-	materials.gold = metal(Color(0.65,0.46,0.18),true)
-	materials.leather = Surfaces.plain(Color(0.095,0.056,0.032),0.86)
-	materials.dark = Surfaces.plain(Color(0.025,0.029,0.032),0.82)
-	materials.hair = Surfaces.plain(Color(0.085,0.052,0.035),0.95)
+	materials.steel = metal(Color(0.52,0.54,0.57) if role == "player" else Color(0.45,0.48,0.49))
+	materials.gold = metal(Color(0.78,0.54,0.16),true)
+	materials.leather = Surfaces.plain(Color(0.082,0.044,0.022),0.83)
+	materials.dark = Surfaces.plain(Color(0.018,0.022,0.028),0.78)
+	materials.hair = Surfaces.plain(Color(0.052,0.030,0.020),0.88)
+	materials.crimson = Surfaces.plain(Color(0.33,0.014,0.025),0.76)
 	for side in ["L","R"]:
 		boots(side)
 		if role != "villager": limbs(side)
@@ -25,6 +26,7 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 		belt()
 	else:
 		cuirass()
+		if role == "player": royal_tabard()
 		headpiece()
 		cape()
 	flush()
@@ -152,46 +154,89 @@ func limbs(side: String) -> void:
 func cuirass() -> void:
 	var surface = SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var ys = [0.215,0.12,0.005,-0.15,-0.25,-0.32]
-	var widths = [0.105,0.218,0.232,0.210,0.195,0.20]
-	var depths = [0.095,0.157,0.195,0.190,0.18,0.18]
+	var ys = [0.225,0.13,0.01,-0.15,-0.26,-0.34]
+	var widths = [0.108,0.222,0.238,0.216,0.198,0.202]
+	var depths = [0.098,0.162,0.200,0.196,0.184,0.182]
 	for row in range(5):
-		for column in range(40):
+		for column in range(48):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
 				var r: int = row+pair[0]
-				var u = float(column+pair[1])/40.0
+				var u = float(column+pair[1])/48.0
 				var a = u*TAU
-				var ridge = pow(maxf(cos(a),0.0),10.0)*0.018
+				var ridge = pow(maxf(cos(a),0.0),10.0)*0.020
 				surface.set_normal(Vector3(sin(a),0,cos(a)).normalized())
 				surface.set_uv(Vector2(u,r/5.0))
-				surface.add_vertex(Vector3(sin(a)*widths[r],ys[r],cos(a)*depths[r]+0.05+ridge))
+				surface.add_vertex(Vector3(sin(a)*widths[r],ys[r],cos(a)*depths[r]+0.052+ridge))
 	surface.index()
 	piece("spine01",surface.commit(),Vector3.ZERO,"steel")
-	for y in [-0.32,-0.29]: ring("spine01",0.200,0.004,Vector3(0,y,0.05),"gold",Basis.IDENTITY.scaled(Vector3(1,1,0.90)))
-	ring("spine01",0.105,0.005,Vector3(0,0.215,0.05),"gold",Basis.IDENTITY.scaled(Vector3(1,1,0.91)))
+	for y in [-0.335,-0.302]:
+		ring("spine01",0.202,0.005,Vector3(0,y,0.052),"gold",Basis.IDENTITY.scaled(Vector3(1,1,0.90)))
+	ring("spine01",0.111,0.006,Vector3(0,0.222,0.052),"gold",Basis.IDENTITY.scaled(Vector3(1,1,0.92)))
+	# Raised center rib, gilded borders and rivets make the royal breastplate read
+	# as articulated plate instead of a single smooth primitive.
+	for y in [0.13,0.04,-0.05,-0.14,-0.23]:
+		box("spine01",Vector3(0.018,0.082,0.014),Vector3(0,y,0.254),"gold")
+		for side in [-1,1]:
+			sphere("spine01",0.0065,Vector3(side*0.145,y+0.012,0.224),"gold")
 	for side in [-1,1]:
-		for y in [0.03,-0.08,-0.19]: sphere("spine01",0.005,Vector3(side*0.137,y,0.205),"gold")
-	for i in range(9):
-		var a = (i-4)*0.27
+		box("spine01",Vector3(0.014,0.39,0.012),Vector3(side*0.186,-0.05,0.186),"gold",Basis(Vector3.FORWARD,side*0.08))
+		sphere("spine01",0.036,Vector3(side*0.172,0.175,0.182),"gold",Vector3(1.0,0.82,0.45))
+	for i in range(11):
+		var a = (i-5)*0.225
 		var mesh = BoxMesh.new()
-		mesh.size = Vector3(0.064,0.165,0.016)
-		piece("spine03",mesh,Vector3(sin(a)*0.177,-0.17,cos(a)*0.145),"steel",Basis(Vector3.UP,a))
-		box("spine03",Vector3(0.047,0.010,0.02),Vector3(sin(a)*0.178,-0.24,cos(a)*0.147),"gold",Basis(Vector3.UP,a))
+		mesh.size = Vector3(0.060,0.185,0.017)
+		piece("spine03",mesh,Vector3(sin(a)*0.182,-0.19,cos(a)*0.148),"steel",Basis(Vector3.UP,a))
+		box("spine03",Vector3(0.046,0.011,0.022),Vector3(sin(a)*0.183,-0.272,cos(a)*0.150),"gold",Basis(Vector3.UP,a))
 	var emblem = QuadMesh.new()
-	emblem.size = Vector2(0.085,0.126)
+	emblem.size = Vector2(0.125,0.175)
 	var herald = StandardMaterial3D.new()
 	herald.albedo_texture = load("res://assets/heraldry/lion.svg")
 	herald.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	herald.alpha_scissor_threshold = 0.4
-	herald.metallic = 0.78
-	herald.roughness = 0.35
+	herald.alpha_scissor_threshold = 0.38
+	herald.metallic = 0.86
+	herald.roughness = 0.28
 	var attachment_node = attach("spine01")
 	var mark = MeshInstance3D.new()
 	mark.mesh = emblem
 	mark.material_override = herald
-	mark.position = Vector3(0,-0.06,0.266)
+	mark.position = Vector3(0,-0.055,0.273)
 	mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	attachment_node.add_child(mark)
+
+func royal_tabard() -> void:
+	var builder = SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(18):
+		for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+			var v = float(row+pair[0])/18.0
+			var u = float(pair[1])
+			var width = lerpf(0.245,0.345,v)
+			var x = lerpf(-width,width,u)
+			var y = 0.17-v*1.08
+			var z = 0.270+0.020*v+0.010*sin(v*PI)
+			builder.set_uv(Vector2(u,v))
+			builder.add_vertex(Vector3(x,y,z))
+	builder.generate_normals()
+	builder.index()
+	var fabric = ShaderMaterial.new()
+	fabric.shader = load("res://shaders/cloth.gdshader")
+	fabric.set_shader_parameter("vertical",true)
+	fabric.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
+	fabric.set_shader_parameter("heraldry",load("res://assets/heraldry/lion.svg"))
+	fabric.set_shader_parameter("royal",true)
+	fabric.set_shader_parameter("tint",Color(0.43,0.018,0.030))
+	var tabard = MeshInstance3D.new()
+	tabard.mesh = builder.commit()
+	tabard.material_override = fabric
+	tabard.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	attach("spine01").add_child(tabard)
+	# Double royal belt with a large gilded clasp and hanging leather pouches.
+	ring("spine03",0.184,0.013,Vector3(0,-0.105,0.035),"leather",Basis.IDENTITY.scaled(Vector3(1,1,0.74)))
+	ring("spine03",0.177,0.006,Vector3(0,-0.105,0.037),"gold",Basis.IDENTITY.scaled(Vector3(1,1,0.74)))
+	box("spine03",Vector3(0.075,0.062,0.018),Vector3(0,-0.105,0.145),"gold")
+	for side in [-1,1]:
+		box("spine03",Vector3(0.095,0.135,0.055),Vector3(side*0.18,-0.19,0.052),"leather",Basis(Vector3.FORWARD,side*0.06))
+		sphere("spine03",0.008,Vector3(side*0.18,-0.137,0.083),"gold")
 
 func belt() -> void:
 	ring("spine03",0.17,0.012,Vector3(0,-0.10,0),"leather",Basis.IDENTITY.scaled(Vector3(1,1,0.72)))
@@ -200,17 +245,29 @@ func belt() -> void:
 
 func headpiece() -> void:
 	if role == "player":
-		ring("head",0.116,0.007,Vector3(0,0.119,0.009),"gold",Basis.IDENTITY.scaled(Vector3(1,1,1.08)))
-		for i in range(7):
-			var a = i*TAU/7.0
-			tube("head",0.012,0.052,Vector3(sin(a)*0.116,0.141,cos(a)*0.125+0.009),"gold",Basis.IDENTITY,0.0)
-			if i % 2 == 0: sphere("head",0.008,Vector3(sin(a)*0.116,0.12,cos(a)*0.125+0.009),"gold")
-		# A trimmed beard follows the head instead of covering its entire face.
-		for i in range(29):
-			var a = (i-14)*0.075
-			tube("head",0.008,0.060,Vector3(sin(a)*0.068,-0.047-absf(sin(a))*0.007,0.138+cos(a)*0.008),"hair",Basis.IDENTITY,0.005)
+		# The final PRIME ruler is bare-headed: layered dark wavy hair frames the
+		# face while a trimmed beard keeps the jaw readable at gameplay distance.
+		for layer in range(3):
+			var radius = 0.126+layer*0.008
+			for i in range(24):
+				var a = float(i)*TAU/24.0+layer*0.055
+				var front_arc = cos(a)
+				if front_arc > 0.72 and layer > 0: continue
+				var strand_y = 0.105-layer*0.032-0.015*absf(sin(a))
+				var strand_h = 0.095+layer*0.026+0.025*maxf(-front_arc,0.0)
+				tube("head",0.010+layer*0.0015,strand_h,Vector3(sin(a)*radius,strand_y,cos(a)*radius-0.018),"hair",Basis(Vector3.FORWARD,0.18*sin(a)),0.004)
 		for side in [-1,1]:
-			tube("head",0.009,0.041,Vector3(side*0.025,-0.017,0.151),"hair",Basis(Vector3.FORWARD,side*0.22),0.006)
+			for row in range(4):
+				tube("head",0.010,0.13+row*0.018,Vector3(side*(0.105+row*0.004),0.025-row*0.028,0.020-row*0.018),"hair",Basis(Vector3.FORWARD,side*(0.20+row*0.04)),0.004)
+		for i in range(33):
+			var a = (i-16)*0.066
+			var jaw = 0.070-0.010*absf(sin(a))
+			tube("head",0.0085,0.062+0.020*cos(a),Vector3(sin(a)*jaw,-0.050-absf(sin(a))*0.011,0.139+cos(a)*0.010),"hair",Basis.IDENTITY,0.004)
+		for side in [-1,1]:
+			tube("head",0.009,0.050,Vector3(side*0.027,-0.018,0.151),"hair",Basis(Vector3.FORWARD,side*0.22),0.005)
+		# Two lion clasps pin the crimson mantle at the collar.
+		for side in [-1,1]:
+			sphere("spine01",0.025,Vector3(side*0.155,0.185,0.128),"gold",Vector3(1.0,0.82,0.44))
 	else:
 		var helmet = SphereMesh.new()
 		helmet.radius = 0.126
@@ -230,22 +287,26 @@ func weapon() -> void:
 	var bone = "wrist.R"
 	var grip = (rest(bone)-rest("lowerarm01.R")).normalized()
 	var axis = Basis(Quaternion(Vector3.UP,grip))
-	# A diamond-section blade has a beveled edge and a reflective central ridge.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var cross_section = [Vector2(-0.028,0),Vector2(0,0.005),Vector2(0.028,0),Vector2(0,-0.005)]
+	var cross_section = [Vector2(-0.030,0),Vector2(0,0.006),Vector2(0.030,0),Vector2(0,-0.006)]
 	for side in range(4):
 		for triangle in [[0,1,2],[0,2,3]]:
-			var points = [Vector3(cross_section[side].x,0.09,cross_section[side].y),Vector3(cross_section[(side+1)%4].x,0.09,cross_section[(side+1)%4].y),Vector3(0,0.86,0),Vector3(0,0.86,0)]
+			var points = [Vector3(cross_section[side].x,0.10,cross_section[side].y),Vector3(cross_section[(side+1)%4].x,0.10,cross_section[(side+1)%4].y),Vector3(0,0.96,0),Vector3(0,0.96,0)]
 			for index in triangle:
 				builder.set_uv(Vector2(float(side)/4.0,float(index)/3.0))
 				builder.add_vertex(points[index])
 	builder.generate_normals()
 	builder.index()
-	piece(bone,builder.commit(),grip*0.085,"steel",axis)
-	box(bone,Vector3(0.23,0.019,0.019),grip*0.165,"gold",axis)
-	tube(bone,0.019,0.15,grip*0.08,"leather",axis)
-	sphere(bone,0.029,-grip*0.005,"gold",Vector3(1,1,0.62))
+	piece(bone,builder.commit(),grip*0.080,"steel",axis)
+	# Long royal crossguard with gilded terminals, leather grip and lion pommel.
+	box(bone,Vector3(0.285,0.022,0.022),grip*0.176,"gold",axis)
+	for side in [-1,1]:
+		sphere(bone,0.022,grip*0.176+axis*Vector3(side*0.142,0,0),"gold",Vector3(0.74,1.0,0.74))
+	tube(bone,0.020,0.165,grip*0.082,"leather",axis,0.017)
+	for offset in [-0.045,0.0,0.045]:
+		ring(bone,0.0215,0.0025,grip*(0.082+offset),"gold",axis)
+	sphere(bone,0.034,-grip*0.012,"gold",Vector3(1,1,0.60))
 	if role == "soldier" and variant % 2 == 0:
 		var board = CylinderMesh.new()
 		board.top_radius = 0.25
@@ -260,13 +321,15 @@ func weapon() -> void:
 func cape() -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for y in range(18):
-		for x in range(14):
+	for y in range(24):
+		for x in range(18):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
-				var u = float(x+pair[1])/14.0
-				var v = float(y+pair[0])/18.0
+				var u = float(x+pair[1])/18.0
+				var v = float(y+pair[0])/24.0
+				var tear = 0.060*absf(sin(u*PI*9.0))*pow(v,7.0)
+				var width = lerpf(0.46,1.02,v)
 				builder.set_uv(Vector2(u,v))
-				builder.add_vertex(Vector3((u-0.5)*lerpf(0.41,0.80,v),0.18-v*1.26,-0.11-0.24*v+sin(u*TAU*4.0)*0.027*v))
+				builder.add_vertex(Vector3((u-0.5)*width,0.205-v*1.50+tear,-0.115-0.33*v+sin(u*TAU*4.0)*0.030*v))
 	builder.generate_normals()
 	builder.index()
 	var fabric = ShaderMaterial.new()
@@ -275,12 +338,14 @@ func cape() -> void:
 	fabric.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
 	fabric.set_shader_parameter("heraldry",load("res://assets/heraldry/lion.svg"))
 	fabric.set_shader_parameter("royal",true)
-	fabric.set_shader_parameter("tint",Color(0.38,0.028,0.043) if role == "player" else Color(0.23,0.075,0.035))
+	fabric.set_shader_parameter("tint",Color(0.42,0.016,0.028) if role == "player" else Color(0.23,0.075,0.035))
 	var visual = MeshInstance3D.new()
 	visual.mesh = builder.commit()
 	visual.material_override = fabric
 	attach("spine01").add_child(visual)
-	for side in [-1,1]: sphere("spine01",0.019,Vector3(side*0.16,0.155,-0.105),"gold")
+	for side in [-1,1]:
+		sphere("spine01",0.026,Vector3(side*0.163,0.173,-0.102),"gold",Vector3(1,0.80,0.48))
+		ring("spine01",0.032,0.004,Vector3(side*0.163,0.173,-0.104),"gold",Basis(Vector3.RIGHT,PI*0.5))
 
 func attach(bone: String) -> BoneAttachment3D:
 	var node = BoneAttachment3D.new()
