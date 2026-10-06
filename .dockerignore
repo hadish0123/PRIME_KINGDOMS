@@ -1,0 +1,9 @@
+**/node_modules
+**/.env
+**/.env.*
+**/coverage
+.git
+.github
+docs
+client
+README.md

@@ -1,0 +1,53 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'Dockerfile', '.github/workflows/backend-ci.yml']
+  pull_request:
+    paths: ['backend/**', 'Dockerfile', '.github/workflows/backend-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: prime
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: prime_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U prime -d prime_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgresql://prime:ci-only-password@localhost:5432/prime_ci
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm test
+      - run: npm run test:integration
+      - name: Verify deployable image
+        working-directory: .
+        run: docker build --tag prime-kingdoms:ci .

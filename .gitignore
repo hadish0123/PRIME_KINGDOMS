@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+client/Library/
+client/Temp/
+client/Logs/
+client/Obj/
+client/Builds/
