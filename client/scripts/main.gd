@@ -184,7 +184,7 @@ func input_field(placeholder: String, secret: bool = false) -> LineEdit:
 	item.secret = secret
 	item.custom_minimum_size.y = 45
 	item.add_theme_font_size_override("font_size", 18)
-	item.max_length = 254 if not secret else 128
+	item.max_length = 254 if not secret else 256
 	item.add_theme_stylebox_override("normal", panel_style(Color(0.06, 0.11, 0.14), Color(0.24, 0.32, 0.33)))
 	return item
 

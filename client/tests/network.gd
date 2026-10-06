@@ -19,7 +19,9 @@ func run() -> void:
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
 	game.api.base_url = base_url
-	var credentials = {"email": "native-%d@example.com" % Time.get_ticks_usec(), "password": "native-test-password-only", "displayName": "Native Tester"}
+	var credentials = {"email": "native-%d@example.com" % Time.get_ticks_usec(), "password": "N".repeat(256), "displayName": "Native Tester"}
+	game.password.text = credentials.password
+	check(game.password.text == credentials.password, "Native password field truncated a server-valid password")
 	var created: Dictionary = await game.api.call_api("/v1/auth/register", credentials)
 	check(created.ok and created.status == 201, "Native HTTP registration failed")
 	if not created.ok:
