@@ -1,29 +1,42 @@
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
 uniform sampler2D albedo_map : source_color, filter_linear_mipmap_anisotropic;
-uniform vec4 tint : source_color = vec4(0.22, 0.35, 0.51, 1.0);
+uniform vec4 tint : source_color = vec4(0.42,0.016,0.028,1.0);
 uniform bool vertical = false;
 uniform bool royal = false;
 uniform sampler2D heraldry : source_color, filter_linear_mipmap;
+
+float weave(vec2 uv) {
+    float a = sin(uv.x*980.0)*0.5+0.5;
+    float b = sin(uv.y*860.0+1.57)*0.5+0.5;
+    return mix(a,b,0.5);
+}
+
 void vertex() {
-    float free_edge = UV.y * UV.y;
+    float free_edge = UV.y*UV.y;
     if (vertical && royal) {
         vec3 down_in_mesh = normalize(transpose(mat3(MODEL_MATRIX))*vec3(0.0,-1.0,0.0));
-        VERTEX += (down_in_mesh-vec3(0.0,-1.0,0.0))*free_edge*0.50;
+        VERTEX += (down_in_mesh-vec3(0.0,-1.0,0.0))*free_edge*0.42;
     }
-    float wave = free_edge * (0.035 * sin(TIME * 2.7 + UV.x * 4.0) + 0.016 * sin(TIME * 5.1 + UV.y * 5.0));
+    float wave = free_edge*(0.043*sin(TIME*2.25+UV.x*5.2)+0.018*sin(TIME*4.7+UV.y*7.0));
     if (vertical) { VERTEX.z += wave; } else { VERTEX.y += wave; }
-    VERTEX.x += free_edge * 0.018 * sin(TIME * 2.2 + UV.y * 4.0);
+    VERTEX.x += free_edge*0.022*sin(TIME*1.9+UV.y*5.3);
 }
+
 void fragment() {
-    ALBEDO = texture(albedo_map, UV * 6.0).rgb * tint.rgb;
+    vec3 linen = texture(albedo_map,UV*7.0).rgb;
+    float fibers = weave(UV);
+    ALBEDO = linen*tint.rgb*mix(0.90,1.08,fibers);
     if (royal) {
-        vec2 crest_uv = vec2((UV.x-0.5)*2.1+0.5,(UV.y-0.55)*1.7+0.5);
+        vec2 crest_uv = vec2((UV.x-0.5)*1.72+0.5,(UV.y-0.50)*1.52+0.5);
         vec4 crest = texture(heraldry,clamp(crest_uv,vec2(0.0),vec2(1.0)));
         float inside = step(0.0,crest_uv.x)*step(crest_uv.x,1.0)*step(0.0,crest_uv.y)*step(crest_uv.y,1.0);
-        ALBEDO = mix(ALBEDO,crest.rgb * 0.83,crest.a*inside);
-        float border = 1.0-smoothstep(0.022,0.034,min(min(UV.x,1.0-UV.x),1.0-UV.y));
-        ALBEDO = mix(ALBEDO,vec3(0.39,0.23,0.055),border);
+        vec3 gold = vec3(0.67,0.43,0.085)*mix(0.90,1.14,fibers);
+        ALBEDO = mix(ALBEDO,gold,crest.a*inside*0.96);
+        float d = min(min(UV.x,1.0-UV.x),1.0-UV.y);
+        float border = 1.0-smoothstep(0.020,0.040,d);
+        ALBEDO = mix(ALBEDO,gold,border);
     }
-    ROUGHNESS = 0.93;
+    ROUGHNESS = mix(0.78,0.92,fibers);
+    SPECULAR = 0.30;
 }
