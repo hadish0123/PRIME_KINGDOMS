@@ -1,0 +1,145 @@
+[
+  {
+    "path": "assets/vendor/quaternius_rpg/Monk.gltf",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "a9d9405d5863c0a1559bb8b003acbd0005adb669",
+    "size": 2655048,
+    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/a9d9405d5863c0a1559bb8b003acbd0005adb669",
+    "repository": "euuuuuuan/cairnfall-public",
+    "destination": "characters/Monk.gltf",
+    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+  },
+  {
+    "path": "assets/vendor/quaternius_rpg/Ranger.gltf",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "c5a1d1bc868ba3af1e7cd6895f40fd1f2abad8c2",
+    "size": 2987934,
+    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/c5a1d1bc868ba3af1e7cd6895f40fd1f2abad8c2",
+    "repository": "euuuuuuan/cairnfall-public",
+    "destination": "characters/Ranger.gltf",
+    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+  },
+  {
+    "path": "assets/vendor/quaternius_rpg/Warrior.gltf",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "7cec60131bb206e63805651890f5110b8787cccd",
+    "size": 3035392,
+    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/7cec60131bb206e63805651890f5110b8787cccd",
+    "repository": "euuuuuuan/cairnfall-public",
+    "destination": "characters/Warrior.gltf",
+    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+  },
+  {
+    "path": "public/models/props/blacksmith.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "a654d0fb8cdaeca95e45a4a97086b0e072374a34",
+    "size": 97444,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/a654d0fb8cdaeca95e45a4a97086b0e072374a34",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/blacksmith.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/cart.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "91c23249fc858b54bbb5d726874e773410726ff4",
+    "size": 30972,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/91c23249fc858b54bbb5d726874e773410726ff4",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/cart.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/fence.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "06ea27edea7e2c6fa817e95983900a81b4c67565",
+    "size": 4836,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/06ea27edea7e2c6fa817e95983900a81b4c67565",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/fence.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/house_1.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "88f7b20a2b4376a53c6e9444910386b1a8a5f510",
+    "size": 84484,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/88f7b20a2b4376a53c6e9444910386b1a8a5f510",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/house_1.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/house_2.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "fb45ec1b03e81dc37e133569e91a666e79d4470b",
+    "size": 103180,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/fb45ec1b03e81dc37e133569e91a666e79d4470b",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/house_2.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/house_3.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "5cece5805e034c57a1581645e8ddf1f2962ee269",
+    "size": 43696,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/5cece5805e034c57a1581645e8ddf1f2962ee269",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/house_3.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/inn.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "e65e40883afe48b6c3f4da389d73efc9acd60290",
+    "size": 92748,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/e65e40883afe48b6c3f4da389d73efc9acd60290",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/inn.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/market_stand_1.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "4ebb2d66a07492f4fe5deeb267f1330e9442b66c",
+    "size": 25184,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/4ebb2d66a07492f4fe5deeb267f1330e9442b66c",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/market_stand_1.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/market_stand_2.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "4afa7eabde19d62893b43665cfcf7e1acd6a23d6",
+    "size": 18868,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/4afa7eabde19d62893b43665cfcf7e1acd6a23d6",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/market_stand_2.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  },
+  {
+    "path": "public/models/props/well.glb",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "a80bb7f20e048621195e300e58a0aebbcc83af66",
+    "size": 27788,
+    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/a80bb7f20e048621195e300e58a0aebbcc83af66",
+    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
+    "destination": "village/well.glb",
+    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+  }
+]

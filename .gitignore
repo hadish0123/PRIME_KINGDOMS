@@ -8,3 +8,11 @@ client/Temp/
 client/Logs/
 client/Obj/
 client/Builds/
+
+client/.godot/
+client/builds/
+*.keystore
+tools/assets/cache/
+client/assets/**/*.glb
+client/assets/**/*.png
+client/assets/**/*.import

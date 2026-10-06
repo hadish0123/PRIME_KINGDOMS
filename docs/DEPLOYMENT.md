@@ -14,8 +14,7 @@ is a reference and is not an automatically applied configuration file.
 - Region: `sfo` for both API and database; one replica each.
 - Database volume: `postgres-volume`, 5 GB, mounted at `/var/lib/postgresql/data`.
 
-This is the backend foundation. The public address returns API metadata rather
-than a playable client. No Unity project or APK has been built yet.
+The public API address returns JSON. The native Godot client connects to it over HTTPS. Android builds and a rendered village preview are published in the repository’s v0.2.0 development release after native validation.
 
 ## API service
 
@@ -36,7 +35,7 @@ than a playable client. No Unity project or APK has been built yet.
 | Database URL | `${{Postgres.DATABASE_URL}}`, resolved inside Railway |
 
 The resource ceiling is not a promise of consumed resources, player capacity or
-graphics quality. The API foundation uses very little compute; rendering belongs
+graphics quality. This initial API uses limited compute; rendering belongs
 to the game client. Future simulation workers will have their own budgets.
 
 ## Database
@@ -48,8 +47,8 @@ copy a resolved database password into GitHub or documentation.
 
 ## Verification
 
-- CI checks configuration validation and HTTP failure handling.
-- CI runs real PostgreSQL migration, concurrency and persistence tests.
+- CI checks configuration, credential validation, exact starter population and HTTP failure handling.
+- CI runs real PostgreSQL migration, concurrent startup and account/village/position persistence tests, including server restart and account ownership checks.
 - CI builds the same Dockerfile used for deployment.
 - Verify public `/health`, `/ready` and `/v1/world` after deployment.
 - Redeploy the API and compare the world's ID and seed to verify persistence.

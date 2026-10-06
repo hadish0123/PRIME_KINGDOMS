@@ -1,0 +1,117 @@
+name: Native 3D Android
+
+on:
+  push:
+    branches: [main]
+    paths: ['client/**', 'tools/assets/**', '.github/workflows/android-build.yml']
+  pull_request:
+    paths: ['client/**', 'tools/assets/**', '.github/workflows/android-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/assets/package-lock.json
+      - name: Restore pinned CC0 3D models
+        run: npm ci --prefix tools/assets --ignore-scripts && npm run --prefix tools/assets prepare:models
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install verified Godot 4.7.2 and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/godot" "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          cd "$RUNNER_TEMP/godot"
+          base=https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable
+          curl -fL --retry 3 "$base/Godot_v4.7.2-stable_linux.x86_64.zip" -o engine.zip
+          curl -fL --retry 3 "$base/Godot_v4.7.2-stable_export_templates.tpz" -o templates.tpz
+          echo '9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65  engine.zip' | sha512sum --check
+          echo 'ca4d71c4d7b81dfc15d1a98baa07534aa95b03fdda78a0075b06672e1648d2e5f40980c9adc28d23e1b92e732ee7bf3461997aa804af74ec2fcd7a93ccb84079  templates.tpz' | sha512sum --check
+          unzip -q engine.zip
+          unzip -q templates.tpz
+          mv templates/* "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+      - name: Configure Android tools and development signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.1'
+          mkdir -p "$HOME/.config/godot" client/builds
+          keytool -genkeypair -keystore "$RUNNER_TEMP/prime-debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+          cat > "$HOME/.config/godot/editor_settings-4.7.tres" <<SETTINGS
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$RUNNER_TEMP/prime-debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          SETTINGS
+      - name: Import all real 3D assets and validate scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --editor --import 2>&1 | tee client/builds/import.log
+          if rg 'SCRIPT ERROR|ERROR:' client/builds/import.log; then exit 1; fi
+      - name: Exercise native 3D physics, animations and rendered village
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --rendering-method gl_compatibility --script res://tests/smoke.gd -- --smoke --screenshot 2>&1 | tee client/builds/smoke.log
+          if rg 'SCRIPT ERROR|ERROR:' client/builds/smoke.log; then exit 1; fi
+      - name: Export installable Android development APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-debug Android builds/PRIME-KINGDOMS-0.2.apk 2>&1 | tee client/builds/export.log
+          test -s client/builds/PRIME-KINGDOMS-0.2.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.2.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.2.apk > client/builds/apk-metadata.log
+          sed -n '1,15p' client/builds/apk-metadata.log
+          sha256sum client/builds/PRIME-KINGDOMS-0.2.apk > client/builds/SHA256SUMS.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: PRIME-KINGDOMS-Android-0.2
+          path: |
+            client/builds/PRIME-KINGDOMS-0.2.apk
+            client/builds/SHA256SUMS.txt
+            client/builds/village.png
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish verified Android development build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v0.2.0 >/dev/null 2>&1; then
+            gh release upload v0.2.0 client/builds/PRIME-KINGDOMS-0.2.apk client/builds/village.png client/builds/SHA256SUMS.txt --clobber
+          else
+            gh release create v0.2.0 client/builds/PRIME-KINGDOMS-0.2.apk client/builds/village.png client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.2 — Third-person village' --notes-file docs/RELEASE_0_2.md
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: Native-3D-validation-logs
+          path: client/builds/*.log
+          retention-days: 7

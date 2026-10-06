@@ -1,0 +1,211 @@
+{
+  "state": {
+    "player": {
+      "id": "smoke-player",
+      "displayName": "PRIME",
+      "position": {
+        "x": 0,
+        "y": 18.34823690816952,
+        "z": 12
+      },
+      "yaw": 0
+    },
+    "world": {
+      "id": "test-world",
+      "name": "PRIME KINGDOMS",
+      "seed": 541652784,
+      "sizeM": 65536,
+      "terrainVersion": 1
+    },
+    "village": {
+      "id": "smoke-village",
+      "ownerPlayerId": "smoke-player",
+      "name": "PRIME's Village",
+      "stage": "village",
+      "position": {
+        "x": 0,
+        "y": 18.248236908169517,
+        "z": 0
+      },
+      "soldierCount": 8,
+      "villagerCount": 5,
+      "npcs": [
+        {
+          "id": "soldier-0",
+          "name": "Guard 1",
+          "role": "soldier",
+          "ordinal": 0,
+          "position": {
+            "x": -23,
+            "y": 18.248236908169517,
+            "z": 22
+          }
+        },
+        {
+          "id": "soldier-1",
+          "name": "Guard 2",
+          "role": "soldier",
+          "ordinal": 1,
+          "position": {
+            "x": -20,
+            "y": 18.248236908169517,
+            "z": 22
+          }
+        },
+        {
+          "id": "soldier-2",
+          "name": "Guard 3",
+          "role": "soldier",
+          "ordinal": 2,
+          "position": {
+            "x": -17,
+            "y": 18.248236908169517,
+            "z": 22
+          }
+        },
+        {
+          "id": "soldier-3",
+          "name": "Guard 4",
+          "role": "soldier",
+          "ordinal": 3,
+          "position": {
+            "x": -14,
+            "y": 18.248236908169517,
+            "z": 22
+          }
+        },
+        {
+          "id": "soldier-4",
+          "name": "Guard 5",
+          "role": "soldier",
+          "ordinal": 4,
+          "position": {
+            "x": -23,
+            "y": 18.248236908169517,
+            "z": 26
+          }
+        },
+        {
+          "id": "soldier-5",
+          "name": "Guard 6",
+          "role": "soldier",
+          "ordinal": 5,
+          "position": {
+            "x": -20,
+            "y": 18.248236908169517,
+            "z": 26
+          }
+        },
+        {
+          "id": "soldier-6",
+          "name": "Guard 7",
+          "role": "soldier",
+          "ordinal": 6,
+          "position": {
+            "x": -17,
+            "y": 18.248236908169517,
+            "z": 26
+          }
+        },
+        {
+          "id": "soldier-7",
+          "name": "Guard 8",
+          "role": "soldier",
+          "ordinal": 7,
+          "position": {
+            "x": -14,
+            "y": 18.248236908169517,
+            "z": 26
+          }
+        },
+        {
+          "id": "villager-0",
+          "name": "Settler 1",
+          "role": "villager",
+          "ordinal": 0,
+          "position": {
+            "x": 23,
+            "y": 18.248236908169517,
+            "z": -16
+          }
+        },
+        {
+          "id": "villager-1",
+          "name": "Settler 2",
+          "role": "villager",
+          "ordinal": 1,
+          "position": {
+            "x": 26,
+            "y": 18.248236908169517,
+            "z": -16
+          }
+        },
+        {
+          "id": "villager-2",
+          "name": "Settler 3",
+          "role": "villager",
+          "ordinal": 2,
+          "position": {
+            "x": 29,
+            "y": 18.248236908169517,
+            "z": -16
+          }
+        },
+        {
+          "id": "villager-3",
+          "name": "Settler 4",
+          "role": "villager",
+          "ordinal": 3,
+          "position": {
+            "x": 32,
+            "y": 18.248236908169517,
+            "z": -16
+          }
+        },
+        {
+          "id": "villager-4",
+          "name": "Settler 5",
+          "role": "villager",
+          "ordinal": 4,
+          "position": {
+            "x": 23,
+            "y": 18.248236908169517,
+            "z": -12
+          }
+        }
+      ]
+    }
+  },
+  "points": [
+    {
+      "x": 0,
+      "z": 0,
+      "height": 18.248236908169517
+    },
+    {
+      "x": -512,
+      "z": 512,
+      "height": 32.21299970228997
+    },
+    {
+      "x": 110,
+      "z": 360,
+      "height": 30.551474717584505
+    },
+    {
+      "x": 32000,
+      "z": -32000,
+      "height": 24.892383988974252
+    },
+    {
+      "x": -1023.8,
+      "z": -1417.5,
+      "height": 43.594985878612064
+    },
+    {
+      "x": 63.9,
+      "z": 173.2,
+      "height": 23.65793768418006
+    }
+  ]
+}
