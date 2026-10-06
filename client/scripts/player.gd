@@ -26,6 +26,7 @@ var action_motion = ""
 var action_clock = 0.0
 var action_elapsed = 0.0
 var action_event_done = false
+var action_duration = 0.0
 var game: Node3D
 var horse: Node3D
 
@@ -128,11 +129,11 @@ func _physics_process(delta: float) -> void:
 	if not action_motion.is_empty():
 		action_clock -= delta
 		action_elapsed += delta
-		if not action_event_done and action_elapsed >= (0.33 if action_motion == "attack" else 0.42):
-			action_event_done = true
+		actor.update_weapon(action_motion,action_elapsed/action_duration)
+		if action_clock <= 0.0:
 			if action_motion in ["draw","sheathe"]: actor.set_weapon_drawn(action_motion == "draw")
-			elif action_motion == "attack": strike_targets()
-		if action_clock <= 0.0: action_motion = ""
+			action_motion = ""
+			actor.update_weapon("",0)
 	elif horse:
 		actor.play_motion("ride")
 		horse.rotation.y = actor.rotation.y
@@ -153,12 +154,15 @@ func _physics_process(delta: float) -> void:
 func start_action(motion: String) -> void:
 	action_motion = motion
 	action_clock = actor.animation.get_animation(motion).length
+	action_duration = action_clock
 	action_elapsed = 0.0
 	action_event_done = false
 	actor.play_motion(motion)
+	actor.update_weapon(motion,0)
 
 func cancel_actions() -> void:
 	action_motion = ""
+	actor.update_weapon("",0)
 	jump_requested = false
 	jump_buffer = 0.0
 
@@ -170,17 +174,25 @@ func attack() -> void:
 	if frozen or lying or horse or not actor.weapon_drawn or not action_motion.is_empty() or not is_on_floor(): return
 	start_action("attack")
 
-func strike_targets() -> void:
-	# Practice equipment has local durability. This does not grant damage or
-	# authority over another account's people, territory or inventory.
-	var facing = Basis(Vector3.UP,actor.rotation.y)*Vector3.BACK
-	for target in get_tree().get_nodes_in_group("practice_targets"):
-		var offset: Vector3 = target.global_position-global_position
-		offset.y = 0
-		if offset.length() <= 2.25 and facing.dot(offset.normalized()) > 0.35:
-			var ray = PhysicsRayQueryParameters3D.create(global_position+Vector3(0,1.2,0),target.global_position+Vector3(0,1.2,0),7,[get_rid()])
-			var hit = get_world_3d().direct_space_state.intersect_ray(ray)
-			if not hit.is_empty() and target.is_ancestor_of(hit.collider): target.hit(25)
+func sweep_sword(base: Vector3,tip: Vector3,old_base: Vector3,old_tip: Vector3) -> void:
+	if action_motion != "attack" or action_event_done or frozen: return
+	# Contact comes from the blade and its swept path, not a cone around the body.
+	# Only practice equipment accepts damage in this milestone.
+	for segment in [[base,tip],[old_tip,tip],[old_base.lerp(old_tip,0.5),base.lerp(tip,0.5)]]:
+		if segment[0].distance_squared_to(segment[1]) < 0.00001: continue
+		var ray = PhysicsRayQueryParameters3D.create(segment[0],segment[1],7,[get_rid()])
+		var hit = get_world_3d().direct_space_state.intersect_ray(ray)
+		if hit.is_empty(): continue
+		# A swept tip can already be beyond a wall when the arms animate through
+		# it. Require an unobstructed path from the player's body to that contact.
+		var clearance = PhysicsRayQueryParameters3D.create(global_position+Vector3(0,1.2,0),hit.position,7,[get_rid()])
+		var obstruction = get_world_3d().direct_space_state.intersect_ray(clearance)
+		if not obstruction.is_empty() and obstruction.collider != hit.collider: continue
+		for target in get_tree().get_nodes_in_group("practice_targets"):
+			if target.is_ancestor_of(hit.collider):
+				target.hit(25)
+				action_event_done = true
+				return
 
 func can_stand(at: Vector3) -> bool:
 	var query = PhysicsShapeQueryParameters3D.new()
