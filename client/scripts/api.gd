@@ -1,6 +1,7 @@
 extends Node
 
 const BASE_URL = "https://prime-kingdoms-api-production.up.railway.app"
+var base_url: String = BASE_URL
 var token: String = ""
 
 func load_session() -> void:
@@ -22,7 +23,7 @@ func call_api(path: String, body = null) -> Dictionary:
 	if not token.is_empty():
 		headers.append("Authorization: Bearer " + token)
 	var method = HTTPClient.METHOD_GET if body == null else HTTPClient.METHOD_POST
-	var error = http.request(BASE_URL + path, headers, method, "" if body == null else JSON.stringify(body))
+	var error = http.request(base_url + path, headers, method, "" if body == null else JSON.stringify(body))
 	if error != OK:
 		http.queue_free()
 		return {"ok": false, "status": 0, "error": "connection_failed"}

@@ -19,6 +19,19 @@ jobs:
   android:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: prime
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: prime_native
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U prime -d prime_native"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -69,7 +82,32 @@ jobs:
         run: |
           set -euo pipefail
           Godot_v4.7.2-stable_linux.x86_64 --headless --path client --editor --import 2>&1 | tee client/builds/import.log
-          if rg 'SCRIPT ERROR|ERROR:' client/builds/import.log; then exit 1; fi
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/import.log; then exit 1; fi
+      - name: Native account entry, shared map and persistent village contract
+        shell: bash
+        env:
+          DATABASE_URL: postgresql://prime:ci-only-password@127.0.0.1:5432/prime_native
+          PORT: '3100'
+          PRIME_TEST_API_URL: http://127.0.0.1:3100
+        run: |
+          set -euo pipefail
+          npm ci --prefix backend --ignore-scripts
+          node backend/src/main.js > client/builds/api-contract-server.log 2>&1 &
+          prime_api_pid=$!
+          trap 'kill "$prime_api_pid" 2>/dev/null || true' EXIT
+          python3 - <<'PY'
+          import urllib.request, time
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:3100/ready', timeout=1)
+                  break
+              except Exception:
+                  time.sleep(0.25)
+          else:
+              raise SystemExit('Disposable test API did not become ready')
+          PY
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --script res://tests/network.gd -- --smoke 2>&1 | tee client/builds/account-contract.log
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/account-contract.log; then exit 1; fi
       - name: Exercise native 3D physics, animations and rendered village
         shell: bash
         env:
@@ -77,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/smoke.gd -- --smoke --screenshot 2>&1 | tee client/builds/smoke.log
-          if rg 'SCRIPT ERROR|ERROR:' client/builds/smoke.log; then exit 1; fi
+          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/smoke.log; then exit 1; fi
       - name: Export installable Android development APK
         shell: bash
         run: |
