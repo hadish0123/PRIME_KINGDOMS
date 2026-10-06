@@ -25,7 +25,7 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	materials.dark = Surfaces.plain(Color(0.03,0.022,0.017),0.93)
 	materials.chain = ShaderMaterial.new()
 	materials.chain.shader = load("res://shaders/chainmail.gdshader")
-	materials.hair = Surfaces.plain(Color(0.038,0.022,0.015),0.85)
+	materials.hair = Surfaces.plain(Color(0.10,0.051,0.027),0.88)
 	ornament = Ornament.new(self)
 	for side in ["L","R"]:
 		boots(side)
@@ -62,6 +62,24 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 	piece(bone,builder.commit(),at,surface,axis)
 	if surface == "steel": ornament.plate(bone,radius,length_value,at,axis,taper,arc)
 
+func shoulder_cap(bone: String,radius: float,at: Vector3,axis: Basis) -> void:
+	# Convex crown closes the uppermost pauldron over the shoulder joint.
+	var builder = SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(10):
+		for col in range(40):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/40.0
+				var v = float(row+pair[0])/10.0
+				var angle = u*TAU
+				var theta = v*PI*0.5
+				builder.set_uv(Vector2(u,v))
+				builder.add_vertex(Vector3(sin(angle)*sin(theta)*radius,-cos(theta)*radius*0.66,cos(angle)*sin(theta)*radius*0.86))
+	builder.generate_normals()
+	builder.generate_tangents()
+	builder.index()
+	piece(bone,builder.commit(),at,"steel",axis)
+
 func limbs(side: String) -> void:
 	for names in [["upperarm01","lowerarm01"],["lowerarm01","wrist"],["upperleg01","lowerleg01"],["lowerleg01","foot"]]:
 		var bone: String = names[0]+"."+side
@@ -72,11 +90,11 @@ func limbs(side: String) -> void:
 		var radius = (0.101 if names[0]=="upperleg01" else 0.078) if leg else (0.078 if names[0]=="upperarm01" else 0.061)
 		shell(bone,radius*0.96,length_value*0.95,direction*0.5,axis,"chain",0.85)
 		if names[0] == "upperarm01":
+			shoulder_cap(bone,0.125,direction.normalized()*0.002,axis)
 			for layer in range(5):
 				var r = 0.125-layer*0.009
 				var center = direction.normalized()*(0.04+layer*0.043)
-				shell(bone,r,0.084,center,axis,"steel",0.88)
-				ring(bone,r*0.88,0.003,center+direction.normalized()*0.038,"gold",axis.scaled(Vector3(1,1,0.86)))
+				shell(bone,r,0.084,center,axis,"steel",0.88,PI*1.42)
 				for angle in [-1.0,1.0]:
 					sphere(bone,0.003,center+axis*Vector3(sin(angle)*r,0.034,cos(angle)*r*0.87),"gold")
 		elif names[0] == "upperleg01":
@@ -99,7 +117,7 @@ func limbs(side: String) -> void:
 
 func cuirass() -> void:
 	# Dark fitted mail under the heraldic textile, rather than a plain breast box.
-	shell("spine01",0.222,0.51,Vector3(0,-0.015,0.04),Basis.IDENTITY.scaled(Vector3(1,1,0.81)),"chain",0.85)
+	shell("spine01",0.215,0.41,Vector3(0,-0.065,0.04),Basis.IDENTITY.scaled(Vector3(1,1,0.81)),"chain",0.85)
 	textile_panel("TabardChest",1.53,1.015,0.116,0.170,0.24,false)
 	textile_panel("TabardSkirt",1.03,0.40,0.157,0.168,0.20,true)
 	# Cross-body strap, double belts, loops, buckles and suspended leather pouch.
@@ -162,7 +180,7 @@ func textile_panel(name_value: String,top: float,bottom: float,top_width: float,
 	skeleton.add_child(visual)
 
 func headpiece() -> void:
-	# The fitted beard is part of hero.glb; no floating facial primitives or crown.
+	# The fitted source groom supplies the silhouette and animated roots.
 	pass
 
 func cape() -> void:
@@ -191,7 +209,11 @@ func cape() -> void:
 		mesh.outer_radius = mesh.inner_radius+0.030
 		mesh.rings = 36
 		mesh.ring_segments = 8
-		var cloth = Surfaces.plain(Color(0.19,0.011,0.018),0.9)
+		var cloth = ShaderMaterial.new()
+		cloth.shader = load("res://shaders/garment.gdshader")
+		cloth.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
+		cloth.set_shader_parameter("normal_map",load("res://assets/textures/rough_linen_normal.jpg"))
+		cloth.set_shader_parameter("tint",Color(0.42,0.024,0.041))
 		var node = MeshInstance3D.new()
 		node.mesh = mesh
 		node.material_override = cloth

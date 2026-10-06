@@ -304,6 +304,44 @@ def animate(glb, heads, bone_ids):
         glb.doc['animations'].append(animation)
 
 
+def stubble(glb, vertices, body_faces, head_joint):
+    """Original close-cut groom sampled on the actual jaw, not floating cards."""
+    points, faces, influences = [], [], []
+    seed = 73462711
+    def random_value():
+        nonlocal seed
+        seed = (1664525*seed+1013904223)&0xffffffff
+        return seed/4294967296.
+    for _, face in body_faces:
+        a, b, c = (vertices[v] for v, uv in face)
+        center = mul(add(add(a,b),c),1/3)
+        if not (1.625<center[1]<1.712 and center[2]>0.070): continue
+        normal = cross(sub(b,a),sub(c,a))
+        area = length(normal)/2
+        normal = unit(normal)
+        tangent = unit(cross(normal,[0.,1.,0.]))
+        if length(tangent)<0.1: tangent = unit(cross(normal,[1.,0.,0.]))
+        bitangent = unit(cross(normal,tangent))
+        for sample in range(max(1,min(24,round(area*220000)))):
+            u, v = random_value(), random_value()
+            if u+v>1: u,v=1-u,1-v
+            root = add(a,add(mul(sub(b,a),u),mul(sub(c,a),v)))
+            # Keep lips and central mouth clear; moustache sits above them.
+            if abs(root[0])<0.033 and 1.675<root[1]<1.708: continue
+            if root[1]>1.695+0.18*abs(root[0]) and abs(root[0])>0.033: continue
+            radius = 0.00018+random_value()*0.00015
+            height = 0.0012+random_value()*0.0020
+            start = len(points)
+            for side in range(3):
+                angle = side*math.tau/3
+                points.append(add(root,add(mul(tangent,math.cos(angle)*radius),mul(bitangent,math.sin(angle)*radius))))
+            points.append(add(root,add(mul(normal,height),mul([0,-1,0],height*0.25))))
+            influences.extend([{head_joint:1.} for _ in range(4)])
+            for side in range(3): faces.append((0,[(start+side,0),(start+(side+1)%3,0),(start+3,0)]))
+    material = glb.material('Stubble',[0.052,0.027,0.015,1.],0.90)
+    glb.mesh('JawStubble',points,[],faces,influences,{0:material})
+
+
 def build(role):
     base, uvs, all_faces = load_obj(CACHE/'core/3dobjs/base.obj')
     for name, weight in [('caucasian-male-young', 0.68), ('caucasian-male-old', 0.32)]:
@@ -358,9 +396,9 @@ def build(role):
     skin_path = CACHE/'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png'
     skin_normal = None
     if role == 'hero':
-        skin_path = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png'
         skin_normal = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png'
     skin = glb.material('Skin', [0.88,0.79,0.72,1.] if role=='hero' else [1.,0.96,0.92,1.], 0.52 if role=='hero' else 0.70, skin_path, normal=skin_normal)
+    if role == 'hero': glb.doc['materials'][skin]['normalTexture']['scale'] = 0.30
     cloth_colors = {'player': [0.08,0.14,0.18,1.], 'soldier': [0.28,0.25,0.20,1.], 'villager': [0.46,0.39,0.28,1.]}
     diffuse = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_diffuse.png'
     normal = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_normal.png'
@@ -368,6 +406,7 @@ def build(role):
     trousers = glb.material('Trousers', [1.,1.,1.,1.], 0.9, diffuse, normal=normal)
     boots = glb.material('Boots', [0.10,0.065,0.038,1.], 0.8)
     glove = glb.material('Glove', [0.080,0.035,0.017,1.], 0.74)
+    scalp = glb.material('Scalp', [0.035,0.018,0.010,1.], 0.94) if role == 'hero' else skin
     eye = glb.material('Eyes', [1.,1.,1.,1.], 0.24, CACHE/'system/eyes/materials/brown_eye.png')
     hair_name = 'long01' if role == 'hero' else 'short01'
     hair_folder = CACHE/f'system/hair/{hair_name}'
@@ -386,25 +425,24 @@ def build(role):
         if any(v in deleted for v, uv in face): continue
         y = sum(transform(base[v])[1] for v, uv in face)/3
         x = abs(sum(transform(base[v])[0] for v, uv in face)/3)
-        skin_faces.append((2 if role=='hero' and x>0.45 and y<1.4 else (1 if y<0.16 else 0), face))
-    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove})
+        material = 2 if role=='hero' and x>0.45 and y<1.4 else (1 if y<0.16 else 0)
+        # A fitted opaque scalp closes tiny root gaps between the source cards;
+        # it is the actual skinned head surface, never a floating hair sphere.
+        if role=='hero' and all(transform(base[v])[1]>1.79 for v, uv in face): material = 3
+        skin_faces.append((material, face))
+    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove, 3: scalp})
     for name, path, mat in [('Eyes', CACHE/'system/eyes/low-poly/low-poly.mhclo', eye), ('Hair', hair_proxy, hair), ('Brows', CACHE/'system/eyebrows/eyebrow001/eyebrow001.mhclo', brow)]:
         v, uv, faces, w, _ = proxy(path, base, weights, transform)
         if role == 'hero' and name == 'Hair':
             for point in v:
                 if point[1] < 1.65: point[1] = 1.65+(point[1]-1.65)*0.58
-                point[0] *= 1.04
-                point[0] += 0.009*math.sin(point[1]*49+point[2]*28)
-                point[2] += 0.010*math.sin(point[1]*54+point[0]*31)
+                loose = max(0., min(1., (1.76-point[1])/0.12))
+                point[0] *= 1.+0.04*loose
+                point[0] += loose*0.005*math.sin(point[1]*49+point[2]*28)
+                point[2] += loose*0.005*math.sin(point[1]*54+point[0]*31)
         glb.mesh(name, v, uv, [(0, f) for _, f in faces], w, {0: mat})
     if role == 'hero':
-        beard_folder = CACHE/'detail/bodyparts05/clothes/wdg_scruffy_beard'
-        beard = glb.material('Beard',[0.55,0.45,0.33,1.],0.86,beard_folder/'beard2_texture-SMUDGE2.png',True)
-        v, uv, faces, w, _ = proxy(beard_folder/'wdg_scruffy_beard.mhclo',base,weights,transform)
-        # Trim the longer source's chin fringe to a closely fitted short beard.
-        for point in v:
-            if point[1] < 1.67: point[1] = 1.67+(point[1]-1.67)*0.38
-        glb.mesh('FittedBeard',v,uv,[(0,f) for _,f in faces],w,{0:beard})
+        stubble(glb,list(map(transform,base)),body_faces,selected.index('head'))
     animate(glb, heads, bone_ids)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     dest = OUTPUT/('hero.glb' if role == 'hero' else 'human.glb'); glb.save(dest)

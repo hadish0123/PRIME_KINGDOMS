@@ -1,10 +1,12 @@
 extends RefCounted
 
 # Original raised ornament, batched with the production wardrobe by bone.
-var wardrobe: RefCounted
-func _init(owner: RefCounted) -> void: wardrobe = owner
+var owner_ref: WeakRef
+var wardrobe: RefCounted:
+	get: return owner_ref.get_ref()
+func _init(owner: RefCounted) -> void: owner_ref = weakref(owner)
 
-func cord(bone: String,points: PackedVector3Array,radius: float,at: Vector3 = Vector3.ZERO,axis: Basis = Basis.IDENTITY) -> void:
+func cord(bone: String,points: PackedVector3Array,radius: float,at: Vector3 = Vector3.ZERO,axis: Basis = Basis.IDENTITY,surface: String = "gold") -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rings: Array[PackedVector3Array] = []
@@ -26,7 +28,7 @@ func cord(bone: String,points: PackedVector3Array,radius: float,at: Vector3 = Ve
 	builder.generate_normals()
 	builder.generate_tangents()
 	builder.index()
-	wardrobe.piece(bone,builder.commit(),at,"gold",axis)
+	wardrobe.piece(bone,builder.commit(),at,surface,axis)
 
 func plate_point(angle: float,v: float,radius: float,length_value: float,taper: float) -> Vector3:
 	var r = radius*lerpf(1.0,taper,v)+pow(absf(v-0.5)*2.0,12.0)*0.0025
