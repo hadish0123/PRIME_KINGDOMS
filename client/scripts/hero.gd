@@ -140,7 +140,7 @@ func cuirass() -> void:
 	box("spine03",Vector3(0.091,0.123,0.055),Vector3(0.21,-0.224,0.073),"leather",Basis(Vector3.UP,0.33))
 	box("spine03",Vector3(0.080,0.021,0.061),Vector3(0.21,-0.174,0.073),"leather",Basis(Vector3.UP,0.33))
 	for side in [-1,1]:
-		ornament.lion("spine01",Vector3(side*0.174,0.149,0.180))
+		ornament.lion("spine01",Vector3(side*0.174,0.149,0.247))
 
 func beam(bone: String,a: Vector3,b: Vector3,width: float,surface: String) -> void:
 	box(bone,Vector3(width,a.distance_to(b),0.011),(a+b)*0.5,surface,Basis(Quaternion(Vector3.UP,(b-a).normalized())))
