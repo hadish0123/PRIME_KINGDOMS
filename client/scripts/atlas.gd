@@ -22,8 +22,8 @@ func _draw() -> void:
 		var offset = float(i) / 6.0
 		draw_line(Vector2(size.x * offset, 10), Vector2(size.x * offset, size.y - 10), Color(0.21, 0.30, 0.26), 1)
 		draw_line(Vector2(10, size.y * offset), Vector2(size.x - 10, size.y * offset), Color(0.21, 0.30, 0.26), 1)
-	for settlement in game.villages.values():
-		var global_point: Vector3 = settlement.position + game.origin
+	for settlement in game.known_villages.values():
+		var global_point = Vector3(float(settlement.position.x), float(settlement.position.y), float(settlement.position.z))
 		var at = half + (Vector2(global_point.x, global_point.z) - center) * scale_value
 		if rectangle.has_point(at):
 			draw_rect(Rect2(at - Vector2(5, 5), Vector2(10, 10)), Color(0.85, 0.69, 0.38))

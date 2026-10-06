@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hashPassword, verifyPassword, normalizeEmail, validatePassword, validateDisplayName, tokenHash } from '../src/auth.js';
-import { terrainHeight, villageLocation } from '../src/terrain.js';
+import { terrainHeight, settledHeight, villageLocation } from '../src/terrain.js';
 
 test('credentials are normalized, validated and salted; hashes never contain the password', async () => {
   assert.equal(normalizeEmail(' PRIME@Example.COM '), 'prime@example.com');
@@ -16,7 +16,19 @@ test('credentials are normalized, validated and salted; hashes never contain the
   assert.equal(await verifyPassword(password, first), true);
   assert.equal(await verifyPassword('different-password', first), false);
   assert.equal(await verifyPassword(password, undefined), false);
+  assert.equal(await verifyPassword(password, 'scrypt$131072$8$1$broken$broken'), false);
   assert.equal(tokenHash('opaque-session').length, 64);
+});
+
+test('settlement ground matches the native flat area and smooth outer transition', () => {
+  const village = villageLocation(4, 541652784);
+  for (const offset of [0, 12, 24, 77]) {
+    assert.equal(settledHeight(village.x + offset, village.z, 541652784, [village]), village.y);
+  }
+  assert.equal(settledHeight(village.x + 126, village.z, 541652784, [village]), terrainHeight(village.x + 126, village.z, 541652784));
+  const blended = settledHeight(village.x + 100, village.z, 541652784, [village]);
+  const raw = terrainHeight(village.x + 100, village.z, 541652784);
+  assert.ok(blended >= Math.min(village.y, raw) && blended <= Math.max(village.y, raw));
 });
 
 test('village allocation stays unique and inside the world and terrain is deterministic', () => {

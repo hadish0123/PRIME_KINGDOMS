@@ -2,6 +2,7 @@ extends Node3D
 
 const CHUNK_SIZE = 160.0
 const RADIUS = 6
+var view_radius = 5
 var seed_value: int = 1
 var origin: Vector3 = Vector3.ZERO
 var world_size: float = 65536.0
@@ -10,6 +11,12 @@ var chunks: Dictionary = {}
 var pending: Array[Vector2i] = []
 var center = Vector2i(100000, 100000)
 var material: ShaderMaterial
+
+func set_radius(value: int) -> void:
+	var next = clampi(value, 4, RADIUS)
+	if next == view_radius: return
+	view_radius = next
+	center = Vector2i(100000, 100000)
 
 static func hash_value(x: int, z: int, seed_number: int) -> float:
 	var n: int = ((x * 374761393) & 0xffffffff) ^ ((z * 668265263) & 0xffffffff) ^ (seed_number & 0xffffffff)
@@ -49,15 +56,20 @@ func configure(world: Dictionary, base: Vector3, settlements: Array) -> void:
 	material.set_shader_parameter("village_center", Vector2(float(villages[0].position.x) - origin.x, float(villages[0].position.z) - origin.z))
 
 func update_villages(settlements: Array) -> void:
-	if settlements.size() == villages.size():
-		var old_ids = villages.map(func(v): return v.id)
-		if settlements.all(func(v): return v.id in old_ids):
-			return
+	var changed: Array = []
+	for old in villages:
+		if not settlements.any(func(v): return v.id == old.id and v.position == old.position): changed.append(old)
+	for new_village in settlements:
+		if not villages.any(func(v): return v.id == new_village.id and v.position == new_village.position): changed.append(new_village)
+	if changed.is_empty(): return
 	villages = settlements
-	for key in chunks:
-		chunks[key].queue_free()
-	chunks.clear()
-	center = Vector2i(100000, 100000)
+	for key in chunks.keys():
+		var tile = Rect2(Vector2(key.x * CHUNK_SIZE, key.y * CHUNK_SIZE), Vector2.ONE * CHUNK_SIZE).grow(125.0)
+		if changed.any(func(v): return tile.has_point(Vector2(float(v.position.x) - origin.x, float(v.position.z) - origin.z))):
+			chunks[key].queue_free()
+			chunks.erase(key)
+			if key not in pending: pending.append(key)
+	pending.sort_custom(func(a, b): return a.distance_squared_to(center) < b.distance_squared_to(center))
 
 func stream_at(position_value: Vector3) -> void:
 	var next = Vector2i(int(floor(position_value.x / CHUNK_SIZE)), int(floor(position_value.z / CHUNK_SIZE)))
@@ -71,11 +83,11 @@ func stream_at(position_value: Vector3) -> void:
 		pending.clear()
 		for key in chunks.keys():
 			var distance = maxi(absi(key.x - center.x), absi(key.y - center.y))
-			if distance > RADIUS or bool(chunks[key].get_meta("near")) != (distance <= 2):
+			if distance > view_radius or bool(chunks[key].get_meta("near")) != (distance <= 2):
 				chunks[key].queue_free()
 				chunks.erase(key)
-		for dz in range(-RADIUS, RADIUS + 1):
-			for dx in range(-RADIUS, RADIUS + 1):
+		for dz in range(-view_radius, view_radius + 1):
+			for dx in range(-view_radius, view_radius + 1):
 				var key = center + Vector2i(dx, dz)
 				if not chunks.has(key): pending.append(key)
 		pending.sort_custom(func(a, b): return a.distance_squared_to(center) < b.distance_squared_to(center))

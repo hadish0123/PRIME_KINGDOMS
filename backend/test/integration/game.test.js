@@ -54,6 +54,20 @@ test('real PostgreSQL: register once, rejoin the same village, own movement and 
     assert.equal((await api('/v1/player/move', { position: { ...target, x: 9000 }, yaw: 0 }, token)).status, 409);
     assert.equal((await api('/v1/player/move', { position: { ...target, x: 40000 }, yaw: 0 }, token)).status, 400);
     assert.equal((await api('/v1/player/move', { position: { ...target, y: 'wrong' }, yaw: 0 }, token)).status, 400);
+    assert.equal((await api('/v1/player/move', { position: { ...target, y: 230 }, yaw: 0 }, token)).body.error, 'height_rejected');
+    assert.equal((await api('/v1/player/move', { position: { ...target, y: 0 }, yaw: 0 }, token)).body.error, 'height_rejected');
+    // A spammer cannot claim the four-metre jitter margin over and over.
+    await pool.query('UPDATE players SET movement_credit=4, position_updated_at=clock_timestamp() WHERE id=$1', [state.player.id]);
+    let acceptedX = target.x;
+    const burstStarted = performance.now();
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const response = await api('/v1/player/move', { position: { ...target, x: acceptedX + 4 }, yaw: 0.5 }, token);
+      if (response.status === 200) acceptedX += 4;
+      else assert.equal(response.body.error, 'movement_rejected');
+    }
+    const allowedBurst = 4 + 12 * (performance.now() - burstStarted) / 1000;
+    assert.ok(acceptedX - target.x <= allowedBurst + 0.01, 'Movement request spam regenerated the latency allowance');
+    await pool.query('UPDATE players SET x=$2, movement_credit=4 WHERE id=$1', [state.player.id, target.x]);
     const nearby = await api('/v1/world/nearby', undefined, token);
     assert.equal(nearby.status, 200); assert.equal(nearby.body.villages.length, 2);
     assert.equal(nearby.body.players.length, 1);
@@ -67,11 +81,24 @@ test('real PostgreSQL: register once, rejoin the same village, own movement and 
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials),
     });
     assert.equal(joined.status, 200);
-    const rejoined = (await joined.json()).state;
+    const rejoinedResult = await joined.json();
+    const rejoined = rejoinedResult.state;
     assert.equal(rejoined.player.id, state.player.id); assert.deepEqual(rejoined.player.position, target);
     assert.equal(rejoined.village.id, state.village.id);
     assert.deepEqual(rejoined.village.npcs.map(n => n.id).sort(), state.village.npcs.map(n => n.id).sort());
     assert.equal((await pool.query('SELECT count(*)::int AS n FROM npcs')).rows[0].n, 26);
+    const restartedBase = `http://127.0.0.1:${server.address().port}`;
+    let newestSession;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const response = await fetch(restartedBase + '/v1/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials),
+      });
+      assert.equal(response.status, 200);
+      newestSession = (await response.json()).session.token;
+    }
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM sessions s JOIN players p ON p.account_id=s.account_id WHERE p.id=$1', [state.player.id])).rows[0].n, 5);
+    assert.equal((await fetch(restartedBase + '/v1/game', { headers: { Authorization: `Bearer ${rejoinedResult.session.token}` } })).status, 401);
+    assert.equal((await fetch(restartedBase + '/v1/game', { headers: { Authorization: `Bearer ${newestSession}` } })).status, 200);
     const sessions = await pool.query('UPDATE sessions SET expires_at=now()-interval \'1 second\' RETURNING token_hash');
     assert.ok(sessions.rows.length >= 1);
   } finally {

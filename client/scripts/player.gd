@@ -12,10 +12,15 @@ var touch_sprint = false
 var jump_requested = false
 var frozen = false
 var grounded_seconds = 0.0
+var jump_buffer = 0.0
+var look_sensitivity = 1.0
+var invert_y = false
 var terrain: Node3D
 var half_world: float = 32748.0
 
 func _ready() -> void:
+	collision_layer = 1
+	collision_mask = 7
 	var collider = CollisionShape3D.new()
 	var capsule = CapsuleShape3D.new()
 	capsule.radius = 0.32
@@ -33,6 +38,7 @@ func _ready() -> void:
 	arm = SpringArm3D.new()
 	arm.spring_length = 5.4
 	arm.margin = 0.22
+	arm.collision_mask = 1
 	arm.add_excluded_object(get_rid())
 	pivot.add_child(arm)
 	camera = Camera3D.new()
@@ -42,8 +48,9 @@ func _ready() -> void:
 	arm.add_child(camera)
 
 func look(delta_value: Vector2) -> void:
-	yaw -= delta_value.x * 0.004
-	pitch = clampf(pitch - delta_value.y * 0.003, -0.9, 0.32)
+	if frozen: return
+	yaw = wrapf(yaw - delta_value.x * 0.004 * look_sensitivity, -PI, PI)
+	pitch = clampf(pitch + delta_value.y * 0.003 * look_sensitivity * (1.0 if invert_y else -1.0), -0.9, 0.32)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if frozen: return
@@ -51,7 +58,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if event.pressed else Input.MOUSE_MODE_VISIBLE
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		look(event.relative)
-	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
 		jump_requested = true
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP: arm.spring_length = maxf(2.5, arm.spring_length - 0.4)
@@ -61,6 +68,8 @@ func _physics_process(delta: float) -> void:
 	pivot.rotation = Vector3(pitch, yaw, 0.0)
 	if frozen:
 		velocity = Vector3.ZERO
+		jump_buffer = 0.0
+		jump_requested = false
 		actor.play_motion("idle")
 		return
 	var movement = touch_move
@@ -74,14 +83,20 @@ func _physics_process(delta: float) -> void:
 	var speed = 8.2 if sprint else 4.5
 	velocity.x = move_toward(velocity.x, direction.x * speed * movement.length(), delta * 28.0)
 	velocity.z = move_toward(velocity.z, direction.z * speed * movement.length(), delta * 28.0)
-	if is_on_floor():
-		if jump_requested: velocity.y = 6.0
+	grounded_seconds = 0.10 if is_on_floor() else maxf(0.0, grounded_seconds - delta)
+	jump_buffer = 0.12 if jump_requested else maxf(0.0, jump_buffer - delta)
+	if grounded_seconds > 0.0 and jump_buffer > 0.0:
+		velocity.y = 6.0
+		jump_buffer = 0.0
+		grounded_seconds = 0.0
+	elif is_on_floor():
+		velocity.y = 0.0
 	else: velocity.y -= 20.0 * delta
 	jump_requested = false
 	if direction.length_squared() > 0.001:
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), minf(1.0, delta * 12.0))
-	actor.play_motion(("run" if sprint else "walk") if movement.length() > 0.1 else "idle")
 	move_and_slide()
+	actor.play_motion(("run" if sprint else "walk") if Vector2(velocity.x, velocity.z).length() > 0.2 else "idle")
 	if terrain:
 		# Newly streamed chunks and terrain edges cannot strand the character beneath the ground.
 		var ground: float = terrain.height_at(position.x, position.z)

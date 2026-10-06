@@ -1,6 +1,6 @@
 import { ApiError } from './errors.js';
 import { hashPassword, verifyPassword, normalizeEmail, validatePassword, validateDisplayName, createSession } from './auth.js';
-import { villageLocation } from './terrain.js';
+import { villageLocation, settledHeight } from './terrain.js';
 
 export async function register(pool, body) {
   const email = normalizeEmail(body.email);
@@ -8,7 +8,7 @@ export async function register(pool, body) {
   const displayName = validateDisplayName(body.displayName);
   const passwordHash = await hashPassword(password);
   const client = await pool.connect();
-  let playerId, session;
+  let playerId, session, state;
   try {
     await client.query('BEGIN');
     const account = (await client.query(`
@@ -39,13 +39,14 @@ export async function register(pool, body) {
       }
     }
     session = await createSession(client, account.id);
+    state = await gameState(client, playerId);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     if (error.code === '23505') throw new ApiError(409, 'account_exists');
     throw error;
   } finally { client.release(); }
-  return { session, state: await gameState(pool, playerId) };
+  return { session, state };
 }
 
 export async function login(pool, body) {
@@ -55,9 +56,17 @@ export async function login(pool, body) {
   if (!await verifyPassword(password, account?.password_hash)) throw new ApiError(401, 'invalid_credentials');
   const player = (await pool.query('SELECT id FROM players WHERE account_id = $1', [account.id])).rows[0];
   if (!player) throw new ApiError(503, 'player_unavailable');
-  await pool.query('DELETE FROM sessions WHERE account_id = $1 AND expires_at <= now()', [account.id]);
-  const session = await createSession(pool, account.id);
-  return { session, state: await gameState(pool, player.id) };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const session = await createSession(client, account.id);
+    const state = await gameState(client, player.id);
+    await client.query('COMMIT');
+    return { session, state };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally { client.release(); }
 }
 
 function villageDTO(row, npcs = []) {
@@ -98,7 +107,7 @@ export async function movePlayer(pool, identity, body) {
   try {
     await client.query('BEGIN');
     const previous = (await client.query(`
-      SELECT p.x, p.y, p.z, p.position_updated_at, w.size_m,
+      SELECT p.x, p.y, p.z, p.position_updated_at, p.movement_credit, w.size_m, w.seed,
         extract(epoch FROM (now() - p.position_updated_at))::double precision AS elapsed
       FROM players p JOIN worlds w ON w.id = p.world_id WHERE p.id = $1 FOR UPDATE OF p
     `, [identity.player_id])).rows[0];
@@ -108,14 +117,25 @@ export async function movePlayer(pool, identity, body) {
       throw new ApiError(400, 'outside_world');
     }
     const travel = Math.hypot(pos.x - previous.x, pos.z - previous.z);
-    if (travel > 12 * Math.max(0, Math.min(previous.elapsed, 30)) + 4) {
+    const allowance = previous.movement_credit + 12 * Math.max(0, Math.min(previous.elapsed, 30));
+    if (travel > allowance + 0.000001) {
       throw new ApiError(409, 'movement_rejected');
     }
+    const villages = (await client.query(`
+      SELECT x,y,z FROM villages WHERE world_id=$1
+        AND x BETWEEN $2-125 AND $2+125 AND z BETWEEN $3-125 AND $3+125
+      ORDER BY slot
+    `, [identity.world_id, pos.x, pos.z])).rows;
+    const ground = settledHeight(pos.x, pos.z, previous.seed, villages);
+    // Includes the existing building rooftops and jumping. Full building and
+    // combat authority are a separate milestone; arbitrary sky/underground saves are refused.
+    if (pos.y < ground - 1.5 || pos.y > ground + 16) throw new ApiError(409, 'height_rejected');
+    const credit = Math.max(0, Math.min(4, allowance - travel));
     const yaw = ((body.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     await client.query(`
-      UPDATE players SET x=$2, y=$3, z=$4, yaw=$5, position_updated_at=now(), last_seen_at=now()
+      UPDATE players SET x=$2, y=$3, z=$4, yaw=$5, movement_credit=$6, position_updated_at=now(), last_seen_at=now()
       WHERE id=$1
-    `, [identity.player_id, pos.x, pos.y, pos.z, yaw]);
+    `, [identity.player_id, pos.x, pos.y, pos.z, yaw, credit]);
     await client.query('COMMIT');
     return { position: pos, yaw };
   } catch (error) {

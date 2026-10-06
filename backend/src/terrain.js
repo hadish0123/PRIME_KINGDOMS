@@ -19,6 +19,19 @@ export function terrainHeight(x, z, seed) {
     + noise(x / 110, z / 110, seed + 137) * 3;
 }
 
+export function settledHeight(x, z, seed, villages) {
+  let height = terrainHeight(x, z, seed);
+  for (const village of villages) {
+    const distance = Math.hypot(x - village.x, z - village.z);
+    if (distance < 125) {
+      const t = Math.max(0, Math.min(1, (distance - 78) / 47));
+      const blend = t * t * (3 - 2 * t);
+      height = village.y + (height - village.y) * blend;
+    }
+  }
+  return height;
+}
+
 // Square spiral: centre first, then adjacent locations, with 512 m between
 // centres. A database sequence plus a uniqueness constraint prevents overlap.
 export function villageLocation(slot, seed) {

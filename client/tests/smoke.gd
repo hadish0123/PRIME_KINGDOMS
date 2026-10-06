@@ -31,6 +31,9 @@ func run() -> void:
 		check(node.animation.get_animation_list().size() >= 3, "Movement animations missing")
 	for frame in range(90): await physics_frame
 	check(game.player.is_on_floor(), "Player cannot stand on the terrain collider")
+	var facing: Vector3 = game.player.actor.global_basis * Vector3.BACK
+	var camera_offset: Vector3 = game.player.camera.global_position - game.player.global_position
+	check(Vector2(facing.x, facing.z).dot(Vector2(camera_offset.x, camera_offset.z)) < 0, "Returning camera must start behind the saved character heading")
 	var start: Vector3 = game.player.position
 	var event = InputEventKey.new()
 	event.physical_keycode = KEY_W
@@ -54,7 +57,7 @@ func run() -> void:
 	touch.player = game.player
 	var press = InputEventScreenTouch.new()
 	press.index = 3
-	press.position = Vector2(140, root.size.y - 160)
+	press.position = Vector2(140, touch.size.y - 160)
 	press.pressed = true
 	touch._input(press)
 	var drag = InputEventScreenDrag.new()
@@ -66,6 +69,16 @@ func run() -> void:
 	press.pressed = false
 	touch._input(press)
 	check(game.player.touch_move == Vector2.ZERO, "Android stick did not release")
+	touch.sprint.button_pressed = true
+	game.player.jump_requested = true
+	touch.release_input()
+	check(not game.player.touch_sprint and not touch.sprint.button_pressed and not game.player.jump_requested, "Pausing left sprint or jump input active")
+	press.pressed = true
+	press.position = touch.jump.get_global_rect().get_center()
+	touch._input(press)
+	check(touch.look_finger == -1 and touch.move_finger == -1, "Touch camera stole a jump button press")
+	press.pressed = false
+	touch._input(press)
 	touch.queue_free()
 	var count_before: int = game.terrain.chunks.size()
 	game.terrain.stream_at(Vector3(960, 0, 960))

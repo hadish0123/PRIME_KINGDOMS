@@ -53,7 +53,8 @@ func run() -> void:
 		check(restored.village.npcs.map(func(n): return n.id) == initial.village.npcs.map(func(n): return n.id), "Re-entry replaced NPC identities")
 		await game.enter_world(restored)
 		game.api.token = str(joined.data.session.token)
-		await game.api.call_api("/v1/auth/logout", {})
+		await game.sign_out()
+		check(not game.in_world and game.api.token.is_empty(), "Native save-and-sign-out did not leave the world safely")
 	print("NATIVE_ACCOUNT_CONTRACT ", JSON.stringify({"failures": failures, "starter_soldiers": 8, "starter_villagers": 5, "same_home_on_reentry": failures.is_empty()}))
 	game.queue_free()
 	await process_frame

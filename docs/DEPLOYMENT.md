@@ -14,7 +14,7 @@ is a reference and is not an automatically applied configuration file.
 - Region: `sfo` for both API and database; one replica each.
 - Database volume: `postgres-volume`, 5 GB, mounted at `/var/lib/postgresql/data`.
 
-The public API address returns JSON. The native Godot client connects to it over HTTPS. Android builds and a rendered village preview are published in the repository’s v0.2.0 development release after native validation.
+The public API address returns JSON. The native Godot client connects to it over HTTPS. Android builds and real rendered village/login/settings/atlas previews are published in the repository’s versioned releases after native validation. Version 0.3 adds transactional account responses, finite movement credit, session limits and client lifecycle recovery while preserving the existing world.
 
 ## API service
 

@@ -7,6 +7,9 @@ var population: Array[Node] = []
 var palette: Dictionary = {}
 var loaded_models: int = 0
 
+func update_population(viewer: Vector3, simulation_distance: float) -> void:
+	for npc in population: npc.update_presence(viewer, simulation_distance)
+
 func material(color: Color, roughness: float = 0.9) -> StandardMaterial3D:
 	var value = StandardMaterial3D.new()
 	value.albedo_color = color
@@ -95,17 +98,17 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		box(Vector3(0.4, 1.1, 0.1), Vector3(x + 0.9, 4.1, 42.05), palette.gold)
 	for index in range(11):
 		for side in [-1, 1]:
-			asset("fence", Vector3(side * 47, 0, -39 + index * 8), 7.7, PI * 0.5, false)
+			asset("fence", Vector3(side * 47, 0, -39 + index * 8), 7.7, PI * 0.5)
 	for index in range(6):
 		box(Vector3(11, 0.08, 0.35), Vector3(31, 0.04, 29 + index * 1.7), palette.soil)
 	var name_label = Label3D.new()
 	name_label.text = str(data.name) + ("  •  YOUR VILLAGE" if owner else "")
-	name_label.position = Vector3(0, 13, -27)
+	name_label.position = Vector3(0, 10, -27)
 	name_label.font_size = 48
 	name_label.pixel_size = 0.011
 	name_label.modulate = Color(0.90, 0.83, 0.61)
 	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	name_label.visibility_range_end = 130.0
+	name_label.visibility_range_end = 75.0
 	add_child(name_label)
 	for npc_data in data.npcs:
 		var npc = Npc.new()

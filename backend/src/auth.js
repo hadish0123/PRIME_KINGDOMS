@@ -41,18 +41,27 @@ export async function hashPassword(password) {
 export async function verifyPassword(password, encoded) {
   if (!encoded) { await key(password, dummySalt); return false; }
   const parts = encoded.split('$');
-  if (parts.length !== 6 || parts.slice(0, 4).join('$') !== 'scrypt$131072$8$1') return false;
+  if (parts.length !== 6 || parts.slice(0, 4).join('$') !== 'scrypt$131072$8$1'
+    || !/^[a-f0-9]{32}$/.test(parts[4]) || !/^[a-f0-9]{64}$/.test(parts[5])) return false;
   const actual = await key(password, Buffer.from(parts[4], 'hex'));
   const expected = Buffer.from(parts[5], 'hex');
   return expected.length === actual.length && timingSafeEqual(actual, expected);
 }
 export function tokenHash(token) { return createHash('sha256').update(token).digest('hex'); }
 export async function createSession(db, accountId) {
+  // Called inside the account transaction. Serializing on the account row
+  // bounds active sessions even when two devices log in concurrently.
+  await db.query('SELECT id FROM accounts WHERE id=$1 FOR UPDATE', [accountId]);
+  await db.query('DELETE FROM sessions WHERE expires_at <= now()');
   const token = randomBytes(32).toString('base64url');
   const { rows } = await db.query(`
-    INSERT INTO sessions(token_hash, account_id, expires_at)
-    VALUES ($1, $2, now() + interval '14 days') RETURNING expires_at
+    INSERT INTO sessions(token_hash, account_id, expires_at, created_at)
+    VALUES ($1, $2, clock_timestamp() + interval '14 days', clock_timestamp()) RETURNING expires_at
   `, [tokenHash(token), accountId]);
+  await db.query(`DELETE FROM sessions WHERE token_hash IN (
+    SELECT token_hash FROM sessions WHERE account_id=$1
+    ORDER BY created_at DESC, token_hash DESC OFFSET 5
+  )`, [accountId]);
   return { token, expiresAt: rows[0].expires_at };
 }
 export async function authenticate(pool, authorization) {

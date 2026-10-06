@@ -1,5 +1,7 @@
 extends Node
 
+const Contract = preload("res://scripts/contract.gd")
+
 const BASE_URL = "https://prime-kingdoms-api-production.up.railway.app"
 var base_url: String = BASE_URL
 var token: String = ""
@@ -8,16 +10,21 @@ func load_session() -> void:
 	var config = ConfigFile.new()
 	if config.load("user://session.cfg") == OK:
 		token = str(config.get_value("session", "token", ""))
+		if token.length() != 43: token = ""
 
 func save_session(value: String) -> void:
 	token = value
 	var config = ConfigFile.new()
 	config.set_value("session", "token", value)
-	config.save("user://session.cfg")
+	if config.save("user://session.cfg") != OK:
+		push_warning("Session is available for this run; device storage could not remember it.")
 
 func call_api(path: String, body = null) -> Dictionary:
 	var http = HTTPRequest.new()
-	http.timeout = 15.0
+	http.timeout = 8.0
+	http.body_size_limit = 1024 * 1024
+	http.max_redirects = 0
+	http.use_threads = true
 	add_child(http)
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	if not token.is_empty():
@@ -34,4 +41,7 @@ func call_api(path: String, body = null) -> Dictionary:
 	var parsed = JSON.parse_string(response[3].get_string_from_utf8())
 	if not parsed is Dictionary:
 		return {"ok": false, "status": response[1], "error": "invalid_response"}
-	return {"ok": response[1] >= 200 and response[1] < 300, "status": response[1], "data": parsed, "error": parsed.get("error", "")}
+	var success: bool = response[1] >= 200 and response[1] < 300
+	if success and not Contract.accepts(path, parsed):
+		return {"ok": false, "status": response[1], "error": "invalid_response"}
+	return {"ok": success, "status": response[1], "data": parsed, "error": str(parsed.get("error", ""))}
