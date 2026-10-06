@@ -241,9 +241,10 @@ func cuirass() -> void:
 	attachment_node.add_child(mark)
 
 func pauldrons() -> void:
-	for side in ["L", "R"]:
-		var bone := "upperarm01." + side
-		var sign := -1.0 if side == "L" else 1.0
+	for side_value in ["L", "R"]:
+		var side: String = str(side_value)
+		var bone: String = "upperarm01." + side
+		var sign: float = -1.0 if side == "L" else 1.0
 		for layer in range(4):
 			var radius := 0.132 - layer * 0.010
 			var mesh := SphereMesh.new()
