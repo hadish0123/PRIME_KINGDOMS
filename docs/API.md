@@ -1,4 +1,4 @@
-# API 0.3
+# API 0.4
 
 Base URL: `https://prime-kingdoms-api-production.up.railway.app`
 

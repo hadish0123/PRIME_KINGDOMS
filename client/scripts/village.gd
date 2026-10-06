@@ -2,6 +2,8 @@ extends Node3D
 
 const Actor = preload("res://scripts/actor.gd")
 const Npc = preload("res://scripts/npc.gd")
+const Architecture = preload("res://scripts/architecture.gd")
+const Surfaces = preload("res://scripts/visual_materials.gd")
 var village_id: String = ""
 var population: Array[Node] = []
 var palette: Dictionary = {}
@@ -36,29 +38,14 @@ func box(size_value: Vector3, at: Vector3, surface: Material, solid: bool = fals
 	return visual
 
 func asset(asset_name: String, at: Vector3, width: float, angle: float = 0.0, solid: bool = true) -> Node3D:
-	var model = load("res://assets/village/" + asset_name + ".glb").instantiate()
+	var model = Architecture.new()
+	model.name = asset_name
 	loaded_models += 1
-	var helper = Actor.new()
-	var bounds = helper.model_bounds(model, Transform3D.IDENTITY)
-	helper.free()
-	var factor = width / maxf(bounds.size.x, bounds.size.z)
-	var container = Node3D.new()
-	add_child(container)
-	container.position = at
-	container.rotation.y = angle
-	container.add_child(model)
-	model.scale *= factor
-	model.position = Vector3(-bounds.get_center().x * factor, -bounds.position.y * factor, -bounds.get_center().z * factor)
-	if solid:
-		var body = StaticBody3D.new()
-		var collision = CollisionShape3D.new()
-		var shape = BoxShape3D.new()
-		shape.size = Vector3(bounds.size.x * factor * 0.88, bounds.size.y * factor * 0.7, bounds.size.z * factor * 0.88)
-		collision.shape = shape
-		collision.position.y = shape.size.y * 0.5
-		body.add_child(collision)
-		container.add_child(body)
-	return container
+	add_child(model)
+	model.position = at
+	model.rotation.y = angle
+	model.build(asset_name, width)
+	return model
 
 func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	village_id = str(data.id)
@@ -66,10 +53,14 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	position = Vector3(float(p.x), float(p.y), float(p.z)) - origin
 	var road = ShaderMaterial.new()
 	road.shader = load("res://shaders/road.gdshader")
+	road.set_shader_parameter("soil_map", load("res://assets/textures/brown_mud_diff.jpg"))
+	road.set_shader_parameter("soil_normal", load("res://assets/textures/brown_mud_normal.jpg"))
+	road.set_shader_parameter("soil_rough", load("res://assets/textures/brown_mud_rough.jpg"))
+	road.set_shader_parameter("stone_map", load("res://assets/textures/rocky_terrain_02_diff.jpg"))
 	palette.road = road
-	palette.wood = material(Color(0.23, 0.14, 0.08))
+	palette.wood = Surfaces.pbr("wood_planks", Color(0.58, 0.46, 0.33), 0.7)
 	palette.gold = material(Color(0.66, 0.47, 0.20), 0.48)
-	palette.soil = material(Color(0.25, 0.20, 0.13))
+	palette.soil = Surfaces.pbr("brown_mud", Color(0.75, 0.68, 0.58))
 	box(Vector3(8, 0.055, 112), Vector3(0, 0.025, 4), palette.road)
 	box(Vector3(92, 0.05, 6), Vector3(0, 0.02, 8), palette.road)
 	var square = MeshInstance3D.new()
@@ -94,8 +85,19 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	asset("cart", Vector3(17, 0, 12), 3.4, PI * 0.25)
 	for x in [-7.0, 7.0]:
 		box(Vector3(0.2, 5.4, 0.2), Vector3(x, 2.7, 42), palette.wood, true)
-		box(Vector3(1.9, 2.2, 0.07), Vector3(x + 0.9, 4.1, 42), material(Color(0.06, 0.16, 0.22)))
-		box(Vector3(0.4, 1.1, 0.1), Vector3(x + 0.9, 4.1, 42.05), palette.gold)
+		var banner = PlaneMesh.new()
+		banner.size = Vector2(1.9, 2.2)
+		banner.subdivide_width = 10
+		banner.subdivide_depth = 8
+		var cloth = ShaderMaterial.new()
+		cloth.shader = load("res://shaders/cloth.gdshader")
+		cloth.set_shader_parameter("albedo_map", load("res://assets/textures/rough_linen_diff.jpg"))
+		var flag = MeshInstance3D.new()
+		flag.mesh = banner
+		flag.material_override = cloth
+		flag.position = Vector3(x + 0.9, 4.1, 42)
+		flag.rotation.x = PI * 0.5
+		add_child(flag)
 	for index in range(11):
 		for side in [-1, 1]:
 			asset("fence", Vector3(side * 47, 0, -39 + index * 8), 7.7, PI * 0.5)

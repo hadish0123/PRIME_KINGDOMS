@@ -1,145 +1,462 @@
 [
   {
-    "path": "assets/vendor/quaternius_rpg/Monk.gltf",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "a9d9405d5863c0a1559bb8b003acbd0005adb669",
-    "size": 2655048,
-    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/a9d9405d5863c0a1559bb8b003acbd0005adb669",
-    "repository": "euuuuuuan/cairnfall-public",
-    "destination": "characters/Monk.gltf",
-    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/3dobjs/base.obj",
+    "sha": "d26635e9326e3cca30778fd7b9c00062b03cce09",
+    "destination": "human/core/3dobjs/base.obj",
+    "license": "CC0-1.0"
   },
   {
-    "path": "assets/vendor/quaternius_rpg/Ranger.gltf",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "c5a1d1bc868ba3af1e7cd6895f40fd1f2abad8c2",
-    "size": 2987934,
-    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/c5a1d1bc868ba3af1e7cd6895f40fd1f2abad8c2",
-    "repository": "euuuuuuan/cairnfall-public",
-    "destination": "characters/Ranger.gltf",
-    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/rigs/default.mhskel",
+    "sha": "b02cbecae00143856410d7561adf006d83bf9b3e",
+    "destination": "human/core/rigs/default.mhskel",
+    "license": "CC0-1.0"
   },
   {
-    "path": "assets/vendor/quaternius_rpg/Warrior.gltf",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "7cec60131bb206e63805651890f5110b8787cccd",
-    "size": 3035392,
-    "url": "https://api.github.com/repos/euuuuuuan/cairnfall-public/git/blobs/7cec60131bb206e63805651890f5110b8787cccd",
-    "repository": "euuuuuuan/cairnfall-public",
-    "destination": "characters/Warrior.gltf",
-    "ref": "8ee4cfd789282c59632a9339e61564b7d6c1acfe"
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/rigs/default_weights.mhw",
+    "sha": "66185806afacf87749be8e5cf6dbf66496b2a6b0",
+    "destination": "human/core/rigs/default_weights.mhw",
+    "license": "CC0-1.0"
   },
   {
-    "path": "public/models/props/blacksmith.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "a654d0fb8cdaeca95e45a4a97086b0e072374a34",
-    "size": 97444,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/a654d0fb8cdaeca95e45a4a97086b0e072374a34",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/blacksmith.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/skins/default.mhmat",
+    "sha": "2ff22cbdcc47c4933544a8c68f52e5e0a3a78fdc",
+    "destination": "human/core/skins/default.mhmat",
+    "license": "CC0-1.0"
   },
   {
-    "path": "public/models/props/cart.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "91c23249fc858b54bbb5d726874e773410726ff4",
-    "size": 30972,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/91c23249fc858b54bbb5d726874e773410726ff4",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/cart.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/macrodetails/caucasian-male-young.target",
+    "sha": "c3b82f92c5ced85599199cd184b0faf3b3fc6881",
+    "destination": "human/core/targets/macrodetails/caucasian-male-young.target",
+    "license": "CC0-1.0"
   },
   {
-    "path": "public/models/props/fence.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "06ea27edea7e2c6fa817e95983900a81b4c67565",
-    "size": 4836,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/06ea27edea7e2c6fa817e95983900a81b4c67565",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/fence.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
+    "destination": "textures/grass_ground_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grass_ground",
+    "sha256": "a79cc5ed65af0f80261b39a383b64a8c5272c5144d724deb43dbc29f0e4cd19b"
   },
   {
-    "path": "public/models/props/house_1.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "88f7b20a2b4376a53c6e9444910386b1a8a5f510",
-    "size": 84484,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/88f7b20a2b4376a53c6e9444910386b1a8a5f510",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/house_1.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_nor_gl_1k.jpg",
+    "destination": "textures/grass_ground_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grass_ground",
+    "sha256": "7000e2ccd479bb7b66dcdf4faef7b47554324566886314ca620cbf03e274e826"
   },
   {
-    "path": "public/models/props/house_2.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "fb45ec1b03e81dc37e133569e91a666e79d4470b",
-    "size": 103180,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/fb45ec1b03e81dc37e133569e91a666e79d4470b",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/house_2.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_rough_1k.jpg",
+    "destination": "textures/grass_ground_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grass_ground",
+    "sha256": "111341f948b7e073edf7ac6add8777e1bf10df8959400df3863243e89bbc8c08"
   },
   {
-    "path": "public/models/props/house_3.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "5cece5805e034c57a1581645e8ddf1f2962ee269",
-    "size": 43696,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/5cece5805e034c57a1581645e8ddf1f2962ee269",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/house_3.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud/brown_mud_diff_1k.jpg",
+    "destination": "textures/brown_mud_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/brown_mud",
+    "sha256": "df3f135c899f10a3b018738343b222cbc67d13e7c76c5d8da834a3d34c984417"
   },
   {
-    "path": "public/models/props/inn.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "e65e40883afe48b6c3f4da389d73efc9acd60290",
-    "size": 92748,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/e65e40883afe48b6c3f4da389d73efc9acd60290",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/inn.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud/brown_mud_nor_gl_1k.jpg",
+    "destination": "textures/brown_mud_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/brown_mud",
+    "sha256": "ac517ca39eb507ae0f27e2b3db431c60888f9b5c3c52bec49d2c0775da0920cb"
   },
   {
-    "path": "public/models/props/market_stand_1.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "4ebb2d66a07492f4fe5deeb267f1330e9442b66c",
-    "size": 25184,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/4ebb2d66a07492f4fe5deeb267f1330e9442b66c",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/market_stand_1.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud/brown_mud_rough_1k.jpg",
+    "destination": "textures/brown_mud_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/brown_mud",
+    "sha256": "ae9fb57c1173ccb4579f40edf8321a30bdca815042ffd72015a2a707c7e2e7ba"
   },
   {
-    "path": "public/models/props/market_stand_2.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "4afa7eabde19d62893b43665cfcf7e1acd6a23d6",
-    "size": 18868,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/4afa7eabde19d62893b43665cfcf7e1acd6a23d6",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/market_stand_2.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_diff_1k.jpg",
+    "destination": "textures/wood_planks_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/wood_planks",
+    "sha256": "3b0669f683e4bf10f5a55a381cfa9669a7b8dfd921901829daa3b35acc2bbdec"
   },
   {
-    "path": "public/models/props/well.glb",
-    "mode": "100644",
-    "type": "blob",
-    "sha": "a80bb7f20e048621195e300e58a0aebbcc83af66",
-    "size": 27788,
-    "url": "https://api.github.com/repos/ArcaneHunters/World-of-Arcane-Hunters/git/blobs/a80bb7f20e048621195e300e58a0aebbcc83af66",
-    "repository": "ArcaneHunters/World-of-Arcane-Hunters",
-    "destination": "village/well.glb",
-    "ref": "b4c9f16b911484272f1c4f05baa2a297d5071a03"
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_nor_gl_1k.jpg",
+    "destination": "textures/wood_planks_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/wood_planks",
+    "sha256": "d02abf113e17a8abe97e1be3e9d6d88add242e8c2291e2200d37aa8c68909f25"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_rough_1k.jpg",
+    "destination": "textures/wood_planks_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/wood_planks",
+    "sha256": "1b7f115bfa25619b0a2db554eb1ab88a6fc5ef0b74ba4890611eae04d00b9829"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_plaster_03/rough_plaster_03_diff_1k.jpg",
+    "destination": "textures/rough_plaster_03_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_plaster_03",
+    "sha256": "0d4eb2248bbef9637e6a9e6a636e93e3d533f5c434103eaa35f023f51444b81f"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_plaster_03/rough_plaster_03_nor_gl_1k.jpg",
+    "destination": "textures/rough_plaster_03_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_plaster_03",
+    "sha256": "cac1933d0f981325eb8035c9d0df6a056de6fd4e60cc1a52eff42c47fedd6463"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_plaster_03/rough_plaster_03_rough_1k.jpg",
+    "destination": "textures/rough_plaster_03_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_plaster_03",
+    "sha256": "91eab98aa1dd5efd311dd21f633a0bdf1f115ba5e631a7b1c209b5ba6dd34754"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall_02/stone_wall_02_diff_1k.jpg",
+    "destination": "textures/stone_wall_02_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/stone_wall_02",
+    "sha256": "546c51130575b57db1c9690766c55df19e80bf122bd3630f25f82f2832998fa8"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall_02/stone_wall_02_nor_gl_1k.jpg",
+    "destination": "textures/stone_wall_02_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/stone_wall_02",
+    "sha256": "47c4ee16834a755da49feafe920161db2fd5147be97dd9d24f3b659d9b462c1e"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall_02/stone_wall_02_rough_1k.jpg",
+    "destination": "textures/stone_wall_02_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/stone_wall_02",
+    "sha256": "b857cb67f7dd2c439f8e6d31ef3e279fa18ae2cec66b320382d03a83593178e5"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_diff_1k.jpg",
+    "destination": "textures/grey_roof_tiles_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grey_roof_tiles",
+    "sha256": "f61107b70cf56074c9db09384a332620c94c678ed2baabfae78029a8242e49a3"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_nor_gl_1k.jpg",
+    "destination": "textures/grey_roof_tiles_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grey_roof_tiles",
+    "sha256": "99546fdc2978d0950a2c61fe94dbd4230bb7825944bb4e4e7ad586839fdc721d"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_rough_1k.jpg",
+    "destination": "textures/grey_roof_tiles_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/grey_roof_tiles",
+    "sha256": "edc3185b560a71b2b5f5f568710b8674da41becb39ca374f5e8efeca15b5794f"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr",
+    "destination": "textures/sky.hdr",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+    "sha256": "fd94c84997b8a3c353b62c2125a9b44e19509956986a126e472684432a02d798"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
+    "destination": "textures/rocky_terrain_02_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rocky_terrain_02",
+    "sha256": "d570c10b1d5302f4fde9e0e94f4cbab0d5e112fc3fe2b3b91c38a98bd3ddaf4b"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_nor_gl_1k.jpg",
+    "destination": "textures/rocky_terrain_02_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rocky_terrain_02",
+    "sha256": "f4f9d9671c660f4e509e96d5da3091887dfd557e1353e313fa2d1dc789499ffd"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_rough_1k.jpg",
+    "destination": "textures/rocky_terrain_02_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rocky_terrain_02",
+    "sha256": "8652ee05de206888eb77f84df7c8080f6ffef27afadb7917127726570b66c45d"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      213331602,
+      213530775
+    ],
+    "deflate": true,
+    "sha256": "78503ed7f56c149843d85e06e1164bc6871ce7319b2ef689237046352cc90de4",
+    "destination": "human/system/clothes/male_casualsuit01/male_casualsuit01.mhclo",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "clothes/male_casualsuit01/male_casualsuit01.mhclo"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      271550263,
+      271553135
+    ],
+    "deflate": true,
+    "sha256": "88b13146395133f3901715e11706cdfd293e5d6087ad7c5e01efe1485a26b513",
+    "destination": "human/system/eyebrows/eyebrow001/eyebrow001.obj",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyebrows/eyebrow001/eyebrow001.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      214284665,
+      214517455
+    ],
+    "deflate": true,
+    "sha256": "001921d237e408c35103720d046aa37f9c5512db1a179a5ede6a065cd504ba89",
+    "destination": "human/system/clothes/male_casualsuit01/male_casualsuit01.obj",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "clothes/male_casualsuit01/male_casualsuit01.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      236127464,
+      236195831
+    ],
+    "deflate": true,
+    "sha256": "ae1ffaa98da5753b803b3a173bede4895d2215e6bb94763f3765a71f0e984f35",
+    "destination": "human/system/hair/short01/short01.mhclo",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/short01/short01.mhclo"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      236196640,
+      236263704
+    ],
+    "deflate": true,
+    "sha256": "d998d8416f9b5d5591f1d756f4d292288d000a6951bc0f4d2e8e72727bbc44fa",
+    "destination": "human/system/hair/short01/short01.obj",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/short01/short01.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      280680470,
+      280682630
+    ],
+    "deflate": true,
+    "sha256": "783fe1e6331162c876520b4c2bed7a8ca06354ca15497e8ebd68bb1b59f4d3de",
+    "destination": "human/system/eyes/low-poly/low-poly.obj",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyes/low-poly/low-poly.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      271641371,
+      271644408
+    ],
+    "deflate": true,
+    "sha256": "54c8892c2ba577f4152d779ce1f20f7cd323beb8cbd9cb701796165c221b4f5b",
+    "destination": "human/system/eyebrows/eyebrow001/eyebrow001.mhclo",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyebrows/eyebrow001/eyebrow001.mhclo"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      280679713,
+      280680385
+    ],
+    "deflate": true,
+    "sha256": "68582e28e9176cba7cfcf35208f671b6201b8d1bc95c32decff61a3160ec34d8",
+    "destination": "human/system/eyes/low-poly/low-poly.mhclo",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyes/low-poly/low-poly.mhclo"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      271553228,
+      271641276
+    ],
+    "deflate": true,
+    "sha256": "9940f7d0b1b223709a19b05156ba6f6e9e4dbdbced02d7574f4d51d72c58967b",
+    "destination": "human/system/eyebrows/eyebrow001/eyebrow001.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyebrows/eyebrow001/eyebrow001.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      277130475,
+      277738352
+    ],
+    "deflate": true,
+    "sha256": "4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b",
+    "destination": "human/system/eyes/materials/brown_eye.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "eyes/materials/brown_eye.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      236263795,
+      238602628
+    ],
+    "deflate": true,
+    "sha256": "f34a0957184e3d1e911ed59245f874f8d4843f61ee44ff49f43edb4be0196949",
+    "destination": "human/system/hair/short01/short01_diffuse.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/short01/short01_diffuse.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      23394972,
+      27084983
+    ],
+    "deflate": true,
+    "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963",
+    "destination": "human/system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "skins/young_caucasian_male/young_lightskinned_male_diffuse.png"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_diff_1k.jpg",
+    "sha256": "04897d7611d7390ddf5b2c6f7273f448dfc48341fdbd1f4f207fa30b331d7f57",
+    "destination": "textures/rough_linen_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_linen"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_nor_gl_1k.jpg",
+    "sha256": "e2402166d1a489f7414814e69e1836ab672aa24e30bec2d41fea356f81687e53",
+    "destination": "textures/rough_linen_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_linen"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_rough_1k.jpg",
+    "sha256": "734ad6718841a6e296aacaa6e9ee2e1686eed5f62bb8d71c915c5605e162bcb4",
+    "destination": "textures/rough_linen_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/rough_linen"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
+    "sha256": "920fa0bed0c9d78c1d530e99795113afd532d7db746de440f4a85d7c83ed0f1a",
+    "destination": "textures/bark_brown_02_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/bark_brown_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_nor_gl_1k.jpg",
+    "sha256": "0d5e691e8ad8bcd093a3587887fda2a6b4a948b5708a4f256f7919584c6eb857",
+    "destination": "textures/bark_brown_02_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/bark_brown_02"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_rough_1k.jpg",
+    "sha256": "68125592de36e15bae7aa6db85c4d135aeb7e5653199ba226483a70f6d69837d",
+    "destination": "textures/bark_brown_02_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Poly Haven",
+    "page": "https://polyhaven.com/a/bark_brown_02"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      206036596,
+      211561928
+    ],
+    "deflate": true,
+    "sha256": "3fd0bba5dcbdea0ac427f644a6c7c298938f7369b8f96626621ce1e88989394e",
+    "destination": "human/system/clothes/male_casualsuit01/male_casualsuit01_diffuse.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "clothes/male_casualsuit01/male_casualsuit01_diffuse.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      211562041,
+      213291714
+    ],
+    "deflate": true,
+    "sha256": "ff029fc5a3350ebc72813cdf050afcffd23064c7701d99e664572713cfa98a5f",
+    "destination": "human/system/clothes/male_casualsuit01/male_casualsuit01_normal.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "clothes/male_casualsuit01/male_casualsuit01_normal.png"
   }
 ]

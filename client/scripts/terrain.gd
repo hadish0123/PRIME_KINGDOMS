@@ -1,5 +1,6 @@
 extends Node3D
 
+const Nature = preload("res://scripts/nature.gd")
 const CHUNK_SIZE = 160.0
 const RADIUS = 6
 var view_radius = 5
@@ -11,6 +12,7 @@ var chunks: Dictionary = {}
 var pending: Array[Vector2i] = []
 var center = Vector2i(100000, 100000)
 var material: ShaderMaterial
+var nature: Node3D
 
 func set_radius(value: int) -> void:
 	var next = clampi(value, 4, RADIUS)
@@ -53,7 +55,15 @@ func configure(world: Dictionary, base: Vector3, settlements: Array) -> void:
 	villages = settlements
 	material = ShaderMaterial.new()
 	material.shader = load("res://shaders/ground.gdshader")
+	for role in ["grass", "mud"]:
+		var asset_name = "grass_ground" if role == "grass" else "brown_mud"
+		for map_name in ["map", "normal", "rough"]:
+			var suffix = "diff" if map_name == "map" else map_name
+			material.set_shader_parameter(role + "_" + map_name, load("res://assets/textures/%s_%s.jpg" % [asset_name, suffix]))
 	material.set_shader_parameter("village_center", Vector2(float(villages[0].position.x) - origin.x, float(villages[0].position.z) - origin.z))
+	nature = Nature.new()
+	nature.terrain = self
+	add_child(nature)
 
 func update_villages(settlements: Array) -> void:
 	var changed: Array = []
@@ -63,6 +73,7 @@ func update_villages(settlements: Array) -> void:
 		if not villages.any(func(v): return v.id == new_village.id and v.position == new_village.position): changed.append(new_village)
 	if changed.is_empty(): return
 	villages = settlements
+	if nature: nature.reset()
 	for key in chunks.keys():
 		var tile = Rect2(Vector2(key.x * CHUNK_SIZE, key.y * CHUNK_SIZE), Vector2.ONE * CHUNK_SIZE).grow(125.0)
 		if changed.any(func(v): return tile.has_point(Vector2(float(v.position.x) - origin.x, float(v.position.z) - origin.z))):
@@ -72,6 +83,7 @@ func update_villages(settlements: Array) -> void:
 	pending.sort_custom(func(a, b): return a.distance_squared_to(center) < b.distance_squared_to(center))
 
 func stream_at(position_value: Vector3) -> void:
+	if nature: nature.stream_at(position_value)
 	var next = Vector2i(int(floor(position_value.x / CHUNK_SIZE)), int(floor(position_value.z / CHUNK_SIZE)))
 	if center.x != 100000:
 		# Keep tiny physics corrections near a tile edge from rebuilding both LOD rings.
@@ -118,6 +130,7 @@ func build_chunk(key: Vector2i) -> void:
 			var a = z * (divisions + 1) + x
 			for index in [a, a + 1, a + divisions + 1, a + 1, a + divisions + 2, a + divisions + 1]:
 				surface.add_index(index)
+	surface.generate_tangents()
 	var mesh = surface.commit()
 	var visual = MeshInstance3D.new()
 	visual.mesh = mesh

@@ -119,33 +119,33 @@ func update_auth_camera(delta: float) -> void:
 func setup_lighting() -> void:
 	var environment = Environment.new()
 	var sky = Sky.new()
-	var sky_material = ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.25, 0.43, 0.61)
-	sky_material.sky_horizon_color = Color(0.79, 0.78, 0.64)
-	sky_material.ground_bottom_color = Color(0.30, 0.32, 0.22)
-	sky_material.ground_horizon_color = Color(0.79, 0.78, 0.64)
-	sky_material.sun_angle_max = 12.0
+	var sky_material = PanoramaSkyMaterial.new()
+	sky_material.panorama = load("res://assets/textures/sky.hdr")
+	sky_material.energy_multiplier = 0.8
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.42
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_energy = 0.28
+	environment.ambient_light_color = Color(0.76, 0.82, 0.89)
+	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.70, 0.75, 0.70)
-	environment.fog_density = 0.0015
-	environment.fog_sky_affect = 0.12
+	environment.fog_light_color = Color(0.69, 0.75, 0.80)
+	environment.fog_density = 0.00085
+	environment.fog_sky_affect = 0.0
 	var world_environment = WorldEnvironment.new()
 	world_environment.environment = environment
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-38, -32, 0)
-	sun.light_color = Color(1.0, 0.89, 0.72)
-	sun.light_energy = 1.1
+	sun.light_color = Color(1.0, 0.95, 0.86)
+	sun.light_energy = 1.05
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04
+	sun.shadow_normal_bias = 0.6
 	add_child(sun)
 
 func panel_style(color: Color, border: Color = Color(0.47, 0.40, 0.26)) -> StyleBoxFlat:
@@ -363,6 +363,7 @@ func build_settings() -> void:
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	details.custom_minimum_size.x = 440
 	column.add_child(details)
+	column.add_child(label("Powered by Poly Haven · Human assets: MakeHuman", 13, Color(0.62, 0.70, 0.70)))
 	column.add_child(button("RETURN TO WORLD", toggle_settings))
 	settings_panel.visible = false
 

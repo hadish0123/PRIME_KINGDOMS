@@ -15,4 +15,6 @@ client/builds/
 tools/assets/cache/
 client/assets/**/*.glb
 client/assets/**/*.png
+client/assets/**/*.jpg
+client/assets/**/*.hdr
 client/assets/**/*.import

@@ -1,9 +1,11 @@
 {
   "name": "prime-kingdoms-asset-pipeline",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "scripts": { "prepare:models": "python3 download.py && node convert.mjs" },
+  "scripts": {
+    "prepare:models": "python3 download.py && python3 humans.py && node convert.mjs"
+  },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",
     "@gltf-transform/extensions": "4.5.1",

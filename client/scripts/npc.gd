@@ -67,8 +67,8 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0
 		velocity.z = 0
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 20.0 * delta
-	actor.play_motion("walk" if moving else "idle")
 	move_and_slide()
+	actor.locomotion(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, delta, "work" if role == "villager" else "idle")
 	if position.y < home.y - 0.25:
 		position.y = home.y + 0.1
 		velocity.y = 0.0

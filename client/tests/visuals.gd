@@ -1,0 +1,92 @@
+extends SceneTree
+
+var failures: Array[String] = []
+
+func _initialize() -> void: run.call_deferred()
+
+func check(condition: bool, message: String) -> void:
+	if condition: return
+	failures.append(message)
+	push_error(message)
+
+func capture(file_name: String) -> void:
+	if DisplayServer.get_name() == "headless": return
+	await RenderingServer.frame_post_draw
+	var result = root.get_texture().get_image()
+	check(not result.is_empty(), "Visual capture is empty")
+	if not result.is_empty(): check(result.save_png("res://builds/" + file_name) == OK, "Visual capture cannot be saved")
+
+func run() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixture.json"))
+	var game = load("res://main.tscn").instantiate()
+	root.add_child(game)
+	await game.enter_world(fixture.state)
+	game.player.position.x = 3.0
+	game.player.position.y = 0.1
+	var actor = game.player.actor
+	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 19, "Anatomical character rig did not load")
+	var inn = game.villages[fixture.state.village.id].get_node("inn")
+	var gable_present = false
+	for visual in inn.get_children():
+		if visual is not MeshInstance3D: continue
+		if visual.material_override.get_meta("source_asset", "") != "rough_plaster_03": continue
+		var arrays = visual.mesh.surface_get_arrays(0)
+		for index in arrays[Mesh.ARRAY_INDEX]:
+			if arrays[Mesh.ARRAY_VERTEX][index].y > 8.0: gable_present = true
+	check(gable_present, "Indexed village wall batch omitted its gable triangles")
+	for name_value in ["idle", "walk", "run", "jump", "fall", "land", "guard", "work"]:
+		check(actor.animation.has_animation(name_value), "Missing character motion: " + name_value)
+	var bone: int = actor.skeleton.find_bone("lowerleg01.L")
+	actor.animation.play("walk")
+	actor.animation.seek(0.0, true)
+	var before: Transform3D = actor.skeleton.get_bone_global_pose(bone)
+	actor.animation.seek(0.35, true)
+	var after: Transform3D = actor.skeleton.get_bone_global_pose(bone)
+	check(not before.is_equal_approx(after), "Walking did not deform the actual skeleton")
+	var camera = Camera3D.new()
+	game.world_root.add_child(camera)
+	camera.fov = 48
+	game.player.frozen = true
+	for frame in range(80): await process_frame
+	check(game.terrain.nature.grass.size() <= 49 and game.terrain.nature.groves.size() <= 25, "Balanced scenery allocation exceeded its budget")
+	camera.position = game.player.position + Vector3(1.10, 1.65, -2.75)
+	camera.look_at(game.player.position + Vector3(0, 1.05, 0))
+	camera.current = true
+	for frame in range(3): await process_frame
+	await capture("human.png")
+	# High-detail setting has finite scenery budgets; returning to LOW frees them.
+	game.terrain.nature.set_quality(2)
+	for frame in range(50): await process_frame
+	check(game.terrain.nature.grass.size() <= 81 and game.terrain.nature.groves.size() <= 49, "High scenery allocation exceeded its budget")
+	game.terrain.nature.set_quality(0)
+	for frame in range(15): await process_frame
+	check(game.terrain.nature.grass.size() <= 25 and game.terrain.nature.groves.size() <= 9, "Low scenery did not release higher quality allocations")
+	game.terrain.nature.set_quality(1)
+	game.player.frozen = false
+	game.player.camera.current = true
+	game.player.yaw = 0
+	game.player.pitch = -0.17
+	# Actual controller input drives the film: idle, walk, sprint, jump and land.
+	if "--film" in OS.get_cmdline_user_args():
+		DirAccess.make_dir_recursive_absolute("res://builds/frames")
+		var motions: Dictionary = {}
+		for frame in range(300):
+			game.player.touch_move = Vector2(0, -1) if frame >= 45 and frame < 230 else Vector2.ZERO
+			game.player.touch_sprint = frame >= 135 and frame < 230
+			if frame in [162, 205]: game.player.jump_requested = true
+			if frame < 45:
+				camera.current = true
+				camera.position = game.player.position + Vector3(sin(frame * 0.02) * 2.8, 1.75, -cos(frame * 0.02) * 2.8)
+				camera.look_at(game.player.position + Vector3(0, 1.12, 0))
+			else: game.player.camera.current = true
+			await process_frame
+			motions[actor.current_motion] = true
+			await capture("frames/frame-%04d.png" % frame)
+		for expected in ["idle", "walk", "run", "jump", "fall", "land"]:
+			check(motions.has(expected), "Controller film did not exercise " + expected)
+	game.player.touch_move = Vector2.ZERO
+	game.player.touch_sprint = false
+	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 19, "motion_clips": 8, "bounded_foliage": true, "controller_film": "--film" in OS.get_cmdline_user_args()}))
+	game.queue_free()
+	await process_frame
+	quit(0 if failures.is_empty() else 1)

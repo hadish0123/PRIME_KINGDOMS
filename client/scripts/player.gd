@@ -80,7 +80,7 @@ func _physics_process(delta: float) -> void:
 	movement = movement.limit_length()
 	var direction = (Basis(Vector3.UP, yaw) * Vector3(movement.x, 0, movement.y)).normalized()
 	var sprint = touch_sprint or Input.is_physical_key_pressed(KEY_SHIFT)
-	var speed = 8.2 if sprint else 4.5
+	var speed = 6.4 if sprint else 2.4
 	velocity.x = move_toward(velocity.x, direction.x * speed * movement.length(), delta * 28.0)
 	velocity.z = move_toward(velocity.z, direction.z * speed * movement.length(), delta * 28.0)
 	grounded_seconds = 0.10 if is_on_floor() else maxf(0.0, grounded_seconds - delta)
@@ -96,7 +96,7 @@ func _physics_process(delta: float) -> void:
 	if direction.length_squared() > 0.001:
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), minf(1.0, delta * 12.0))
 	move_and_slide()
-	actor.play_motion(("run" if sprint else "walk") if Vector2(velocity.x, velocity.z).length() > 0.2 else "idle")
+	actor.locomotion(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, delta)
 	if terrain:
 		# Newly streamed chunks and terrain edges cannot strand the character beneath the ground.
 		var ground: float = terrain.height_at(position.x, position.z)

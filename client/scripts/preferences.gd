@@ -35,7 +35,9 @@ func apply(game: Node) -> void:
 	game.sun.shadow_enabled = profile.shadows
 	game.sun.directional_shadow_max_distance = 120.0 if quality == 1 else 180.0
 	game.render_distance = profile.distance
-	if is_instance_valid(game.terrain): game.terrain.set_radius(profile.radius)
+	if is_instance_valid(game.terrain):
+		game.terrain.set_radius(profile.radius)
+		if game.terrain.nature: game.terrain.nature.set_quality(quality)
 	if is_instance_valid(game.player):
 		game.player.look_sensitivity = sensitivity
 		game.player.invert_y = invert_y

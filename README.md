@@ -2,9 +2,9 @@
 
 A persistent third-person kingdom game, beginning with a small village and eventually growing into cities, countries and empires.
 
-## Play milestone 0.3
+## Play milestone 0.4
 
-[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.3.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.4.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
 
 Install the APK, choose a ruler name, email and password (at least 10 characters), then select **CREATE ACCOUNT**. Select **ENTER WORLD** for an existing account. The app remembers an unexpired session on the same device.
 
@@ -12,16 +12,16 @@ Install the APK, choose a ruler name, email and password (at least 10 characters
 
 - Native Godot 4.7.2 3D client with a rigged, animated human character and a third-person orbit camera.
 - Walking, sprinting, buffered jumping, terrain/building/fence collisions, mouse camera control and mobile touch controls. Camera collision ignores resident capsules.
-- A deterministic 65.536 × 65.536 km world, streamed in bounded chunks as the player moves. Terrain near villages is flattened; the rest is currently empty hills.
+- A deterministic 65.536 × 65.536 km world, streamed in bounded chunks as the player moves. Terrain near villages is flattened; hills have deterministic, streamed grass and trees.
 - Each account receives exactly one permanent village, **8 soldiers and 5 villagers**, created atomically on the server. Subsequent logins keep the same village, NPC identities and saved position.
-- Village houses, hall, blacksmith, well, market, fences and paths, with warm sunlight, shadows and atmospheric fog.
+- Village houses, hall, blacksmith, well, market, fences and paths, with photographic PBR surfaces, HDR sky lighting, shadows and atmospheric fog.
 - Nearby registered villages and online players appear in the shared world. Player movement is saved periodically, on application pause and before sign-out.
 - Connection recovery restores server-confirmed position with retry backoff. Menus, Android pause/resume and stale responses from older logins cannot bypass freezes or mutate a new world.
 - Saved LOW/BALANCED/HIGH graphics profiles, camera sensitivity and vertical inversion. Distant villages unload and distant residents stop physics/animation until approached.
 - A real 3D animated login backdrop, retry for remembered sessions, scrollable account form, safe-area controls, settings and a world atlas.
 - Railway hosts the Node.js/PostgreSQL API. Graphics run on the Android device, not on Railway.
 
-This completes the implemented village foundation as a **stylized development milestone**. Photorealistic/AAA graphics, full server NPC simulation, combat, economy, village growth, PRIME's god powers and seven Legends are future milestones. Android hardware performance has not been measured; 30/60 FPS are profile targets. NPCs currently have local presentation patrols. Builds without configured production signing secrets use a test certificate; installing over a differently signed older APK may require uninstalling that app and signing back into the same account. [Release notes and actual limits](docs/RELEASE_0_3.md).
+Version 0.4 upgrades this foundation with anatomical humans, textured faces/garments, eight skeletal motions, stone-and-timber architecture and wind-animated foliage/capes. It is a tested graphics milestone, with actual screenshots and animation.mp4 in the release. It does not yet match photorealistic AAA/PUBG art, and Android hardware performance has not been measured; 30/60 FPS are profile targets. NPCs use local presentation patrol/guard/work clips. Combat, economy, growth/conquest, independent server NPC simulation, PRIME powers and seven Legends remain future systems. [Release notes and actual limits](docs/RELEASE_0_4.md).
 
 ## Controls
 
@@ -43,7 +43,7 @@ npm run --prefix tools/assets prepare:models
 # Open client/project.godot in Godot 4.7.2, then run the project.
 ```
 
-The asset pipeline downloads only pinned CC0 models, verifies their Git blob checksums and converts them to Godot-compatible GLB. Models are embedded in the APK; no model download is required during gameplay. [Asset credits](client/assets/ATTRIBUTION.md).
+The asset pipeline downloads pinned CC0 data and photographic textures, verifies Git/SHA-256 checksums, fits a clothed human and generates its rig/animations as a shared Godot-compatible GLB. Models are embedded in the APK; no model download is required during gameplay. [Asset credits](client/assets/ATTRIBUTION.md).
 
 ```sh
 godot --headless --path client --editor --import
@@ -51,7 +51,7 @@ godot --headless --path client --script res://tests/smoke.gd -- --smoke
 godot --headless --path client --script res://tests/resilience.gd -- --smoke
 ```
 
-The native smoke test checks terrain agreement with the server, actual rigged animations, village models, the exact 8/5 population, walking, jumping, landing, camera orbit, touch release and terrain streaming. Resilience checks exercise lost connections, stale responses, Android resume and distant NPC processing. GitHub Actions supplies a disposable PostgreSQL API for the native account/save/sign-out contract, renders village/login/settings/atlas screenshots, exports the APK and verifies its signature. Export presets are in `client/export_presets.cfg`; the workflow uses verified official engine binaries and OpenJDK 17.
+The native smoke test checks terrain agreement with the server, actual rigged animations, village models, the exact 8/5 population, walking, jumping, landing, camera orbit, touch release and terrain streaming. Resilience checks exercise lost connections, stale responses, Android resume and distant NPC processing. GitHub Actions supplies a disposable PostgreSQL API for the native account/save/sign-out contract, renders village/human/login/settings/atlas screenshots and a real controller-driven motion video, exports the APK and verifies its signature. Export presets are in `client/export_presets.cfg`; the workflow uses verified official engine binaries and OpenJDK 17.
 
 Production APK signing accepts `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` as **private repository secrets**. The keystore and key passwords must match. Without these, the workflow clearly exports a development APK. Never commit a production keystore or password. Existing release downloads are immutable; a code change requiring a new APK receives a new version.
 

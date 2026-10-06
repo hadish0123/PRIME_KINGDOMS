@@ -48,6 +48,7 @@ func run() -> void:
 	game.player.jump_requested = true
 	for frame in range(8): await physics_frame
 	check(game.player.position.y > floor_y + 0.1, "Jump failed")
+	check(game.player.actor.current_motion == "jump", "Jump did not select its airborne skeletal animation")
 	for frame in range(75): await physics_frame
 	check(game.player.is_on_floor(), "Player failed to land after jumping")
 	game.player.look(Vector2(130, 20))
