@@ -3,6 +3,20 @@
 These settings are applied in Railway through its API/dashboard. This document
 is a reference and is not an automatically applied configuration file.
 
+## Live environment
+
+- Project: [PRIME_KINGDOMS](https://railway.com/project/ae104ce9-d860-40ad-a75e-d918a60b93dc)
+- Environment: `production`
+- API: [prime-kingdoms-api-production.up.railway.app](https://prime-kingdoms-api-production.up.railway.app)
+- Database readiness: [/ready](https://prime-kingdoms-api-production.up.railway.app/ready)
+- World metadata: [/v1/world](https://prime-kingdoms-api-production.up.railway.app/v1/world)
+- Initial verified CI: [Backend CI](https://github.com/hadish0123/PRIME_KINGDOMS/actions/runs/37399518295)
+- Region: `sfo` for both API and database; one replica each.
+- Database volume: `postgres-volume`, 5 GB, mounted at `/var/lib/postgresql/data`.
+
+This is the backend foundation. The public address returns API metadata rather
+than a playable client. No Unity project or APK has been built yet.
+
 ## API service
 
 | Setting | Value |
