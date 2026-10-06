@@ -17,12 +17,13 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 
 	materials.steel = metal(Color(0.43, 0.46, 0.49))
 	materials.steel_bright = metal(Color(0.61, 0.64, 0.67))
-	materials.gold = metal(Color(0.73, 0.50, 0.15), true)
+	materials.gold = metal(Color(0.90, 0.61, 0.13), true)
 	materials.leather = Surfaces.plain(Color(0.095, 0.052, 0.027), 0.82)
 	materials.leather_light = Surfaces.plain(Color(0.18, 0.095, 0.042), 0.76)
 	materials.dark = Surfaces.plain(Color(0.018, 0.021, 0.024), 0.86)
 	materials.mail = Surfaces.plain(Color(0.12, 0.135, 0.15), 0.48, 0.72)
 	materials.hair = Surfaces.plain(Color(0.068, 0.038, 0.024), 0.92)
+	materials.crimson = Surfaces.plain(Color(0.62, 0.018, 0.028), 0.86)
 
 	for side in ["L", "R"]:
 		boots(side)
@@ -297,6 +298,7 @@ func headpiece() -> void:
 
 	# Open-headed ruler: no crown. Keep the face visible like the target artwork,
 	# with a steel/gold gorget and a fuller trimmed beard under the existing hair.
+	ring("neck03", 0.118, 0.022, Vector3(0, -0.038, 0.010), "crimson", Basis.IDENTITY.scaled(Vector3(1, 1, 0.94)))
 	ring("neck03", 0.107, 0.010, Vector3(0, -0.020, 0.010), "steel", Basis.IDENTITY.scaled(Vector3(1, 1, 0.92)))
 	ring("neck03", 0.110, 0.004, Vector3(0, -0.010, 0.012), "gold", Basis.IDENTITY.scaled(Vector3(1, 1, 0.93)))
 	for i in range(35):
@@ -310,6 +312,32 @@ func tabard() -> void:
 	if role != "player":
 		return
 
+	# Upper crimson surcoat: this is the strongest visual identity from the
+	# approved reference and deliberately sits over the steel breastplate.
+	var chest_attachment := attach("spine01")
+	var chest_builder := SurfaceTool.new()
+	chest_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var chest_rows := 10
+	var chest_columns := 8
+	for y in range(chest_rows):
+		for x in range(chest_columns):
+			for pair in [[0, 0], [0, 1], [1, 0], [0, 1], [1, 1], [1, 0]]:
+				var u := float(x + pair[1]) / float(chest_columns)
+				var v := float(y + pair[0]) / float(chest_rows)
+				var width := lerpf(0.265, 0.305, v)
+				var curve := (1.0 - pow((u - 0.5) * 2.0, 2.0)) * 0.018
+				chest_builder.set_uv(Vector2(u, v))
+				chest_builder.add_vertex(Vector3((u - 0.5) * width, 0.215 - v * 0.53, 0.274 + curve))
+	chest_builder.generate_normals()
+	chest_builder.index()
+
+	var chest_panel := MeshInstance3D.new()
+	chest_panel.mesh = chest_builder.commit()
+	chest_panel.material_override = royal_cloth(Color(0.86, 0.018, 0.032, 1.0), true)
+	chest_panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	chest_attachment.add_child(chest_panel)
+
+	# Lower tabard continues the same red/gold language over the mail skirt.
 	var attachment_node := attach("spine03")
 	var panel_builder := SurfaceTool.new()
 	panel_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -324,19 +352,21 @@ func tabard() -> void:
 				var width := lerpf(0.31, 0.43, v)
 				var rag := 0.025 * sin((u * 7.0 + 0.35) * TAU) * pow(v, 8.0)
 				panel_builder.set_uv(Vector2(u, v))
-				panel_builder.add_vertex(Vector3((u - 0.5) * width, -0.015 - v * 1.02 + rag, 0.212 - v * 0.015))
+				panel_builder.add_vertex(Vector3((u - 0.5) * width, -0.015 - v * 1.02 + rag, 0.218 - v * 0.015))
 	panel_builder.generate_normals()
 	panel_builder.index()
 
 	var panel := MeshInstance3D.new()
 	panel.mesh = panel_builder.commit()
-	panel.material_override = royal_cloth(Color(0.48, 0.025, 0.037, 1.0), true)
+	panel.material_override = royal_cloth(Color(0.82, 0.016, 0.028, 1.0), true)
 	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	attachment_node.add_child(panel)
 
-	# Gold weighted hem pieces make the tabard read as embroidered rather than flat.
+	# Gold weighted hem and chest fasteners strengthen the heraldic silhouette.
 	for x in [-0.19, 0.0, 0.19]:
-		box("spine03", Vector3(0.030, 0.020, 0.012), Vector3(x, -1.025, 0.218), "gold")
+		box("spine03", Vector3(0.030, 0.020, 0.012), Vector3(x, -1.025, 0.222), "gold")
+	for x in [-0.105, 0.105]:
+		sphere("spine01", 0.022, Vector3(x, 0.185, 0.292), "gold", Vector3(1.0, 0.35, 1.0))
 
 func cape() -> void:
 	var builder := SurfaceTool.new()
@@ -357,7 +387,7 @@ func cape() -> void:
 
 	var fabric := MeshInstance3D.new()
 	fabric.mesh = builder.commit()
-	fabric.material_override = royal_cloth(Color(0.40, 0.018, 0.028, 1.0), true)
+	fabric.material_override = royal_cloth(Color(0.72, 0.012, 0.024, 1.0), true)
 	attach("spine01").add_child(fabric)
 
 	# Round shoulder clasps mirror the target artwork.
