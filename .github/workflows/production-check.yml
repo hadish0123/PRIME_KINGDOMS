@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     env:
-      PRIME_CHECK_VERSION: '0.4.0'
-      PRIME_CHECK_COMMIT: 'e9acd51be8f812a165685c58e763a3c5f2a45221'
+      PRIME_CHECK_VERSION: '0.5.0'
+      PRIME_CHECK_COMMIT: '7532eb31187009c699fe0b6cd7017116431ddef7'
     steps:
       - name: Verify public readiness and preserve the existing world
         shell: bash
@@ -36,6 +36,7 @@ jobs:
                   assert world['id']=='1e31354f-9d2a-407d-9dd0-9305406aa06f'
                   assert world['seed']==541652784 and world['sizeM']==65536
                   assert world['terrainVersion']==1
+                  assert world['createdAt']=='2026-10-06T01:31:53.441Z'
                   break
               except Exception as error:
                   print('Read-only verification retry',attempt+1,type(error).__name__,flush=True)
