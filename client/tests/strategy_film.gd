@@ -1,9 +1,11 @@
 extends SceneTree
 
-# Visual proof for the 0.8 strategy conversion. Uses the disposable CI backend,
-# a real v2 account and the same native scene/UI that ships in the Android build.
+# Fast native visual proof for the 0.8 strategy conversion. The preview is built
+# from real rendered keyframes of the shipping scene/UI instead of spending CI
+# time simulating hundreds of frames under llvmpipe.
 var failures: Array[String] = []
 var target: Dictionary = {}
+var captured := 0
 
 func _initialize() -> void:
 	run.call_deferred()
@@ -21,16 +23,25 @@ func select_tab(panel: Control, title: String) -> void:
 	push_error("Film tab unavailable: "+title)
 	failures.append("Film tab unavailable: "+title)
 
-func capture_frame(frame: int) -> void:
+func capture_frame() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	check(not image.is_empty(),"Strategy film produced an empty frame")
 	if not image.is_empty():
-		# JPEG keyframes are dramatically faster than 300 full PNG encodes under
-		# llvmpipe. CI still records every story beat, then ffmpeg holds/interpolates
-		# them into a normal 10-second preview.
-		check(image.save_jpg("res://builds/strategy-frames/frame-%04d.jpg" % frame,0.88) == OK,"Strategy film frame could not be saved")
+		check(image.save_jpg("res://builds/strategy-frames/frame-%04d.jpg" % captured,0.86) == OK,"Strategy film frame could not be saved")
+	captured += 1
+
+func capture_settlement(game: Node) -> void:
+	for index in range(4):
+		game.strategy_camera.rotate(0.055)
+		game.strategy_camera.pan_screen(Vector2(-7.0+index*2.0,2.0))
+		await capture_frame()
+
+func capture_panel(panel: Control, title: String, count: int) -> void:
+	select_tab(panel,title)
+	for _index in range(count):
+		await capture_frame()
 
 func run() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -45,7 +56,7 @@ func run() -> void:
 
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
-	game.preferences.quality = 1
+	game.preferences.quality = 0
 	game.api.base_url = base
 	var created: Dictionary = await game.api.call_api("/v1/auth/register",{
 		"email":"film-%d@example.com" % Time.get_ticks_usec(),
@@ -91,62 +102,46 @@ func run() -> void:
 	game.connection_label.text = "ONLINE · PRIME KINGDOMS 0.8.0 · STRATEGIC COMMAND"
 	var panel = game.kingdom_panel
 	panel.close()
-	game.strategy_camera.distance = 50.0
+	game.strategy_camera.distance = 48.0
 	game.strategy_camera.yaw = -0.8
 	game.strategy_camera.elevation = 0.72
 	game.strategy_camera.set_focus(Vector3.ZERO)
 
 	var started := Time.get_ticks_msec()
-	var captured := 0
-	for frame in range(300):
-		# 0-74: living 3D settlement under strategy camera.
-		if frame < 75:
-			game.strategy_camera.rotate(0.0035)
-			if frame < 45:
-				game.strategy_camera.pan_screen(Vector2(-0.55,0.18))
-			if frame >= 45 and frame < 65:
-				game.strategy_camera.zoom(-0.055)
-		# 75-129: realm overview and growth requirements.
-		if frame == 75:
-			await panel.open()
-			select_tab(panel,"Overview")
-		# 130-179: army command and formation.
-		if frame == 130:
-			select_tab(panel,"Army")
-		# 180-249: strategic map, selectable connected territory and conquest.
-		if frame == 180:
-			await panel.load_map()
-			select_tab(panel,"Map")
-		if frame == 205 and not target.is_empty():
-			panel.selected_target = target.duplicate(true)
-			panel.rebuild()
-			select_tab(panel,"Map")
-		if frame == 225 and not target.is_empty():
-			await panel.submit("/v2/battles/attack",{
-				"x":int(target.x),
-				"z":int(target.z),
-				"presetSlot":1
-			})
-			select_tab(panel,"Reports")
-		# 250-274: persistent battle report.
-		if frame == 250:
-			select_tab(panel,"Reports")
-		# 275-299: return to the living realm.
-		if frame == 275:
-			panel.close()
-			game.strategy_camera.distance = 60.0
-			game.strategy_camera.set_focus(Vector3(10,0,4))
-		if frame >= 275:
-			game.strategy_camera.rotate(-0.004)
-			game.strategy_camera.pan_screen(Vector2(0.22,-0.08))
+	# 4 keyframes: living settlement under the strategy camera.
+	await capture_settlement(game)
 
-		if frame % 10 == 0:
-			await capture_frame(captured)
-			captured += 1
-		else:
-			await process_frame
-		if frame % 60 == 0:
-			print("STRATEGY_FILM_PROGRESS simulation_frame=",frame,"/300 captured=",captured," wall_seconds=",(Time.get_ticks_msec()-started)/1000.0)
+	# 3 + 3 keyframes: progression and army command.
+	await panel.open()
+	await capture_panel(panel,"Overview",3)
+	await capture_panel(panel,"Army",3)
+
+	# 3 keyframes: connected strategic target.
+	await panel.load_map()
+	select_tab(panel,"Map")
+	if not target.is_empty():
+		panel.selected_target = target.duplicate(true)
+		panel.rebuild()
+		select_tab(panel,"Map")
+	for _index in range(3):
+		await capture_frame()
+
+	# Resolve one authoritative battle and show its persistent report.
+	if not target.is_empty():
+		await panel.submit("/v2/battles/attack",{
+			"x":int(target.x),
+			"z":int(target.z),
+			"presetSlot":1
+		})
+	await capture_panel(panel,"Reports",3)
+
+	# 2 closing frames back in the realm.
+	panel.close()
+	game.strategy_camera.distance = 58.0
+	game.strategy_camera.set_focus(Vector3(10,0,4))
+	for _index in range(2):
+		game.strategy_camera.rotate(-0.08)
+		await capture_frame()
 
 	check(game.strategy_mode,"Film was not rendered from v2 strategy mode")
 	check(game.player.frozen,"Film accidentally restored direct character steering")
@@ -159,9 +154,9 @@ func run() -> void:
 	print("STRATEGY_FILM ",JSON.stringify({
 		"failures":failures,
 		"version":"0.8.0",
-		"simulationFrames":300,
 		"captureFrames":captured,
-		"captureFps":3,
+		"captureFps":2,
+		"wallSeconds":(Time.get_ticks_msec()-started)/1000.0,
 		"onlineBackend":true,
 		"directCharacterSteering":false,
 		"strategyCamera":true,
