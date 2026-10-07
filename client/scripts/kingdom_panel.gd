@@ -339,7 +339,6 @@ func gold_action_button(text_value: String, callback: Callable) -> Button:
 	item.custom_minimum_size.y = 54
 	item.icon = game.ui_icon_texture(3)
 	item.expand_icon = true
-	item.icon_max_width = 26
 	item.add_theme_font_size_override("font_size",18)
 	item.add_theme_color_override("font_color",Color(0.14,0.09,0.025))
 	item.add_theme_color_override("font_hover_color",Color(0.08,0.05,0.015))
@@ -439,18 +438,15 @@ func rebuild() -> void:
 	var refresh_button = game.button("Refresh",refresh)
 	refresh_button.icon = game.ui_icon_texture(15)
 	refresh_button.expand_icon = true
-	refresh_button.icon_max_width = 22
 	actions.add_child(refresh_button)
 	if not pending_path.is_empty():
 		var retry_button = game.button("Retry Order",func(): submit(pending_path,pending_body))
 		retry_button.icon = game.ui_icon_texture(15)
 		retry_button.expand_icon = true
-		retry_button.icon_max_width = 22
 		actions.add_child(retry_button)
 	var return_button = game.button("Return to Realm",close)
 	return_button.icon = game.ui_icon_texture(16)
 	return_button.expand_icon = true
-	return_button.icon_max_width = 22
 	actions.add_child(return_button)
 
 func cost_text(cost: Dictionary) -> String:
