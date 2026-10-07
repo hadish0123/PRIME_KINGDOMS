@@ -1,0 +1,35 @@
+name: GDScript Parse
+
+on:
+  pull_request:
+    paths: ['client/**/*.gd', '.github/workflows/gdscript-parse.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gdscript-parse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install verified Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o godot.zip
+          echo '9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65  godot.zip' | sha512sum --check
+          unzip -q godot.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+      - name: Parse strategy command script
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/Godot_v4.7.2-stable_linux.x86_64" --headless --path client --script res://tests/parse_kingdom_panel.gd 2>&1 | tee /tmp/gdscript-parse.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR: Failed to load script' /tmp/gdscript-parse.log; then exit 1; fi

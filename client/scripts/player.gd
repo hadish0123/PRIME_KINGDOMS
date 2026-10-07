@@ -91,10 +91,21 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	pivot.rotation = Vector3(pitch, yaw, 0.0)
 	if frozen:
+		# Strategy mode keeps the ruler as a grounded world representation even
+		# though direct steering is disabled. A small downward solve records the
+		# CharacterBody floor state instead of leaving the frozen body airborne.
+		if is_instance_valid(game) and game.strategy_mode and is_instance_valid(terrain) and not horse:
+			var strategy_ground: float = terrain.height_at(position.x,position.z)
+			if position.y > strategy_ground + 0.08 or position.y < strategy_ground - 0.02:
+				position.y = strategy_ground + 0.04
+			velocity = Vector3(0.0,-2.0,0.0)
+			move_and_slide()
+			velocity = Vector3.ZERO
+		else:
+			velocity = Vector3.ZERO
 		if horse:
 			horse.rotation.y = actor.rotation.y
 			collider.rotation.y = actor.rotation.y
-		velocity = Vector3.ZERO
 		jump_buffer = 0.0
 		jump_requested = false
 		actor.play_motion("ride" if horse else ("prone" if lying else "idle"))

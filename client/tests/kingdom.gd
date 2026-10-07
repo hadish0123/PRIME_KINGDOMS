@@ -32,15 +32,19 @@ func run() -> void:
 	check(game.strategy_mode and game.player.scene_half_size == 128,"Strategy entry did not select a bounded settlement")
 	check(game.terrain.chunks.size()==4 and game.terrain.horizon.is_empty(),"Settlement allocated streamed world geometry")
 	game.terrain.stream_at(Vector3(9600,0,-9600))
-	check(game.terrain.chunks.size()==4 and game.terrain.pending.is_empty(),"Player travel allocated new settlement terrain")
+	check(game.terrain.chunks.size()==4 and game.terrain.pending.is_empty(),"Command view allocated streamed world geometry")
 	for frame in range(12): await physics_frame
-	check(game.player.is_on_floor(),"Ruler could not stand in the settlement")
+	check(game.player.is_on_floor(),"Ruler representation could not stand in the settlement")
 	var start: Vector3 = game.player.position
 	game.player.touch_move = Vector2(0,-1)
 	for frame in range(35): await physics_frame
 	game.player.touch_move = Vector2.ZERO
-	check(game.player.position.distance_to(start)>0.4,"Touch movement failed in the bounded settlement")
-	check(await game.sync_position(),"Bounded scene movement could not be saved")
+	check(game.player.position.distance_to(start)<0.05,"Strategy mode still allowed direct ruler movement")
+	check(game.player.frozen and is_instance_valid(game.strategy_camera) and game.strategy_camera.camera.current,"Strategy command camera did not replace direct character control")
+	check(not game.touch_controls.visible,"Character joystick remained visible in strategy command mode")
+	var camera_start: Vector3 = game.strategy_camera.focus
+	game.strategy_camera.pan_screen(Vector2(80,-20))
+	check(game.strategy_camera.focus.distance_to(camera_start)>0.1,"Command camera could not pan independently")
 	var panel = game.kingdom_panel
 	check(not panel.kingdom.is_empty() and panel.kingdom.progression.level==1,"Persistent kingdom snapshot did not reach native UI")
 	await panel.open()
@@ -53,8 +57,16 @@ func run() -> void:
 	check(panel.kingdom.empire.emblem=="eagle","Empire customization did not persist")
 	check(has_emblem(game.player,"eagle"),"Ruler did not display the server-selected emblem")
 	check(has_emblem(game.villages[game.state.village.id],"eagle"),"Settlement flags or soldiers did not receive the emblem")
+	await panel.submit("/v2/army/preset",{"slot":1,"name":"Royal Host","formation":"wedge","stance":"aggressive","isDefense":false,"units":[{"type":"swordsman","quantity":8}]})
+	check(not panel.command_data.is_empty() and panel.command_data.presets.size()==1,"Army preset did not reach the command UI")
 	await panel.load_map()
 	check(panel.map_data.tiles.size()==49,"Strategic ownership map did not load")
+	var targets: Array = panel.map_data.tiles.filter(func(tile): return bool(tile.get("attackable",false)) and tile.ownerPlayerId == null)
+	check(not targets.is_empty(),"Strategic map exposed no connected target")
+	if not targets.is_empty():
+		await panel.submit("/v2/battles/attack",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1})
+		check(not panel.command_data.reports.is_empty(),"Battle result did not create a command report")
+		check(panel.kingdom.realm.ownedTiles>=2,"Successful strategic battle did not expand territory")
 	await panel.load_clans()
 	check(not panel.clan_data.is_empty() and panel.clan_data.creationLevel==15,"Clan contract did not reach the native client")
 	await panel.submit("/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
@@ -65,7 +77,15 @@ func run() -> void:
 		var building_tasks: Array = panel.kingdom.tasks.duplicate(true)
 		await panel.submit("/v2/clans/join",{"clanId":test_clan})
 		check(panel.clan_data.own != null and panel.clan_data.own.id==test_clan,"Native join did not enter the real clan region")
-		check(panel.kingdom.settlementId==settlement_id and panel.kingdom.tasks==building_tasks,"Native join lost the village identity or queue")
+		check(panel.kingdom.settlementId==settlement_id,"Native join changed the permanent village identity")
+		# Relocation is lossless, but a real server timer may legitimately finish
+		# while this rendered integration test is running. Only tasks whose finish
+		# time is still in the future must remain in the active queue.
+		var joined_server_time := str(panel.kingdom.serverTime)
+		for task_before in building_tasks:
+			if str(task_before.finishes_at) <= joined_server_time: continue
+			var task_id := str(task_before.id)
+			check(panel.kingdom.tasks.any(func(task_after): return str(task_after.id)==task_id),"Native join lost an unfinished server queue task")
 		await panel.load_map()
 		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
 		await panel.submit("/v2/clans/donate",{"resource":"wood","amount":10})
@@ -85,7 +105,7 @@ func run() -> void:
 	panel.pending_path = ""
 	panel.pending_body = {}
 	panel.close()
-	check(not game.player.frozen,"Closing management failed to release touch controls")
+	check(game.player.frozen and game.strategy_camera.enabled,"Closing management did not return control to the strategic camera")
 	for quality in range(4):
 		game.preferences.quality = quality
 		game.preferences.apply(game)
@@ -94,13 +114,13 @@ func run() -> void:
 	game.connection_failed()
 	check(game.player.frozen,"Lost connection left scene controls active")
 	await game.recover_connection()
-	check(game.network_online and not game.player.frozen,"Strategy reconnect failed")
+	check(game.network_online and game.player.frozen and game.strategy_camera.enabled,"Strategy reconnect failed")
 	if DisplayServer.get_name() != "headless":
 		await panel.open()
 		for frame in range(3): await process_frame
 		await RenderingServer.frame_post_draw
 		check(root.get_texture().get_image().save_png("res://builds/kingdom.png")==OK,"Strategy screenshot could not be written")
-	print("NATIVE_KINGDOM ",JSON.stringify({"failures":failures,"bounded_chunks":4,"direct_control":true,"server_tasks":2,"empire_emblems":true,"strategic_map":true,"graphics_profiles":4,"reconnect":true}))
+	print("NATIVE_KINGDOM ",JSON.stringify({"failures":failures,"bounded_chunks":4,"direct_control":false,"strategic_command":true,"server_tasks":2,"empire_emblems":true,"strategic_map":true,"battle_reports":true,"graphics_profiles":4,"reconnect":true}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)
