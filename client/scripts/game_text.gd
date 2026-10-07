@@ -1,6 +1,9 @@
 extends RefCounted
 
 const ERRORS = {
+	"connection_failed":"The connection was interrupted. Reconnecting to your realm…",
+	"connection_timeout":"Your realm is taking longer to respond. Reconnecting safely…",
+	"invalid_response":"Your realm could not be refreshed. Reconnect and try again.",
 	"invalid_credentials":"Email or password is incorrect.", "account_exists":"This account already exists. Sign in to continue.",
 	"invalid_email":"Enter a valid email address.", "invalid_name":"Choose a name of the required length, without control characters.",
 	"password_length":"Use a password of 10–256 characters.", "unauthorized":"Your session expired. Sign in to continue.",

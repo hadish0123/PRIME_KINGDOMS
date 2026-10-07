@@ -90,7 +90,7 @@ func run() -> void:
 		await panel.load_map()
 		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
 		await issue(panel,"/v2/clans/donate",{"resource":"wood","amount":10})
-		check(panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
+		check(panel.clan_data.own!=null and panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
 		await issue(panel,"/v2/clans/leave",{})
 		check(panel.last_error=="clan_cooldown","Native relocation bypassed server cooldown")
 	# Recover an exact unresolved request after an application restart.
@@ -136,4 +136,11 @@ func issue(panel: Control,path: String,body: Dictionary) -> void:
 	var started = Time.get_ticks_msec()
 	while panel.busy and Time.get_ticks_msec()-started<20000: await process_frame
 	check(not panel.busy,"Realm refresh remained busy before a player order")
-	if not panel.busy: await panel.submit(path,body)
+	if panel.busy: return
+	await panel.submit(path,body)
+	# Mobile orders can time out after the server commits. Recover through the
+	# actual reconnect path; its durable request ID must settle the same order.
+	if not panel.game.network_online:
+		print("NATIVE_ORDER_RECOVERY ",path," ",panel.last_error)
+		await panel.game.recover_connection()
+		check(panel.game.network_online and panel.pending_path.is_empty(),"Interrupted order did not recover: "+panel.last_error)
