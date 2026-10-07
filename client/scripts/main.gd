@@ -4,6 +4,7 @@ const Api = preload("res://scripts/api.gd")
 const Terrain = preload("res://scripts/terrain.gd")
 const SettlementTerrain = preload("res://scripts/settlement_terrain.gd")
 const KingdomPanel = preload("res://scripts/kingdom_panel.gd")
+const StrategyCamera = preload("res://scripts/strategy_camera.gd")
 const EmpireVisuals = preload("res://scripts/empire_visuals.gd")
 const Player = preload("res://scripts/player.gd")
 const Village = preload("res://scripts/village.gd")
@@ -75,6 +76,8 @@ var kingdom_panel: Control
 var population_label: Label
 var army_display: Node3D
 var army_display_signature = ""
+var strategy_camera: Node3D
+var control_hint: Label
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -324,16 +327,16 @@ func build_ui() -> void:
 	top_actions.position = Vector2(-298,-76)
 	top_actions.add_theme_constant_override("separation", 12)
 	hud.add_child(top_actions)
-	top_actions.add_child(button("UNITS", toggle_residents))
-	top_actions.add_child(button("WORLD", toggle_map))
+	top_actions.add_child(button("COMMAND", toggle_residents))
+	top_actions.add_child(button("REALM", toggle_map))
 	top_actions.add_child(button("SETTINGS", toggle_settings))
 	top_actions.add_child(button("SIGN OUT", sign_out))
-	var hint = label("WASD · Shift run · Space jump · F sword · X lie · E ride · RMB look", 12)
-	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	hint.position = Vector2(26, -38)
-	hud.add_child(hint)
+	control_hint = label("WASD · Shift run · Space jump · F sword · X lie · E ride · RMB look", 12)
+	control_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	control_hint.position = Vector2(26, -38)
+	hud.add_child(control_hint)
 	if DisplayServer.is_touchscreen_available():
-		hint.text = "Left thumb: move   ·   Right thumb: look"
+		control_hint.text = "Left thumb: move   ·   Right thumb: look"
 	touch_controls = TouchControls.new()
 	hud.add_child(touch_controls)
 	touch_controls.blocked_regions.append_array([info, population, top_actions,minimap])
@@ -552,6 +555,14 @@ func apply_empire(empire: Dictionary) -> void:
 	EmpireVisuals.apply(world_root,empire)
 	population_label.text = str(empire.name)+" · SETTLEMENT"
 
+func apply_realm(realm: Dictionary) -> void:
+	if not in_world or realm.is_empty(): return
+	var title := str(realm.get("name",realm.get("stage","Village"))).to_upper()
+	village_label.text = str(state.player.displayName)+" · "+title
+	population_label.text = "%s · %d TERRITORIES" % [title,int(realm.get("ownedTiles",1))]
+	if strategy_mode:
+		position_label.text = "STRATEGIC COMMAND · "+title
+
 func update_garrison(kingdom: Dictionary) -> void:
 	if not strategy_mode or not villages.has(state.village.id): return
 	var signature = JSON.stringify(kingdom.units)
@@ -616,6 +627,16 @@ func enter_world(game_state: Dictionary) -> void:
 	player.actor.rotation.y = float(state.player.yaw)
 	preferences.apply(self)
 	terrain.ensure_spawn(player.position)
+	strategy_camera = null
+	if strategy_mode:
+		player.camera.current = false
+		strategy_camera = StrategyCamera.new()
+		strategy_camera.game = self
+		world_root.add_child(strategy_camera)
+		strategy_camera.set_focus(Vector3.ZERO)
+		control_hint.text = "Drag: pan · Two fingers/right drag: rotate · Pinch/wheel: zoom · COMMAND manages your realm"
+	else:
+		control_hint.text = "WASD · Shift run · Space jump · F sword · X lie · E ride · RMB look"
 	horse = Horse.new()
 	world_root.add_child(horse)
 	var mount_state = state.player.get("mount",{"mounted":false,"position":{"x":origin.x+12,"y":origin.y+0.1,"z":origin.z+20}})
@@ -627,8 +648,9 @@ func enter_world(game_state: Dictionary) -> void:
 	world_root.add_child(practice)
 	practice.position = Vector3(9,0,17)
 	if touch_controls:
-		touch_controls.player = player
-		touch_controls.enabled = true
+		touch_controls.visible = not strategy_mode
+		touch_controls.player = null if strategy_mode else player
+		touch_controls.enabled = not strategy_mode
 		touch_controls.release_input()
 	village_label.text = str(state.player.displayName) + " · " + str(state.village.stage).capitalize()
 	auth_panel.visible = false
@@ -680,7 +702,7 @@ func update_settlements() -> void:
 			add_village(settlement)
 	for settlement in villages.values():
 		for npc in settlement.population:
-			npc.following = settlement.village_id == state.village.id and npc.role == "soldier" and state.player.get("armyOrder","guard") == "follow"
+			npc.following = not strategy_mode and settlement.village_id == state.village.id and npc.role == "soldier" and state.player.get("armyOrder","guard") == "follow"
 			npc.follow_target = player
 		settlement.update_population(player.global_position, 80.0 if preferences.quality > 0 else 55.0)
 	for remote in remote_players.values():
@@ -690,17 +712,21 @@ func update_settlements() -> void:
 
 func apply_control_state() -> void:
 	if not in_world or not is_instance_valid(player): return
-	var blocked: bool = (is_instance_valid(kingdom_panel) and kingdom_panel.visible) or not network_online or app_paused or signing_out or quitting or mount_busy or map_panel.visible or settings_panel.visible or residents_panel.visible
-	if blocked:
+	var ui_blocked: bool = (is_instance_valid(kingdom_panel) and kingdom_panel.visible) or not network_online or app_paused or signing_out or quitting or mount_busy or map_panel.visible or settings_panel.visible or residents_panel.visible
+	var player_blocked: bool = strategy_mode or ui_blocked
+	if player_blocked:
 		player.cancel_actions()
 		player.touch_move = Vector2.ZERO
 		player.touch_sprint = false
 		player.jump_requested = false
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	player.frozen = blocked
+	player.frozen = player_blocked
+	if is_instance_valid(strategy_camera):
+		strategy_camera.enabled = strategy_mode and not ui_blocked
 	if touch_controls:
-		touch_controls.enabled = not blocked
-		if blocked: touch_controls.release_input()
+		touch_controls.visible = not strategy_mode
+		touch_controls.enabled = not player_blocked
+		if player_blocked: touch_controls.release_input()
 
 func connection_failed(message: String = "Connection lost · reconnecting…") -> void:
 	if not in_world: return
@@ -751,7 +777,11 @@ func _process(delta: float) -> void:
 		return
 	terrain.stream_at(player.position)
 	var p = player.position + origin
-	position_label.text = "X %d   Z %d" % [p.x, p.z]
+	if strategy_mode:
+		if is_instance_valid(strategy_camera):
+			position_label.text = "COMMAND VIEW · X %d   Z %d" % [strategy_camera.focus.x,strategy_camera.focus.z]
+	else:
+		position_label.text = "X %d   Z %d" % [p.x, p.z]
 	for remote in remote_players.values():
 		var distance: float = remote.node.position.distance_to(remote.target)
 		remote.node.position = remote.node.position.lerp(remote.target, minf(delta * 4.0, 1.0))
@@ -770,14 +800,16 @@ func _process(delta: float) -> void:
 		return
 	save_clock += delta
 	poll_clock += delta
-	if save_clock >= 1.5 and not saving and not signing_out:
+	if not strategy_mode and save_clock >= 1.5 and not saving and not signing_out:
 		save_clock = 0
 		sync_position()
-	if poll_clock >= 5.0 and not polling and not signing_out:
+	var poll_interval := 8.0 if strategy_mode else 5.0
+	if poll_clock >= poll_interval and not polling and not signing_out:
 		poll_clock = 0
 		poll_world()
 
 func sync_position() -> bool:
+	if strategy_mode: return in_world and network_online
 	if not in_world or saving or not network_online: return false
 	var epoch = world_epoch
 	saving = true
@@ -835,8 +867,20 @@ func recover_connection() -> void:
 	apply_control_state()
 
 func poll_world() -> void:
-	if strategy_mode: return
 	if not in_world or polling or not network_online: return
+	if strategy_mode:
+		var epoch = world_epoch
+		polling = true
+		var live: Dictionary = await api.call_api("/v2/presence")
+		if epoch != world_epoch or not in_world: return
+		polling = false
+		if live.ok:
+			connection_label.text = "Online · %d rulers active in this region" % int(live.data.online)
+		elif live.status == 401:
+			expire_session()
+		else:
+			connection_failed()
+		return
 	var epoch = world_epoch
 	polling = true
 	var response: Dictionary = await api.call_api("/v1/world/nearby")
@@ -979,6 +1023,8 @@ func leave_world(message: String) -> void:
 	if touch_controls:
 		touch_controls.release_input()
 		touch_controls.player = null
+		touch_controls.visible = true
+	strategy_camera = null
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_auth_busy(false, message)
 	saved_session_button.visible = false
