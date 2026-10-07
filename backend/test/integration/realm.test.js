@@ -119,10 +119,17 @@ test('strategic command: presets, online presence, deterministic battles, report
       "INSERT INTO strategic_tiles(world_id,x,z,kind,owner_player_id) SELECT world_id,$2,$3,'neutral',$1 FROM players WHERE id=$1 ON CONFLICT(world_id,x,z) DO UPDATE SET owner_player_id=$1,kind='neutral'",
       [attacker.id, own.x + 1, own.z + 1],
     );
+    const incomplete=(await api('/v2/kingdom',undefined,attacker)).body;
+    assert.equal(incomplete.stage,'village','Keep and XP must not bypass economic development');
+    await pool.query("UPDATE kingdom_buildings SET level=2 WHERE player_id=$1 AND key IN ('farm','lumber_mill')",[attacker.id]);
     const grown = (await api('/v2/kingdom', undefined, attacker)).body;
     assert.equal(grown.stage, 'town');
     assert.equal(grown.realm.stage, 'town');
     assert.equal(grown.realm.next.stage, 'city');
+    const promotionGold=grown.resources.gold;
+    assert.equal((await api('/v2/kingdom',undefined,attacker)).body.resources.gold,promotionGold,'Promotion paid twice');
+    await pool.query("UPDATE kingdom_buildings SET level=1 WHERE player_id=$1 AND key='keep'",[attacker.id]);
+    assert.equal((await api('/v2/kingdom',undefined,attacker)).body.stage,'town','Earned realm title regressed');
 
     // Connected-edge and stale-preset protections are enforced by the server.
     assert.equal((await api('/v2/battles/attack', { requestId: randomUUID(), x: own.x + 30, z: own.z + 30, presetSlot: 1 }, attacker)).body.error, 'target_not_connected');

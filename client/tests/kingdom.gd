@@ -15,6 +15,7 @@ func run() -> void:
 		return
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
+	DirAccess.make_dir_recursive_absolute("res://builds")
 	game.api.base_url = base
 	var created: Dictionary = await game.api.call_api("/v1/auth/register",{"email":"strategy-%d@example.com"%Time.get_ticks_usec(),"password":"safe-native-strategy-password","displayName":"Strategy Ruler"})
 	check(created.ok,"Strategy account registration failed")
@@ -29,53 +30,53 @@ func run() -> void:
 		return
 	await game.enter_world(scene.data)
 	await game.kingdom_panel.refresh()
-	check(game.strategy_mode and game.player.scene_half_size == 128,"Strategy entry did not select a bounded settlement")
+	check(game.in_world and game.state.scene.halfSize == 128,"Strategy entry did not select a bounded settlement")
 	check(game.terrain.chunks.size()==4 and game.terrain.horizon.is_empty(),"Settlement allocated streamed world geometry")
 	game.terrain.stream_at(Vector3(9600,0,-9600))
 	check(game.terrain.chunks.size()==4 and game.terrain.pending.is_empty(),"Command view allocated streamed world geometry")
 	for frame in range(12): await physics_frame
-	check(game.player.is_on_floor(),"Ruler representation could not stand in the settlement")
-	var start: Vector3 = game.player.position
-	game.player.touch_move = Vector2(0,-1)
-	for frame in range(35): await physics_frame
-	game.player.touch_move = Vector2.ZERO
-	check(game.player.position.distance_to(start)<0.05,"Strategy mode still allowed direct ruler movement")
-	check(game.player.frozen and is_instance_valid(game.strategy_camera) and game.strategy_camera.camera.current,"Strategy command camera did not replace direct character control")
-	check(not game.touch_controls.visible,"Character joystick remained visible in strategy command mode")
+	check(game.ruler is Node3D and not game.ruler is CharacterBody3D,"Ruler still depends on direct character control")
+	check(is_instance_valid(game.strategy_camera) and game.strategy_camera.camera.current,"Strategy camera is not active")
 	var camera_start: Vector3 = game.strategy_camera.focus
 	game.strategy_camera.pan_screen(Vector2(80,-20))
 	check(game.strategy_camera.focus.distance_to(camera_start)>0.1,"Command camera could not pan independently")
 	var panel = game.kingdom_panel
 	check(not panel.kingdom.is_empty() and panel.kingdom.progression.level==1,"Persistent kingdom snapshot did not reach native UI")
 	await panel.open()
-	check(game.player.frozen,"Management controls did not freeze movement")
-	await panel.submit("/v2/buildings/upgrade",{"key":"keep"})
-	check(panel.kingdom.tasks.size()==1,"Building button did not create a persistent server task")
-	await panel.submit("/v2/units/train",{"key":"swordsman","quantity":1})
-	check(panel.kingdom.tasks.size()==2,"Army training button did not create a server task")
-	await panel.submit("/v2/empire/customize",{"name":"Emerald Empire","primaryColor":"#117744","secondaryColor":"#ddcc22","emblem":"eagle","bannerStyle":"square"})
+	check(not game.strategy_camera.enabled,"Management panel did not own camera input")
+	await issue(panel,"/v2/buildings/upgrade",{"key":"keep"})
+	check((panel.kingdom.tasks.any(func(t):return t.key=="keep") or panel.kingdom.buildings.keep>=2),"Building button failed: "+panel.last_error)
+	await issue(panel,"/v2/units/train",{"key":"swordsman","quantity":1})
+	check((panel.kingdom.tasks.any(func(t):return t.kind=="training") or panel.kingdom.units.any(func(u):return u.type=="swordsman" and u.alive>=9)),"Army training failed: "+panel.last_error)
+	await issue(panel,"/v2/empire/customize",{"name":"Emerald Empire","primaryColor":"#117744","secondaryColor":"#ddcc22","emblem":"eagle","bannerStyle":"square"})
 	check(panel.kingdom.empire.emblem=="eagle","Empire customization did not persist")
-	check(has_emblem(game.player,"eagle"),"Ruler did not display the server-selected emblem")
+	check(has_emblem(game.ruler,"eagle"),"Ruler did not display the server-selected emblem")
 	check(has_emblem(game.villages[game.state.village.id],"eagle"),"Settlement flags or soldiers did not receive the emblem")
-	await panel.submit("/v2/army/preset",{"slot":1,"name":"Royal Host","formation":"wedge","stance":"aggressive","isDefense":false,"units":[{"type":"swordsman","quantity":8}]})
+	await issue(panel,"/v2/army/preset",{"slot":1,"name":"Royal Host","formation":"wedge","stance":"aggressive","isDefense":false,"units":[{"type":"swordsman","quantity":8}]})
 	check(not panel.command_data.is_empty() and panel.command_data.presets.size()==1,"Army preset did not reach the command UI")
 	await panel.load_map()
 	check(panel.map_data.tiles.size()==49,"Strategic ownership map did not load")
 	var targets: Array = panel.map_data.tiles.filter(func(tile): return bool(tile.get("attackable",false)) and tile.ownerPlayerId == null)
 	check(not targets.is_empty(),"Strategic map exposed no connected target")
 	if not targets.is_empty():
-		await panel.submit("/v2/battles/attack",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1})
+		await issue(panel,"/v2/battles/attack",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1})
 		check(not panel.command_data.reports.is_empty(),"Battle result did not create a command report")
 		check(panel.kingdom.realm.ownedTiles>=2,"Successful strategic battle did not expand territory")
+		check(not panel.command_data.reports.is_empty() and panel.command_data.reports[0].replay!=null,"Server did not persist replay input")
+		if DisplayServer.get_name()!="headless":
+			for frame in range(3): await process_frame
+			await RenderingServer.frame_post_draw
+			check(root.get_texture().get_image().save_png("res://builds/battle.png")==OK,"Battle replay could not be rendered")
+	panel.close_replay()
 	await panel.load_clans()
 	check(not panel.clan_data.is_empty() and panel.clan_data.creationLevel==15,"Clan contract did not reach the native client")
-	await panel.submit("/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
+	await issue(panel,"/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
 	check(panel.clan_data.own==null and panel.status.text.contains("15"),"Native clan creation bypassed the server level gate")
 	var test_clan = OS.get_environment("PRIME_TEST_CLAN_ID")
 	if not test_clan.is_empty():
 		var settlement_id: String = panel.kingdom.settlementId
 		var building_tasks: Array = panel.kingdom.tasks.duplicate(true)
-		await panel.submit("/v2/clans/join",{"clanId":test_clan})
+		await issue(panel,"/v2/clans/join",{"clanId":test_clan})
 		check(panel.clan_data.own != null and panel.clan_data.own.id==test_clan,"Native join did not enter the real clan region")
 		check(panel.kingdom.settlementId==settlement_id,"Native join changed the permanent village identity")
 		# Relocation is lossless, but a real server timer may legitimately finish
@@ -88,9 +89,9 @@ func run() -> void:
 			check(panel.kingdom.tasks.any(func(task_after): return str(task_after.id)==task_id),"Native join lost an unfinished server queue task")
 		await panel.load_map()
 		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
-		await panel.submit("/v2/clans/donate",{"resource":"wood","amount":10})
+		await issue(panel,"/v2/clans/donate",{"resource":"wood","amount":10})
 		check(panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
-		await panel.submit("/v2/clans/leave",{})
+		await issue(panel,"/v2/clans/leave",{})
 		check(panel.last_error=="clan_cooldown","Native relocation bypassed server cooldown")
 	# Recover an exact unresolved request after an application restart.
 	panel.pending_path = "/v2/units/train"
@@ -105,18 +106,18 @@ func run() -> void:
 	panel.pending_path = ""
 	panel.pending_body = {}
 	panel.close()
-	check(game.player.frozen and game.strategy_camera.enabled,"Closing management did not return control to the strategic camera")
+	check(game.strategy_camera.enabled,"Closing management did not return control to the strategic camera")
 	for quality in range(4):
 		game.preferences.quality = quality
 		game.preferences.apply(game)
-		game.terrain.stream_at(game.player.position)
+		game.terrain.stream_at(Vector3.ZERO)
 		check(game.terrain.chunks.size()==4,"Graphics profile rebuilt an open world")
 	game.connection_failed()
-	check(game.player.frozen,"Lost connection left scene controls active")
+	check(not game.strategy_camera.enabled,"Lost connection left camera input active")
 	await game.recover_connection()
-	check(game.network_online and game.player.frozen and game.strategy_camera.enabled,"Strategy reconnect failed")
+	check(game.network_online and game.strategy_camera.enabled,"Strategy reconnect failed")
 	if DisplayServer.get_name() != "headless":
-		await panel.open()
+		await panel.open_section("Buildings")
 		for frame in range(3): await process_frame
 		await RenderingServer.frame_post_draw
 		check(root.get_texture().get_image().save_png("res://builds/kingdom.png")==OK,"Strategy screenshot could not be written")
@@ -130,3 +131,9 @@ func has_emblem(node: Node,value: String) -> bool:
 	for child in node.get_children():
 		if has_emblem(child,value): return true
 	return false
+
+func issue(panel: Control,path: String,body: Dictionary) -> void:
+	var started = Time.get_ticks_msec()
+	while panel.busy and Time.get_ticks_msec()-started<20000: await process_frame
+	check(not panel.busy,"Realm refresh remained busy before a player order")
+	if not panel.busy: await panel.submit(path,body)

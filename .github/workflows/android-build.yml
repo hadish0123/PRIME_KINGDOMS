@@ -1,5 +1,5 @@
 name: Native 3D Android
-# v0.8.0 strategic-command validation trigger: parse-fix-1
+# Bounded authority, native lifecycle and actual-render checks.
 
 on:
   push:
@@ -17,9 +17,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  authority:
+    uses: ./.github/workflows/backend-ci.yml
+    permissions:
+      contents: read
   android:
+    needs: authority
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:18
@@ -42,13 +47,6 @@ jobs:
           cache-dependency-path: tools/assets/package-lock.json
       - name: Restore pinned CC0 humans and photographic PBR assets
         run: npm ci --prefix tools/assets --ignore-scripts && npm run --prefix tools/assets prepare:models
-      - name: Install animation capture encoder
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg
-          ffmpeg -version
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
@@ -144,179 +142,62 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/account-contract.log; then exit 1; fi
           PRIME_TEST_CLAN_ID=$(node backend/test/native-clan-fixture.js)
           export PRIME_TEST_CLAN_ID
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 60 --script res://tests/kingdom.gd -- --smoke 2>&1 | tee client/builds/kingdom-contract.log
+          timeout 240 xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/kingdom.gd -- --smoke 2>&1 | tee client/builds/kingdom-contract.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/kingdom-contract.log; then exit 1; fi
       - name: Reconnect, Android lifecycle and bounded NPC regression checks
         shell: bash
         run: |
           set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --script res://tests/resilience.gd -- --smoke 2>&1 | tee client/builds/resilience.log
+          timeout 120 Godot_v4.7.2-stable_linux.x86_64 --headless --path client --script res://tests/resilience.gd -- --smoke 2>&1 | tee client/builds/resilience.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/resilience.log; then exit 1; fi
-      - name: Exercise native 3D physics, animations and rendered village
+      - name: Verify strategic camera, residents and bounded visual evidence
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/smoke.gd -- --smoke --screenshot 2>&1 | tee client/builds/smoke.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/smoke.log; then exit 1; fi
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/presentation.gd -- --smoke 2>&1 | tee client/builds/presentation.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/presentation.log; then exit 1; fi
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --fixed-fps 60 --script res://tests/actions.gd -- --smoke 2>&1 | tee client/builds/actions.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/actions.log; then exit 1; fi
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/poses.gd -- --smoke 2>&1 | tee client/builds/poses.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/poses.log; then exit 1; fi
-      - name: Validate anatomical rig and all three scenery budgets
-        shell: bash
-        run: |
-          set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --script res://tests/visuals.gd -- --smoke 2>&1 | tee client/builds/visuals.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/visuals.log; then exit 1; fi
-      - name: Validate physical sword draw, finger rig and actual player images
-        shell: bash
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --fixed-fps 60 --script res://tests/hero.gd -- --smoke 2>&1 | tee client/builds/hero-headless.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/hero-headless.log; then exit 1; fi
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/hero.gd -- --smoke 2>&1 | tee client/builds/hero-render.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/hero-render.log; then exit 1; fi
-      - name: Render the production character under neutral inspection light
-        shell: bash
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          set -euo pipefail
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/character_review.gd -- --record 2>&1 | tee client/builds/character-review.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/character-review.log; then exit 1; fi
-          ffmpeg -y -framerate 30 -i client/builds/character-frames/%04d.png -c:v libx264 -threads 4 -crf 19 -pix_fmt yuv420p -movflags +faststart client/builds/character-review.mp4
-      - name: Record actual controller movement with LOW software rendering
-        shell: bash
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          set -euo pipefail
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/film.gd -- --smoke 2>&1 | tee client/builds/film.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/film.log; then exit 1; fi
-          ffmpeg -y -framerate 30 -i client/builds/frames/frame-%04d.png -c:v libx264 -threads 4 -crf 21 -pix_fmt yuv420p -movflags +faststart client/builds/animation.mp4
-      - name: Build 0.8.0 strategy preview from verified runtime captures
-        shell: bash
-        run: |
-          set -euo pipefail
-          for image in kingdom.png village.png units.png atlas.png; do
-            test -s "client/builds/$image"
+          for native_test in smoke presentation visuals character_review; do
+            timeout 180 xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --script "res://tests/$native_test.gd" -- --smoke 2>&1 | tee "client/builds/$native_test.log"
+            if grep -E 'SCRIPT ERROR|ERROR:' "client/builds/$native_test.log"; then exit 1; fi
           done
-          ffmpeg -y \
-            -loop 1 -t 2.5 -i client/builds/kingdom.png \
-            -loop 1 -t 2.5 -i client/builds/atlas.png \
-            -loop 1 -t 2.5 -i client/builds/units.png \
-            -loop 1 -t 2.5 -i client/builds/village.png \
-            -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v1];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v2];[3:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v3];[v0][v1][v2][v3]concat=n=4:v=1:a=0[v]" \
-            -map "[v]" -c:v libx264 -threads 4 -crf 20 -pix_fmt yuv420p -movflags +faststart client/builds/strategy-0.8.0.mp4
-          test -s client/builds/strategy-0.8.0.mp4
       - name: Export and verify installable Android APK
         shell: bash
         run: |
           set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.8.0.apk 2>&1 | tee client/builds/export.log
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.9.0.apk 2>&1 | tee client/builds/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/export.log; then exit 1; fi
-          test -s client/builds/PRIME-KINGDOMS-0.8.0.apk
-          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.8.0.apk
-          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.8.0.apk > client/builds/apk-metadata.log
+          test -s client/builds/PRIME-KINGDOMS-0.9.0.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.9.0.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.9.0.apk > client/builds/apk-metadata.log
           sed -n '1,15p' client/builds/apk-metadata.log
-          (cd client/builds && sha256sum PRIME-KINGDOMS-0.8.0.apk strategy-0.8.0.mp4 kingdom.png village.png human.png sword.png prone.png horse.png units.png animation.mp4 login.png settings.png atlas.png hero-front.png hero-back.png hero-face.png hero-draw-21.png hero-draw-45.png hero-draw-65.png hero-sword.png ground-detail.png character-front.png character-face.png character-profile.png character-back.png character-sword.png character-review.mp4 > SHA256SUMS.txt)
+          (cd client/builds && sha256sum PRIME-KINGDOMS-0.9.0.apk kingdom.png settlement.png human.png login.png settings.png character-front.png character-face.png character-profile.png character-back.png > SHA256SUMS.txt)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-Android-0.8.0
+          name: PRIME-KINGDOMS-Android-0.9.0-${{ github.run_number }}
           path: |
-            client/builds/PRIME-KINGDOMS-0.8.0.apk
-            client/builds/strategy-0.8.0.mp4
+            client/builds/PRIME-KINGDOMS-0.9.0.apk
             client/builds/SHA256SUMS.txt
-            client/builds/village.png
-            client/builds/human.png
-            client/builds/sword.png
-            client/builds/prone.png
-            client/builds/horse.png
-            client/builds/units.png
-            client/builds/animation.mp4
-            client/builds/login.png
-            client/builds/settings.png
-            client/builds/atlas.png
-            client/builds/hero-front.png
-            client/builds/hero-back.png
-            client/builds/hero-face.png
-            client/builds/hero-draw-21.png
-            client/builds/hero-draw-45.png
-            client/builds/hero-draw-65.png
-            client/builds/hero-sword.png
-            client/builds/ground-detail.png
-            client/builds/character-front.png
-            client/builds/character-face.png
-            client/builds/character-profile.png
-            client/builds/character-back.png
-            client/builds/character-sword.png
-            client/builds/character-review.mp4
-            client/builds/kingdom.png
           if-no-files-found: error
           retention-days: 30
-      - name: Save separately downloadable runtime images and movie
+      - name: Preserve runtime evidence and diagnostic logs
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-0.8.0-evidence
+          name: PRIME-KINGDOMS-0.9.0-evidence-${{ github.run_number }}
           path: |
-            client/builds/hero-front.png
-            client/builds/hero-back.png
-            client/builds/hero-face.png
-            client/builds/hero-draw-21.png
-            client/builds/hero-draw-45.png
-            client/builds/hero-draw-65.png
-            client/builds/hero-sword.png
-            client/builds/ground-detail.png
-            client/builds/character-front.png
-            client/builds/character-face.png
-            client/builds/character-profile.png
-            client/builds/character-back.png
-            client/builds/character-sword.png
-            client/builds/character-review.mp4
-            client/builds/kingdom.png
-            client/builds/strategy-0.8.0.mp4
-            client/builds/animation.mp4
-            client/builds/SHA256SUMS.txt
-          if-no-files-found: error
+            client/builds/*.png
+            client/builds/*.log
+          if-no-files-found: warn
           retention-days: 30
-      - name: Publish 0.8.0 strategy preview
-        if: github.event_name == 'pull_request' && github.head_ref == 'feature/strategic-command-online-08'
+      - name: Publish unique installable candidate
+        if: github.event_name == 'pull_request' && github.head_ref == 'feature/production-strategy-polish'
         env:
           GH_TOKEN: ${{ github.token }}
-          PRIME_PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+          PRIME_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          gh release delete v0.8.0-preview --yes --cleanup-tag >/dev/null 2>&1 || true
-          gh release create v0.8.0-preview client/builds/strategy-0.8.0.mp4 client/builds/PRIME-KINGDOMS-0.8.0.apk client/builds/kingdom.png client/builds/SHA256SUMS.txt --target "$PRIME_PREVIEW_SHA" --prerelease --title 'PRIME KINGDOMS 0.8.0 Preview — Strategic Command' --notes-file docs/RELEASE_0_8_0.md
-      - name: Publish verified Android milestone
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if gh release view v0.8.0 >/dev/null 2>&1; then
-            prime_released_head=$(gh release view v0.8.0 --json targetCommitish --jq .targetCommitish)
-            if test "$prime_released_head" = "$GITHUB_SHA"; then
-              echo 'The release for this exact source commit is already published; existing downloads stay unchanged.'
-            else
-              git fetch --depth=1 origin "$prime_released_head"
-              git diff --exit-code "$prime_released_head" "$GITHUB_SHA" -- client/project.godot client/export_presets.cfg client/scripts client/shaders client/assets tools/assets
-              echo 'Server-only patch verified. Installed clients receive the API fix; the existing APK release stays unchanged.'
-            fi
-          else
-            gh release create v0.8.0 client/builds/PRIME-KINGDOMS-0.8.0.apk client/builds/strategy-0.8.0.mp4 client/builds/kingdom.png client/builds/village.png client/builds/human.png client/builds/sword.png client/builds/prone.png client/builds/horse.png client/builds/units.png client/builds/animation.mp4 client/builds/login.png client/builds/settings.png client/builds/atlas.png client/builds/hero-front.png client/builds/hero-back.png client/builds/hero-face.png client/builds/hero-draw-21.png client/builds/hero-draw-45.png client/builds/hero-draw-65.png client/builds/hero-sword.png client/builds/ground-detail.png client/builds/character-front.png client/builds/character-face.png client/builds/character-profile.png client/builds/character-back.png client/builds/character-sword.png client/builds/character-review.mp4 client/builds/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title 'PRIME KINGDOMS 0.8.0 — Online strategic command and conquest' --notes-file docs/RELEASE_0_8_0.md
+          prime_candidate_tag="v0.9.0-candidate-${GITHUB_RUN_NUMBER}"
+          if ! gh release view "$prime_candidate_tag" >/dev/null 2>&1; then
+            gh release create "$prime_candidate_tag" client/builds/PRIME-KINGDOMS-0.9.0.apk client/builds/SHA256SUMS.txt client/builds/kingdom.png client/builds/settlement.png --target "$PRIME_CANDIDATE_SHA" --prerelease --title 'PRIME KINGDOMS 0.9.0 — Strategy candidate' --notes-file docs/RELEASE_0_9_0.md
           fi
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: Native-3D-validation-logs
-          path: client/builds/*.log
-          retention-days: 7

@@ -21,3 +21,12 @@ client/assets/**/*.import
 client/assets/**/*.ttf
 !client/assets/textures/meadow_alpha.png
 !client/assets/heraldry/royal-textile.png
+
+__pycache__/
+*.pyc
+client/assets/audio/*.wav
+
+client/localization/*.translation
+client/localization/*.import
+
+!client/localization/english.en.translation

@@ -9,10 +9,9 @@ var role: String = "villager"
 var clock: float = 0.0
 var title: Label3D
 var simulating = true
-var following = false
-var follow_target: Node3D
 var ordinal = 0
 var terrain: Node3D
+var present_in_garrison = true
 
 func setup(data: Dictionary, local_position: Vector3) -> void:
 	collision_layer = 2
@@ -46,8 +45,8 @@ func setup(data: Dictionary, local_position: Vector3) -> void:
 
 func update_presence(viewer: Vector3, simulation_distance: float) -> void:
 	var distance = global_position.distance_to(viewer)
-	visible = distance < simulation_distance + 25.0
-	var active = distance < simulation_distance
+	visible = present_in_garrison and distance < simulation_distance + 25.0
+	var active = present_in_garrison and distance < simulation_distance
 	if active != simulating:
 		simulating = active
 		set_physics_process(active)
@@ -60,15 +59,12 @@ func _physics_process(delta: float) -> void:
 	# Presentation patrols only. Identity, population and home are owned by the server.
 	clock += delta
 	var target = home + Vector3(sin(clock * 0.18 + phase) * 1.5, 0, cos(clock * 0.22 + phase) * 1.5)
-	if following and is_instance_valid(follow_target):
-		var offset = Vector3((ordinal%2-0.5)*3.0,0,-4.0-floorf(ordinal/2.0)*1.8)
-		target = to_local(follow_target.global_position+Basis(Vector3.UP,follow_target.actor.rotation.y)*offset)+position
 	var direction = target - position
 	direction.y = 0
-	var moving = direction.length() > 0.35 and (following or fmod(clock + phase, 13.0) < 8.0)
+	var moving = direction.length() > 0.35 and fmod(clock + phase, 13.0) < 8.0
 	if moving:
 		direction = direction.normalized()
-		var speed = minf(5.4,maxf(1.0,(target-position).length())) if following else 1.0
+		var speed = 1.0
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), delta * 5.0)

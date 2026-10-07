@@ -1,103 +1,85 @@
 extends SceneTree
 
-const Terrain = preload("res://scripts/terrain.gd")
-const TouchControls = preload("res://scripts/touch_controls.gd")
 var failures: Array[String] = []
-
-func _initialize() -> void:
-	run.call_deferred()
-
-func check(condition: bool, message: String) -> void:
-	if not condition:
+func _initialize() -> void: run.call_deferred()
+func check(value: bool,message: String) -> void:
+	if not value:
 		failures.append(message)
 		push_error(message)
 
 func run() -> void:
+	DirAccess.make_dir_recursive_absolute("res://builds")
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixture.json"))
-	for point in fixture.points:
-		check(absf(Terrain.raw_height(float(point.x), float(point.z), int(fixture.state.world.seed)) - float(point.height)) < 0.000001, "Client/server terrain heights disagree")
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
 	await game.enter_world(fixture.state)
-	check(game.player.camera.current, "Third-person camera is not active")
-	check(game.player.arm.spring_length > 3.0, "Camera must sit behind the player")
+	check(game.in_world and game.strategy_camera.camera.current,"Strategy camera did not become active")
+	check(game.ruler is Node3D and not game.ruler is CharacterBody3D,"Ruler still requires an avatar controller")
+	check(game.terrain.chunks.size()==4,"Settlement geometry is not bounded")
 	var village = game.villages[fixture.state.village.id]
-	check(village.loaded_models >= 32, "Village buildings and props failed to load")
-	check(village.population.size() == 13, "Village must contain exactly 13 people")
-	check(village.population.filter(func(n): return n.role == "soldier").size() == 8, "Expected eight soldiers")
-	check(village.population.filter(func(n): return n.role == "villager").size() == 5, "Expected five villagers")
-	for node in [game.player.actor, village.population[0].actor, village.population[8].actor]:
-		check(node.animation != null, "Real rigged model has no animation player")
-		check(node.animation.get_animation_list().size() >= 3, "Movement animations missing")
-	for frame in range(90): await physics_frame
-	check(game.player.is_on_floor(), "Player cannot stand on the terrain collider")
-	var facing: Vector3 = game.player.actor.global_basis * Vector3.BACK
-	var camera_offset: Vector3 = game.player.camera.global_position - game.player.global_position
-	check(Vector2(facing.x, facing.z).dot(Vector2(camera_offset.x, camera_offset.z)) < 0, "Returning camera must start behind the saved character heading")
-	var start: Vector3 = game.player.position
-	var event = InputEventKey.new()
-	event.physical_keycode = KEY_W
-	event.keycode = KEY_W
-	event.pressed = true
-	Input.parse_input_event(event)
-	for frame in range(45): await physics_frame
-	event.pressed = false
-	Input.parse_input_event(event)
-	check(game.player.position.distance_to(start) > 1.0, "Third-person walking did not move the player")
-	var floor_y: float = game.player.position.y
-	game.player.jump_requested = true
-	for frame in range(8): await physics_frame
-	check(game.player.position.y > floor_y + 0.1, "Jump failed")
-	check(game.player.actor.current_motion == "jump", "Jump did not select its airborne skeletal animation")
-	for frame in range(75): await physics_frame
-	check(game.player.is_on_floor(), "Player failed to land after jumping")
-	game.player.look(Vector2(130, 20))
-	check(game.player.yaw < -0.4, "Orbit camera failed")
-	var touch = TouchControls.new()
-	game.hud.add_child(touch)
-	touch.player = game.player
-	var press = InputEventScreenTouch.new()
-	press.index = 3
-	press.position = Vector2(140, touch.size.y - 160)
-	press.pressed = true
-	touch._input(press)
+	check(village.population.size()==13,"Starter residents were not preserved")
+	for actor in [game.ruler,village.population[0].actor,village.population[8].actor]:
+		check(actor.animation!=null and actor.skeleton!=null,"Licensed animated character did not load")
+	var start: Vector3 = game.ruler.position
+	var input = InputEventKey.new()
+	input.keycode = KEY_W
+	input.physical_keycode = KEY_W
+	input.pressed = true
+	Input.parse_input_event(input)
+	for frame in range(20): await physics_frame
+	input.pressed = false
+	Input.parse_input_event(input)
+	check(game.ruler.position.is_equal_approx(start),"Keyboard input moved the decorative ruler")
+	var camera = game.strategy_camera
+	camera.pan_screen(Vector2(80,-20))
+	check(camera.focus.length()>1,"Camera pan did not move the kingdom view")
+	camera.pan_screen(Vector2(100000,100000))
+	check(abs(camera.focus.x)<=76 and abs(camera.focus.z)<=76,"Camera left the settlement")
+	camera.zoom(-10000)
+	check(camera.distance==32,"Minimum camera zoom failed")
+	camera.zoom(10000)
+	check(camera.distance==155,"Maximum camera zoom failed")
+	camera.set_focus(Vector3.ZERO)
+	camera.distance = 105
+	# A real pinch and rotation must update the strategic camera.
+	var touch = InputEventScreenTouch.new()
+	touch.index = 1
+	touch.position = Vector2(500,300)
+	touch.pressed = true
+	camera._unhandled_input(touch)
+	touch.index = 2
+	touch.position = Vector2(600,300)
+	camera._unhandled_input(touch)
+	var old_yaw: float = camera.yaw
 	var drag = InputEventScreenDrag.new()
-	drag.index = 3
-	drag.position = press.position + Vector2(40, -30)
-	drag.relative = Vector2(40, -30)
-	touch._input(drag)
-	check(game.player.touch_move.length() > 0.5, "Android stick failed")
-	press.pressed = false
-	touch._input(press)
-	check(game.player.touch_move == Vector2.ZERO, "Android stick did not release")
-	touch.sprint.button_pressed = true
-	game.player.jump_requested = true
-	touch.release_input()
-	check(not game.player.touch_sprint and not touch.sprint.button_pressed and not game.player.jump_requested, "Pausing left sprint or jump input active")
-	press.pressed = true
-	press.position = touch.jump.get_global_rect().get_center()
-	touch._input(press)
-	check(touch.look_finger == -1 and touch.move_finger == -1, "Touch camera stole a jump button press")
-	press.pressed = false
-	touch._input(press)
-	touch.queue_free()
-	var count_before: int = game.terrain.chunks.size()
-	game.terrain.stream_at(Vector3(960, 0, 960))
-	check(game.terrain.pending.size() > 0, "New terrain does not stream when moving")
-	check(game.terrain.chunks.size() <= 169, "World allocation is not bounded")
-	check(game.terrain.chunks[game.terrain.center].get_meta("near"), "Exploration must upgrade distant terrain to collision terrain")
-	game.player.position = start
-	game.player.velocity = Vector3.ZERO
-	game.player.yaw = -0.35
-	game.player.pitch = -0.17
-	game.terrain.stream_at(start)
-	for frame in range(120): await process_frame
-	if "--screenshot" in OS.get_cmdline_user_args():
+	drag.index = 2
+	drag.position = Vector2(650,335)
+	drag.relative = Vector2(50,35)
+	camera._unhandled_input(drag)
+	check(camera.distance<105 and not is_equal_approx(camera.yaw,old_yaw),"Pinch or rotation did not affect strategy camera")
+	camera.enabled = false
+	check(camera.touch_points.is_empty(),"Modal left a touch gesture active")
+	game.apply_control_state()
+	camera.yaw = -0.55
+	camera.set_focus(Vector3.ZERO)
+	camera.distance = 105
+	for quality in range(4):
+		game.preferences.quality = quality
+		game.preferences.apply(game)
+		game.terrain.stream_at(Vector3(9600,0,-9600))
+		check(game.terrain.chunks.size()==4 and game.terrain.pending.is_empty(),"Quality tier allocated an endless world")
+	var npc = village.population[0]
+	npc.update_presence(Vector3(10000,0,10000),55)
+	check(not npc.visible and not npc.is_physics_processing() and not npc.actor.animation.active,"Distant resident kept processing")
+	npc.update_presence(npc.global_position,55)
+	check(npc.visible and npc.is_physics_processing(),"Resident failed to resume")
+	game.preferences.quality = 1
+	game.preferences.apply(game)
+	for frame in range(12): await process_frame
+	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
-		var screenshot = root.get_texture().get_image()
-		check(not screenshot.is_empty(), "Renderer returned an empty screenshot")
-		if not screenshot.is_empty(): screenshot.save_png("res://builds/village.png")
-	print("NATIVE_3D_SMOKE ", JSON.stringify({"failures": failures, "npcs": village.population.size(), "terrain_chunks": count_before, "player_walked": true}))
+		check(root.get_texture().get_image().save_png("res://builds/settlement.png")==OK,"Settlement render could not be saved")
+	print("NATIVE_STRATEGY_SMOKE ",JSON.stringify({"failures":failures,"residents":13,"chunks":4,"direct_control":false,"pinch_and_rotation":true,"graphics_tiers":4}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

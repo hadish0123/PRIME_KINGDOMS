@@ -34,14 +34,6 @@ static func cell(value) -> bool:
 static func territories(value) -> bool:
 	return value is Dictionary and number(value.get("owned")) and float(value.owned) == int(value.owned) and value.owned >= 1 and value.owned <= 16129 and value.get("cells") is Array and value.cells.size() <= 169 and value.cells.all(cell)
 
-static func army(value) -> bool:
-	if not value is Array or value.size() not in [0,8]: return false
-	var ids: Dictionary = {}
-	for unit in value:
-		if not unit is Dictionary or not unit.get("id") is String or ids.has(unit.id) or not position(unit.get("position")): return false
-		ids[unit.id] = true
-	return true
-
 static func state(value) -> bool:
 	if not value is Dictionary or not player(value.get("player")) or not village(value.get("village")): return false
 	if value.has("scene"):
@@ -52,9 +44,8 @@ static func state(value) -> bool:
 	return world is Dictionary and world.get("id") is String and number(world.get("seed")) and number(world.get("sizeM")) and world.sizeM == 65536 and world.get("terrainVersion") == 1 and value.village.ownerPlayerId == value.player.id
 
 static func accepts(path: String, value: Dictionary) -> bool:
+	path = path.get_slice("?",0)
 	if path == "/v2/scene": return state(value) and value.has("scene")
-	if path == "/v2/scene/move": return position(value.get("position")) and number(value.get("yaw")) and army(value.get("army"))
-	if path == "/v2/scene/mount": return value.get("mounted") is bool and position(value.get("playerPosition")) and position(value.get("horsePosition")) and number(value.get("yaw"))
 	if path == "/v2/kingdom": return kingdom(value)
 	if path in ["/v2/buildings/upgrade","/v2/research/start","/v2/units/train","/v2/empire/customize"]: return kingdom(value.get("kingdom"))
 	if path == "/v2/world/map": return strategic_map(value)
@@ -64,12 +55,6 @@ static func accepts(path: String, value: Dictionary) -> bool:
 		var session = value.get("session")
 		return session is Dictionary and session.get("token") is String and session.token.length() == 43 and state(value.get("state"))
 	if path == "/v1/game": return state(value)
-	if path == "/v1/player/move": return position(value.get("position")) and number(value.get("yaw")) and (not value.has("army") or army(value.army))
-	if path == "/v1/player/order": return value.get("order") in ["guard","follow"]
-	if path == "/v1/player/mount": return value.get("mounted") is bool and position(value.get("playerPosition")) and position(value.get("horsePosition")) and number(value.get("yaw"))
-	if path == "/v1/territory/claim":
-		var claimed = value.get("claimed")
-		return claimed is Dictionary and number(claimed.get("x")) and number(claimed.get("z")) and value.get("stage") in ["village","city","country","empire"] and territories(value.get("territories"))
 	if path == "/v1/world/nearby":
 		if not value.get("villages") is Array or not value.get("players") is Array: return false
 		if value.has("territories") and not territories(value.territories): return false
@@ -89,7 +74,7 @@ static func kingdom(value) -> bool:
 	if not empire.get("name") is String or not empire.get("primaryColor") is String or not empire.get("secondaryColor") is String: return false
 	if not empire.get("emblem") in ["lion","eagle","crown","stag","sun","wolf"] or not empire.get("bannerStyle") in ["square","swallowtail","pennant"]: return false
 	if not value.get("catalog") is Array or value.catalog.size() > 64 or not value.get("quotes") is Array or value.quotes.size() > 48: return false
-	if not value.get("tasks") is Array or value.tasks.size() > 3 or not value.get("units") is Array or value.units.size() > 13: return false
+	if not value.get("tasks") is Array or value.tasks.size() > 3 or not value.get("units") is Array or value.units.size() > 20: return false
 	for task in value.tasks:
 		if not task is Dictionary or not task.get("id") is String or not task.get("kind") is String or not task.get("key") is String or not number(task.get("quantity")) or not number(task.get("target_level")) or not task.get("finishes_at") is String: return false
 	for unit in value.units:

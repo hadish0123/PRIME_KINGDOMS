@@ -1,28 +1,22 @@
-# Combat authority and implementation status
+# Authoritative strategic combat
 
-Current client preserves ruler walking/sprinting/jumping, sword draw/sheathe/strike,
-lying/crawling, riding and legacy follow/guard presentation. Sword sweeps still damage
-local practice targets. This is not yet authoritative hostile army combat.
+The current command is an army preset and strategic target. The server validates
+ownership, available troops, contiguous territory, target protection/occupation,
+clan eligibility, preparation phase and fort siege capability. Client victory,
+casualties, timestamps and reward values have no authority.
 
-The next vertical subsystem is a server-created battle instance. Reserve owned units,
-snapshot catalog stats/research/equipment, bind participants and target tile/version,
-record server seed/configuration/commands, and produce deterministic verifiable results.
-Reserve first so one army cannot fight two simultaneous battles. Results atomically
-apply alive/wounded/dead counts, rewards, XP, territory consequences and reports once.
+Shared catalogs define fundamental troop quality. Research, commander leadership,
+formation, stance, composition counters, blacksmith and fortification modify power.
+The committed battle seed controls bounded variation and casualty allocation.
+Wounded units enter real paid hospital treatment. Defenders lose actual plunder
+above protected stores; NPC holding rewards come from fixed server rules.
 
-Local third-person battle movement and animation remain responsive. Important ruler
-actions need legal command sequencing, cooldown/range checks and server state. A
-modified APK cannot submit victory, casualty counts, equipment stats or damage totals.
-Clients render confirmed units and interpolate snapshots; replay visual approximation
-must be distinguished from synchronous authoritative combat.
+A transaction commits casualties, rewards, XP, target version/ownership or occupation,
+war contribution and both participants' reports. Duplicate requests return the exact
+cached result. Daily battle XP is capped. A battle replay never awards currency
+and never decides who won.
 
-Implement infantry, ranged, cavalry, commanders and siege using shared definition
-tables and class-appropriate visuals/animations. Army presets and follow/hold/attack/
-defend/retreat/formation commands must connect to reservations/simulation. Add block,
-dodge, hit reaction and defeat input/presentation without changing the saved settlement
-controller's established behavior.
-
-Persist attacker/defender armies, seed/version, commands, casualties, result, rewards,
-time, tile impact and clan/war context. Later dedicated servers can replace simulation
-workers without changing battle identifiers or result authority. Railway HTTP is not
-treated as a high-frequency UDP MMO server.
+Recorded replay composition, phases, outcome and loss totals drive the bounded 3D
+presentation. This is visual presentation of an authoritative result, not a
+synchronous tactical simulation. Class-specific ranged/cavalry/siege choreography,
+timed marches and reinforcements remain final-release work.

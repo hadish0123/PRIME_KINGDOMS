@@ -1,7 +1,8 @@
 import { ApiError } from '../errors.js';
 import { transaction, UUID, text, integer } from './transaction.js';
 import { progression } from './progression.js';
-import { settle, spend, RESOURCES } from './economy.js';
+import { settle, spend, levels, RESOURCES } from './economy.js';
+import { settleWars, notify } from './wars.js';
 
 const DAY = 86400000;
 const emblems = ['lion', 'eagle', 'crown', 'stag', 'sun', 'wolf'];
@@ -65,6 +66,9 @@ async function addMember(db, profile, group, reason, now) {
   if (!plot) throw new ApiError(409, 'clan_region_full');
   await db.query('INSERT INTO clan_members(player_id,clan_id,role,joined_at) VALUES($1,$2,$3,$4)', [profile.player_id, group.id, reason === 'create' ? 'leader' : 'member', now]);
   await relocate(db, profile, group.region_id, plot.plot, reason, now, group.id);
+  await db.query("INSERT INTO clan_activity(clan_id,kind,message) VALUES($1,'member',$2)",[group.id,profile.empire_name+' has joined the clan.']);
+  await notify(db,profile.player_id,'clan-joined:'+group.id,'clan','Your settlement has relocated', 'Your buildings, stores and armies are preserved in '+group.name+'.');
+
   await db.query("UPDATE clan_applications SET status=CASE WHEN clan_id=$2 THEN 'accepted' ELSE 'withdrawn' END WHERE player_id=$1 AND status='pending'", [profile.player_id, group.id]);
   await db.query('UPDATE clan_invitations SET accepted_at=$3 WHERE player_id=$1 AND clan_id=$2', [profile.player_id, group.id, now]);
 }
@@ -88,10 +92,11 @@ async function snapshot(db, profile, now) {
   let own = null;
   if (member) {
     const group = (await db.query('SELECT c.*,r.map_x,r.map_z FROM clans c JOIN strategic_regions r ON r.id=c.region_id WHERE c.id=$1', [member.clan_id])).rows[0];
-    const members = (await db.query('SELECT m.player_id,m.role,m.joined_at,k.empire_name,p.plot,p.map_x,p.map_z FROM clan_members m JOIN kingdoms k ON k.player_id=m.player_id JOIN strategic_plots p ON p.player_id=m.player_id WHERE m.clan_id=$1 ORDER BY m.joined_at,m.player_id', [group.id])).rows;
+    const members = (await db.query("SELECT m.player_id,m.role,m.contribution,m.joined_at,k.empire_name,p.plot,p.map_x,p.map_z,(SELECT last_seen_at>=clock_timestamp()-interval '45 seconds' FROM players pl WHERE pl.id=m.player_id) AS online FROM clan_members m JOIN kingdoms k ON k.player_id=m.player_id JOIN strategic_plots p ON p.player_id=m.player_id WHERE m.clan_id=$1 ORDER BY m.joined_at,m.player_id", [group.id])).rows;
     const treasury = Object.fromEntries((await db.query('SELECT resource,amount FROM clan_treasury WHERE clan_id=$1', [group.id])).rows.map(r => [r.resource, Number(r.amount)]));
     const pending = ['leader', 'officer'].includes(member.role) ? (await db.query("SELECT a.player_id,k.empire_name,a.created_at FROM clan_applications a JOIN kingdoms k ON k.player_id=a.player_id WHERE a.clan_id=$1 AND a.status='pending' ORDER BY a.created_at LIMIT 100", [group.id])).rows : [];
-    own = { id: group.id, name: group.name, tag: group.tag, emblem: group.emblem, primaryColor: group.primary_color, secondaryColor: group.secondary_color, leaderId: group.leader_id, founderId: group.founder_id, level: group.level, xp: Number(group.xp), admission: group.admission, role: member.role, regionId: group.region_id, capital: { x: group.map_x, z: group.map_z }, treasury, members: members.map(m => ({ playerId: m.player_id, role: m.role, empireName: m.empire_name, plot: m.plot, x: m.map_x, z: m.map_z, joinedAt: m.joined_at })), applications: pending.map(a => ({ playerId: a.player_id, empireName: a.empire_name, createdAt: a.created_at })) };
+    const activity=(await db.query('SELECT kind,message,created_at FROM clan_activity WHERE clan_id=$1 ORDER BY id DESC LIMIT 30',[group.id])).rows;
+    own = { description:group.description,announcement:group.announcement,activity, id: group.id, name: group.name, tag: group.tag, emblem: group.emblem, primaryColor: group.primary_color, secondaryColor: group.secondary_color, leaderId: group.leader_id, founderId: group.founder_id, level: group.level, xp: Number(group.xp), admission: group.admission, role: member.role, regionId: group.region_id, capital: { x: group.map_x, z: group.map_z }, treasury, members: members.map(m => ({ playerId: m.player_id, role: m.role, empireName: m.empire_name, plot: m.plot, x: m.map_x, z: m.map_z, contribution:Number(m.contribution),joinedAt: m.joined_at,online:Boolean(m.online) })), applications: pending.map(a => ({ playerId: a.player_id, empireName: a.empire_name, createdAt: a.created_at })) };
   }
   const invitations = (await db.query('SELECT i.clan_id,c.name,c.tag,i.expires_at FROM clan_invitations i JOIN clans c ON c.id=i.clan_id WHERE i.player_id=$1 AND i.accepted_at IS NULL AND i.expires_at>$2 ORDER BY i.expires_at LIMIT 50', [profile.player_id, now])).rows;
   const applications = (await db.query('SELECT a.clan_id,c.name,a.status FROM clan_applications a JOIN clans c ON c.id=a.clan_id WHERE a.player_id=$1 ORDER BY a.created_at DESC LIMIT 50', [profile.player_id])).rows;
@@ -104,8 +109,23 @@ export const getClans = (pool, identity) => transaction(pool, identity, 'clans',
 
 export function clanAction(pool, identity, body, action) {
   return transaction(pool, identity, `clan_${action}`, body, async (db, profile, now) => {
+    await settleWars(db,identity.world_id,now);
+    if (action==='invite' && body.rulerName!=null) {
+      const name=text(body.rulerName,2,32);
+      const matches=(await db.query('SELECT k.player_id FROM kingdoms k JOIN players p ON p.id=k.player_id JOIN accounts a ON a.id=p.account_id WHERE p.world_id=$1 AND (lower(k.empire_name)=lower($2) OR lower(a.display_name)=lower($2)) LIMIT 2',[identity.world_id,name])).rows;
+      if (!matches.length) throw new ApiError(404,'player_not_found');
+      if (matches.length>1) throw new ApiError(409,'player_name_ambiguous');
+      body={...body,playerId:matches[0].player_id};
+    }
     const current = await membership(db, profile.player_id);
-    if (action === 'create') {
+    if (action === 'describe') {
+      if (!current) throw new ApiError(403,'clan_permission');
+      await authorize(db,profile.player_id,current.clan_id);
+      const description = body.description === '' ? '' : text(body.description,1,240);
+      const announcement = body.announcement === '' ? '' : text(body.announcement,1,240);
+      await db.query('UPDATE clans SET description=$2,announcement=$3 WHERE id=$1',[current.clan_id,description,announcement]);
+      await db.query("INSERT INTO clan_activity(clan_id,kind,message) VALUES($1,'announcement',$2)",[current.clan_id,profile.empire_name+' has updated the clan charter.']);
+    } else if (action === 'create') {
       if (current) throw new ApiError(409, 'already_in_clan');
       if ((await progression(db, profile)).level < 15) throw new ApiError(403, 'clan_level_15_required');
       const name = text(body.name, 3, 32), tag = text(body.tag, 3, 6, 'invalid_tag').toUpperCase();
@@ -140,6 +160,7 @@ export function clanAction(pool, identity, body, action) {
       const target = await targetProfile(db, body.playerId, identity.world_id);
       if (await membership(db, target.player_id)) throw new ApiError(409, 'already_in_clan');
       await db.query('INSERT INTO clan_invitations(clan_id,player_id,inviter_id,expires_at) VALUES($1,$2,$3,$4) ON CONFLICT(clan_id,player_id) DO UPDATE SET inviter_id=excluded.inviter_id,expires_at=excluded.expires_at,accepted_at=NULL', [group.id, target.player_id, profile.player_id, new Date(now.getTime() + 7 * DAY)]);
+      await notify(db,target.player_id,'clan-invitation:'+group.id+':'+body.requestId,'clan','A clan invites you',group.name+' has offered you a place in its region.',group.id);
     } else if (action === 'role') {
       const group = await clan(db, body.clanId, identity.world_id); await authorize(db, profile.player_id, group.id, ['leader']);
       if (!['member', 'officer', 'leader'].includes(body.role) || body.playerId === profile.player_id) throw new ApiError(400, 'invalid_role');
@@ -166,13 +187,20 @@ export function clanAction(pool, identity, body, action) {
       await cooldown(db, subject.player_id, ['leave_after', 'relocate_after'], now);
       await resettle(db, subject, action, now);
       await db.query('DELETE FROM clan_members WHERE player_id=$1', [subject.player_id]);
+      await db.query("INSERT INTO clan_activity(clan_id,kind,message) VALUES($1,'member',$2)",[current.clan_id,subject.empire_name+' has left the clan region.']);
     } else if (action === 'donate') {
       if (!current) throw new ApiError(409, 'not_in_clan');
       if (!RESOURCES.includes(body.resource)) throw new ApiError(400, 'invalid_resource');
       const amount = integer(body.amount, 1, 1000000);
       await settle(db, profile, now); await spend(db, profile.player_id, { [body.resource]: amount });
-      const result = await db.query('UPDATE clan_treasury SET amount=amount+$3 WHERE clan_id=$1 AND resource=$2 AND amount+$3<=1000000000000 RETURNING amount', [current.clan_id, body.resource, amount]);
+      const buildings=await levels(db,profile.player_id,'building');
+      const value=Math.floor(amount*(1+Math.min(30,buildings.embassy??0)*.01));
+      const result = await db.query('UPDATE clan_treasury SET amount=amount+$3 WHERE clan_id=$1 AND resource=$2 AND amount+$3<=1000000000000 RETURNING amount', [current.clan_id, body.resource, value]);
       if (!result.rows.length) throw new ApiError(409, 'treasury_capacity');
+      const contribution=await db.query("UPDATE clan_members SET contribution=contribution+$2 WHERE player_id=$1 RETURNING contribution",[profile.player_id,amount]);
+      await db.query('UPDATE clans SET xp=xp+$2,level=least(100,1+floor(sqrt((xp+$2)/500.0))::int) WHERE id=$1',[current.clan_id,Math.floor(amount*(1+Math.min(30,buildings.clan_hall??0)*.01))]);
+      await db.query("INSERT INTO clan_activity(clan_id,kind,message) VALUES($1,'contribution',$2)",[current.clan_id,profile.empire_name+' contributed '+amount+' '+body.resource+'.']);
+
     } else throw new ApiError(400, 'unknown_clan_action');
     return { clans: await snapshot(db, profile, now) };
   }, { globalLock: true });

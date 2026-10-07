@@ -8,6 +8,20 @@ var village_id: String = ""
 var population: Array[Node] = []
 var palette: Dictionary = {}
 var loaded_models: int = 0
+var development_signature = ""
+var building_root: Node3D
+var building_nodes: Dictionary = {}
+const SLOTS = {
+	"keep":Vector3(0,0,-27), "farm":Vector3(31,0,33), "lumber_mill":Vector3(-39,0,-15),
+	"quarry":Vector3(40,0,-38), "iron_mine":Vector3(38,0,-24), "market":Vector3(15,0,-8),
+	"warehouse":Vector3(-25,0,-30), "barracks":Vector3(-26,0,8), "archery_range":Vector3(-40,0,25),
+	"stable":Vector3(27,0,16), "siege_workshop":Vector3(39,0,4), "blacksmith":Vector3(-25,0,32),
+	"academy":Vector3(22,0,-30), "hospital":Vector3(24,0,-45), "embassy":Vector3(-18,0,-46),
+	"clan_hall":Vector3(17,0,-43), "watch_towers":Vector3(-51,0,-53), "walls":Vector3(51,0,0),
+	"gatehouse":Vector3(0,0,53), "workshop":Vector3(-40,0,40), "training_grounds":Vector3(-38,0,-1),
+	"commander_hall":Vector3(25,0,-15), "trading_post":Vector3(-13,0,-7), "granary":Vector3(39,0,46),
+}
+
 
 func update_population(viewer: Vector3, simulation_distance: float) -> void:
 	for npc in population: npc.update_presence(viewer, simulation_distance)
@@ -80,12 +94,14 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	square.material_override = plaza_material
 	square.position.y = 0.04
 	add_child(square)
-	asset("inn", Vector3(0, 0, -27), 15.0)
-	asset("house_1", Vector3(-25, 0, -23), 11.0, PI * 0.5)
-	asset("house_2", Vector3(25, 0, -26), 10.0, -PI * 0.5)
-	asset("house_3", Vector3(-26, 0, 6), 10.0, PI * 0.5)
-	asset("house_1", Vector3(28, 0, 14), 10.0, -PI * 0.5)
-	asset("blacksmith", Vector3(-27, 0, 32), 12.0, PI * 0.5)
+	if not owner:
+		asset("inn", Vector3(0, 0, -27), 15.0)
+		asset("house_1", Vector3(-25, 0, -23), 11.0, PI * 0.5)
+		asset("house_2", Vector3(25, 0, -26), 10.0, -PI * 0.5)
+		asset("house_3", Vector3(-26, 0, 6), 10.0, PI * 0.5)
+		asset("house_1", Vector3(28, 0, 14), 10.0, -PI * 0.5)
+		asset("blacksmith", Vector3(-27, 0, 32), 12.0, PI * 0.5)
+	for at in [Vector3(-15,0,22),Vector3(12,0,26),Vector3(-12,0,-19)]: asset("house_1",at,5.5)
 	asset("well", Vector3(0, 0.1, 0), 3.3)
 	asset("market_stand_1", Vector3(12, 0, -7), 4.5, -PI * 0.5)
 	asset("market_stand_2", Vector3(-12, 0, -7), 4.2, PI * 0.5)
@@ -137,4 +153,92 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		add_child(npc)
 		var n: Dictionary = npc_data.position
 		npc.setup(npc_data, Vector3(float(n.x) - float(p.x), float(n.y) - float(p.y), float(n.z) - float(p.z)))
+		if owner and npc.role=="villager":
+			var jobs = [Vector3(33,0.1,28),Vector3(-34,0.1,-15),Vector3(37,0.1,-33),Vector3(11,0.1,-6),Vector3(-20,0.1,31)]
+			npc.home = jobs[npc.ordinal%jobs.size()]
+			npc.position = npc.home
 		population.append(npc)
+
+func apply_development(kingdom: Dictionary) -> void:
+	var active: Dictionary = {}
+	for task in kingdom.tasks:
+		if task.kind=="building": active[task.key]=true
+	var signature = JSON.stringify(kingdom.buildings)+JSON.stringify(active)+str(kingdom.realm.rank)
+	if signature==development_signature: return
+	development_signature=signature
+	if is_instance_valid(building_root):
+		remove_child(building_root)
+		building_root.queue_free()
+	building_nodes.clear()
+	building_root=Node3D.new()
+	add_child(building_root)
+	for key in SLOTS:
+		var level_value = int(kingdom.buildings.get(key,0))
+		var architecture = Architecture.new()
+		architecture.set_meta("building_key",key)
+		building_root.add_child(architecture)
+		architecture.position=SLOTS[key]
+		building_nodes[key]=architecture
+		architecture.begin()
+		if key in ["walls","watch_towers","gatehouse"]:
+			# Existing defensive silhouettes are selected through their upgrade stations.
+			architecture.block(Vector3(3,0.15,3),Vector3(0,0.1,0),"stone")
+			architecture.collision(Vector3(3,3,3),Vector3(0,1.5,0))
+		elif level_value==0:
+			# Surveyed building sites are part of construction gameplay.
+			architecture.block(Vector3(7,0.12,6),Vector3(0,0.06,0),"stone")
+			for x in [-3,3]:
+				for z in [-2.5,2.5]: architecture.cylinder(0.08,1.1,Vector3(x,0.55,z),"wood")
+			architecture.collision(Vector3(7,0.25,6),Vector3(0,0.13,0))
+		elif key=="keep":
+			if level_value<4: architecture.house(11,9,1,1)
+			else:
+				architecture.keep(12,10)
+				if level_value>=12:
+					for side in [-1,1]: architecture.tower(1.8,13,Vector3(side*9,0,-4),false)
+				if level_value>=20:
+					for side in [-1,1]: architecture.block(Vector3(4,7,10),Vector3(side*8,3.5,0),"stone")
+		elif key in ["market","trading_post"]:
+			architecture.market()
+			if level_value>=5:
+				architecture.position.x+=1
+				architecture.house(5,5,1,1)
+		elif key=="farm":
+			architecture.house(5,4,1,1)
+			architecture.fence()
+		elif key in ["quarry","iron_mine"]:
+			architecture.house(5,5,1,1)
+			for index in range(4): architecture.block(Vector3(1.5,1.2,1.4),Vector3(index%2*2-2,0.6,5+index/2*2),"stone" if key=="quarry" else "iron")
+		else:
+			architecture.house(7.4,6.3,2 if level_value>=6 else 1,key.hash())
+			if level_value>=14: architecture.tower(0.9,8,Vector3(3,0,-2),true)
+		if active.has(key):
+			for x in [-4,4]:
+				for z in [-3.5,3.5]: architecture.beam(Vector3(x,0,z),Vector3(x,8,z),0.11)
+			for y in [2,4,6]:
+				architecture.beam(Vector3(-4,y,3.5),Vector3(4,y,3.5),0.10)
+				architecture.block(Vector3(8,0.12,0.9),Vector3(0,y,3.5),"wood")
+		architecture.finish()
+		if key in ["blacksmith","keep"] and level_value>0:
+			var smoke=CPUParticles3D.new()
+			smoke.amount=8
+			smoke.lifetime=4
+			smoke.visibility_aabb=AABB(Vector3(-3,0,-3),Vector3(6,12,6))
+			smoke.position=Vector3(1,5,0)
+			smoke.direction=Vector3(0,1,0)
+			smoke.initial_velocity_min=0.7
+			smoke.initial_velocity_max=1.2
+			smoke.gravity=Vector3(0,0.1,0)
+			smoke.scale_amount_min=0.15
+			smoke.scale_amount_max=0.4
+			smoke.color=Color(0.33,0.33,0.31,0.2)
+			var puff=SphereMesh.new()
+			puff.radius=0.3
+			puff.height=0.6
+			var material=StandardMaterial3D.new()
+			material.albedo_color=Color(0.4,0.4,0.38,0.16)
+			material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+			puff.material=material
+			smoke.mesh=puff
+			architecture.add_child(smoke)

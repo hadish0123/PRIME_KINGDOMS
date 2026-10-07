@@ -47,3 +47,12 @@ five seconds and may need a controlled migration maintenance setting for a large
 population. Take a recoverable database backup. Deploy API compatibility first,
 then the v2 APK. Roll back application code rather than undo additive data migrations.
 Never delete villages or use test-schema cleanup against production.
+
+## Migration 009
+
+Adds persisted realm rank and economic/research/prestige gates, attainable XP
+requirements, objective claims, inbox deduplication, commanders, hospital queues,
+recorded replay input, social/moderation tables, clan charter/activity/contribution
+and complete war phase/reward data. The replacement initialize_kingdom function
+no longer creates movement rows. Existing scene rows remain archival. All earlier
+migration checksums are preserved.

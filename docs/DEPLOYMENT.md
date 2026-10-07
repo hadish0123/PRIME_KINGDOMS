@@ -2,12 +2,12 @@
 
 ## Strategy branch rollout
 
-The strategy conversion is developed on `feature/kingdom-strategy-full` (draft PR 7).
+The 0.9.0 strategy candidate is developed on feature/production-strategy-polish.
 It has not been deployed to production by this work. Existing Railway main deployment
 and player data remain intact. The new APK requires the v2 backend for scene entry.
 
 Before rollout, restore a production backup into a disposable database, run additive
-migrations 006/007 with checksum verification and compare world/account/village/NPC/
+migrations 006–009 with checksum verification and compare world/account/village/NPC/
 horse/session/territory identifiers. Measure backfill duration and lock contention;
 the default five-second statement timeout may need a maintenance migration setting
 for large datasets. Deploy compatible API before distributing the new client.
@@ -31,7 +31,7 @@ is a reference and is not an automatically applied configuration file.
 - Region: `sfo` for both API and database; one replica each.
 - Database volume: `postgres-volume`, 5 GB, mounted at `/var/lib/postgresql/data`.
 
-The public API address returns JSON. The native Godot client connects to it over HTTPS. Android builds and real rendered village/login/settings/atlas previews are published in the repository’s versioned releases after native validation. Version 0.3 adds transactional account responses, finite movement credit, session limits and client lifecycle recovery while preserving the existing world.
+The current candidate is not yet deployed. Its final rollout requires a verified v2 backend and matching APK. The public API address returns JSON. The native Godot client connects to it over HTTPS. Android builds and real rendered village/login/settings/atlas previews are published in the repository’s versioned releases after native validation. Version 0.3 adds transactional account responses, finite movement credit, session limits and client lifecycle recovery while preserving the existing world.
 
 ## API service
 

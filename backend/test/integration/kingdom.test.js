@@ -27,7 +27,7 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
     assert.equal((await api('/v2/kingdom')).status,401);
     const first=(await api('/v2/kingdom',undefined,token)).body;
     assert.equal(first.progression.level,1); assert.equal(first.buildings.keep,1); assert.equal(first.units[0].alive,8);
-    assert.equal(first.catalog.filter(c=>c.kind==='building').length,18); assert.equal(first.catalog.filter(c=>c.kind==='unit').length,13);
+    assert.equal(first.catalog.filter(c=>c.kind==='building').length,24); assert.equal(first.catalog.filter(c=>c.kind==='unit').length,16);
     assert.deepEqual((await api('/v1/game',undefined,token)).body.village,legacy.village);
     await pool.query("UPDATE kingdoms SET settled_at=clock_timestamp()-interval '1 hour' WHERE player_id=$1",[player]);
     const production=(await api('/v2/kingdom',undefined,token)).body;
@@ -68,11 +68,11 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
     const map=(await api('/v2/world/map',undefined,token)).body; assert.equal(map.tiles.length,49); assert.equal(map.region.kind,'starter');
     assert.ok(map.tiles.some(t=>t.ownerPlayerId===player&&t.primaryColor==='#117744'), JSON.stringify({center:map.center,owned:map.tiles.filter(t=>t.ownerPlayerId),plots:(await pool.query('SELECT * FROM strategic_plots WHERE player_id=$1',[player])).rows}));
     const scene=(await api('/v2/scene',undefined,token)).body; assert.equal(scene.scene.halfSize,128); assert.equal(scene.scene.type,'settlement');
-    assert.equal((await api('/v2/scene/move',{position:{...scene.player.position,x:scene.village.position.x+150},yaw:0},token)).body.error,'outside_scene');
-    const position={...scene.player.position,x:scene.player.position.x+1.25};
-    assert.equal((await api('/v2/scene/move',{position,yaw:.2},token)).status,200);
+    assert.equal((await api('/v2/scene/move',{position:scene.player.position,yaw:0},token)).status,404);
+    assert.equal((await api('/v2/scene/mount',{mounted:true},token)).status,404);
     assert.deepEqual((await api('/v1/game',undefined,token)).body.player.position,legacy.player.position);
-    const reentered=(await api('/v2/scene',undefined,token)).body; assert.deepEqual(reentered.player.position,position);
+    const reentered=(await api('/v2/scene',undefined,token)).body;
+    assert.deepEqual(reentered.player.position,scene.player.position);
     await migrate(pool); assert.equal((await api('/v2/kingdom',undefined,token)).body.units.find(u=>u.type==='swordsman').alive,12);
     assert.equal((await pool.query('SELECT count(*)::int AS n FROM kingdom_legacy_units WHERE player_id=$1',[player])).rows[0].n,8);
     await pool.query('UPDATE kingdoms SET xp=8000000000000000 WHERE player_id=$1',[player]);

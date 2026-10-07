@@ -1,87 +1,64 @@
-# Engineering handoff — strategy conversion in progress
+# Production strategy handoff — 0.9.0 candidate
 
-Base main: `7532eb31187009c699fe0b6cd7017116431ddef7` (v0.5).
-Working branch: `feature/kingdom-strategy-full`.
-Latest committed implementation: `6678c04` (0.7.1 clan checkpoint).
-Previous published checkpoint: `fcb21f22fb87ad3a66981ad6c691308dcb0c5c29` (0.7.0).
-This handoff accompanies the implementation in a separate documentation commit.
-It is not a claim that the complete product is finished.
+Base implementation: feature/strategic-command-online-08 at
+90c34eb3f3c6a00705375ab106381d7b5518d986.
+Work branch: feature/production-strategy-polish.
 
-## Implemented in the current checkpoint
+## Implemented changes
 
-- Additive migration 006; original world/account/village/NPC/horse/session/land
-  records and migrations 001–005 remain intact. Exactly one new kingdom maps to
-  each primary village. The eight existing NPC soldiers map once to unit inventory.
-- Five integer resource wallets, fractional production carry, capacity, offline
-  accrual and completion events at server timestamps. Row-serialized spending.
-- Eighteen persistent building levels, costs/durations/prerequisites; three
-  independent construction/training/research queues; thirteen trainable unit
-  definitions, expandable persistent army counts; eleven research categories.
-- Server-configurable 1–100 XP curve with prestige/conquest/season/ascension gates,
-  unique XP events and capped training/research XP. No public XP mutation endpoint.
-- Empire name/colors/approved emblems/banner data, shader color/emblem application
-  on ruler cloth, soldier capes and settlement flags, persistent strategic tiles.
-- Versioned v2 endpoints and player/operation/payload-bound request replay.
-- New native authentication enters a bounded third-person settlement. Four fixed
-  terrain pieces and physical borders; movement and horse state persist in separate
-  scene records. Legacy expedition positions are preserved rather than destroyed.
-- Native management UI for construction, resources, training, research, empire and
-  map; bounded additional soldier display; original joystick/horse/sword/prone code.
-- Four graphics profiles with the GL Compatibility renderer retained.
-- Additive migration 007; level-15/500-gold clan creation, real clan region/capital,
-  unique member plots, applications/invitations, role administration and leadership
-  transfer. Atomic join/leave/kick relocation retains original village and all data.
-- Clan treasury donations, cooldowns, active-war relocation protection, immutable
-  starter-protection deadline, membership/plot race protection and relocation audit.
-- Native clan UI, server level-gate rejection, region-map presentation and disk-backed
-  unresolved request replay after restart. Per-player bounded v2 request lanes.
+Direct-control client scripts, movement HUD, avatar action inputs, old controller
+settings/tutorial logic, direct movement/horse API writes and follow-to-claim combat
+have been removed. Authenticated read access to historical account records remains.
 
-## Validation so far
+The primary camera pans, zooms, rotates and selects buildings independently of the
+ruler. The council uses one shared royal theme, human-readable location/unit names,
+English localization sources, server-clock countdowns, shortage/effect previews and
+designed error messages. Main navigation connects buildings, research, armies,
+world, clans, objectives, inbox and settings. Additional council sections connect
+commanders, rankings, wars, reports and chat.
 
-Backend syntax and 13 unit checks passed. The 0.7.0 published Backend CI passed on
-native PostgreSQL: https://github.com/hadish0123/PRIME_KINGDOMS/actions/runs/37583393100.
-Its native account/kingdom/reconnect checks passed; full Android render/export is
-still running at this checkpoint. Player character review passed.
+Migration 009 preserves applied history and adds real treatment, commander,
+objective, inbox, moderation, charter/activity, war contribution/reward and realm
+promotion storage. Persistent player progression and idempotency remain server-owned.
+Storage scales sufficiently to reach high-level building costs. Daily battle XP is
+bounded. Level 100 remains attainable by every player who satisfies the earned gates.
 
-New settlement and clan HTTP/SQL tests passed locally in separate fresh PostgreSQL
-WASM (PGlite) instances. This is supplemental, not native PostgreSQL concurrency
-certification. Running both schemas on one multiplexed PGlite socket caused a map
-assertion failure; independent runs pass. Native PostgreSQL CI runs isolated schemas
-and remains required for 007. New native clan join/donation/reconnect/render CI is
-wired using a disposable localhost fixture; its result is pending publication.
-Godot editor import parsed the clan UI and tests without errors.
-Local Blender exits with SIGBUS in this workspace; the pinned pipeline previously
-completed on GitHub. Do not replace the horse with a placeholder to hide this.
+Worlds and village identities are preserved. Clan relocation only changes strategic
+allocation, in the existing transaction; queues, inventory, economy and research
+remain attached to their original player. Battle plunder debits defender stores,
+respecting protected resources. Rewards and war resolution cannot replay twice.
 
-## Partial / remaining work
+## Validation status
 
-The complete requested game is NOT implemented. Building effects that require
-future equipment/combat/social systems are not active yet. Unit catalogs share
-existing infantry presentation; cavalry/ranged/siege-specific production visuals
-and combat are not complete. Large-army animation LOD requires further work.
+Local syntax/unit validation and seven disposable SQL integration suites passed.
+Local SQL execution uses PostgreSQL compiled to WebAssembly (PGlite), serialized by
+a test adapter. This validates SQL and HTTP semantics; it does not certify native
+PostgreSQL connection pools, race scheduling or production load. GitHub PostgreSQL
+18 integration CI is the required authority gate.
 
-Next: army presets and deterministic battle instances/casualties/reports, connected territory capture,
-army presets/commands, ruler block/dodge/defeat presentation, commanders/inventory,
-clan wars, quests/achievements, social/rankings and moderation limits.
+Native Godot account entry/re-entry and headless end-to-end kingdom commands passed.
+Actual-render camera, login and settings checks passed. Additional rendered kingdom,
+foliage/character and CI checks must pass on the exact published source commit.
 
-No changes have been deployed to Railway. Do not merge or call the release final
-until full checks pass. No production test accounts, reset or signing secrets.
+No production migration or deployment is implied by these results. Railway main
+and existing player data remain untouched until a verified rollout is performed.
 
-## Migration and rollout risks
+## Remaining release blockers
 
-006 backfills one strategy kingdom per existing player; 007 maps existing strategic
-locations and adds clan tables/constraints. Test their
-runtime on a restored production backup before deployment at large player counts.
-Legacy v1 apps remain usable. The new APK needs the v2 backend before ordinary login
-can enter a settlement; it displays retry instead of silently using an open world.
-A scene adapter retains old canonical positions when they fit the own settlement;
-positions from expeditions are retained in v1 and get a separate legal scene spawn.
-Strategic plots are separate from original physical village coordinates.
+- Environment composition and asset detail are below the requested final art bar.
+  Current characters are licensed fitted humans with authored procedural movement.
+  Distinct premium commanders, cavalry, ranged and siege visuals are not certified.
+- Battle presentation consumes recorded server results but still needs class-specific
+  animation, deployment/flanking/siege choreography and retreat presentation.
+- Timed marches, recalls, reinforcement armies, equipment and full season operations
+  are not complete.
+- Realm promotions have persisted title/rewards and visual building milestones;
+  final ceremonies and realm-wide architectural transformations remain.
+- Chat persistence, block/report and moderation storage work; a staffed moderation
+  workflow, retention policy and operational review interface remain.
+- Final balance, physical-device FPS/battery/thermal/memory and installed Android
+  lifecycle tests remain. Exported APK evidence cannot substitute for these.
+- A signed final release, deployment of this API, production readiness/endpoints,
+  migration timing on a restored production backup and production log review remain.
 
-Migrations added: `006_kingdom_strategy.sql`, `007_clan_regions.sql`.
-Changed domains: backend/migrations/006_kingdom_strategy.sql and 007_clan_regions.sql; backend/src/kingdom/*;
-backend/server/check; backend/test/integration/kingdom/upgrade; client strategy
-panel/terrain/empire/contract/main/player/preferences/shaders/heraldry; CI, versions
-and all requested architecture/domain/release documentation. Obtain exact changed
-files with `git diff --name-status 7532eb31187009c699fe0b6cd7017116431ddef7 HEAD`.
-For the clan checkpoint alone use `git diff --name-status 2c0582f 6678c04`.
+This is a tested strategy candidate, not completion of the master production scope.

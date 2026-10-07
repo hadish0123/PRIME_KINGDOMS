@@ -5,6 +5,7 @@ const Architecture = preload("res://scripts/architecture.gd")
 const GRASS_TILE = 24.0
 const GROVE_TILE = 80.0
 var terrain: Node3D
+var settlement_sites: Array = []
 var quality = 1
 var grass: Dictionary = {}
 var groves: Dictionary = {}
@@ -71,8 +72,8 @@ func clear_at(p: Vector2, for_tree: bool) -> bool:
 		if for_tree and local.length() < 72.0: return false
 		if not for_tree and local.length() < 65.0:
 			if absf(local.x) < 5.1 or (absf(local.x) < 47.0 and absf(local.y - 8.0) < 4.2): return false
-			for building in [Vector2(0, -27), Vector2(-25, -23), Vector2(25, -26), Vector2(-26, 6), Vector2(28, 14), Vector2(-27, 32), Vector2(31, 34)]:
-				if absf(local.x - building.x) < 8.0 and absf(local.y - building.y) < 7.0: return false
+			for building in settlement_sites:
+				if absf(local.x-building.x)<5 and absf(local.y-building.z)<5: return false
 	return true
 
 func stream_at(viewer: Vector3) -> void:

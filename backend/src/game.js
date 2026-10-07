@@ -1,7 +1,7 @@
 import { ApiError } from './errors.js';
 import { hashPassword, verifyPassword, normalizeEmail, validatePassword, validateDisplayName, createSession } from './auth.js';
-import { villageLocation, settledHeight } from './terrain.js';
-import { LAND_LOCK, territoryState, marchArmy } from './strategy.js';
+import { villageLocation } from './terrain.js';
+import { LAND_LOCK, territoryState } from './strategy.js';
 
 export async function register(pool, body) {
   const email = normalizeEmail(body.email);
@@ -107,57 +107,6 @@ export async function gameState(pool, playerId) {
     village: villageDTO(village, npcs),
     territories: await territoryState(pool,player),
   };
-}
-
-export async function movePlayer(pool, identity, body) {
-  const pos = body.position;
-  if (!pos || ![pos.x, pos.y, pos.z, body.yaw].every((value) => typeof value === 'number' && Number.isFinite(value))) {
-    throw new ApiError(400, 'invalid_position');
-  }
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const previous = (await client.query(`
-      SELECT p.x, p.y, p.z, p.army_order, p.position_updated_at, p.movement_credit, w.size_m, w.seed,
-        extract(epoch FROM (now() - p.position_updated_at))::double precision AS elapsed
-      FROM players p JOIN worlds w ON w.id = p.world_id WHERE p.id = $1 FOR UPDATE OF p
-    `, [identity.player_id])).rows[0];
-    if (!previous) throw new ApiError(404, 'player_unavailable');
-    const edge = previous.size_m / 2 - 20;
-    if (Math.abs(pos.x) > edge || Math.abs(pos.z) > edge || pos.y < -20 || pos.y > 256) {
-      throw new ApiError(400, 'outside_world');
-    }
-    const travel = Math.hypot(pos.x - previous.x, pos.z - previous.z);
-    const allowance = previous.movement_credit + 12 * Math.max(0, Math.min(previous.elapsed, 30));
-    if (travel > allowance + 0.000001) {
-      throw new ApiError(409, 'movement_rejected');
-    }
-    const villages = (await client.query(`
-      SELECT x,y,z FROM villages WHERE world_id=$1
-        AND x BETWEEN $2::double precision-125 AND $2::double precision+125
-        AND z BETWEEN $3::double precision-125 AND $3::double precision+125
-      ORDER BY slot
-    `, [identity.world_id, pos.x, pos.z])).rows;
-    const ground = settledHeight(pos.x, pos.z, previous.seed, villages);
-    // Includes the existing building rooftops and jumping. Full building and
-    // combat authority are a separate milestone; arbitrary sky/underground saves are refused.
-    if (pos.y < ground - 1.5 || pos.y > ground + 16) throw new ApiError(409, 'height_rejected');
-    const credit = Math.max(0, Math.min(4, allowance - travel));
-    const yaw = ((body.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-    await client.query(`
-      UPDATE players SET x=$2, y=$3, z=$4, yaw=$5, movement_credit=$6, position_updated_at=now(), last_seen_at=now()
-        ,horse_x=CASE WHEN mounted THEN $2 ELSE horse_x END
-        ,horse_y=CASE WHEN mounted THEN $3 ELSE horse_y END
-        ,horse_z=CASE WHEN mounted THEN $4 ELSE horse_z END
-      WHERE id=$1
-    `, [identity.player_id, pos.x, pos.y, pos.z, yaw, credit]);
-    const army=await marchArmy(client,identity,previous,pos,yaw,villages);
-    await client.query('COMMIT');
-    return { position: pos, yaw, army };
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw error;
-  } finally { client.release(); }
 }
 
 export async function nearbyWorld(pool, identity) {

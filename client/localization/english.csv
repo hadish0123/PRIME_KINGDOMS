@@ -1,0 +1,314 @@
+keys,en
+" · 1,000 Treasury Gold"," · 1,000 Treasury Gold"
+ · DEFENSE, · DEFENSE
+%d / %d · %d XP · %d Gold,%d / %d · %d XP · %d Gold
+%d · %s · %d Prestige · %d Conquests,%d · %s · %d Prestige · %d Conquests
+%d → %d %s,%d → %d %s
+%dm %02ds,%dm %02ds
+%s leadership · Level %d,%s leadership · Level %d
+%s · %d : %d,%s · %d : %d
+%s · %d alive · %d wounded · %d dead,%s · %d alive · %d wounded · %d dead
+%s · %d contribution,%s · %d contribution
+%s · %d controlled territories,%s · %d controlled territories
+%s · %d wounded · %d fallen,%s · %d wounded · %d fallen
+"%s · %d wounded · %d fallen
+%s","%s · %d wounded · %d fallen
+%s"
+%s · %s level %d · %s,%s · %s level %d · %s
+%s · %s · %s · Contributions %d,%s · %s · %s · Contributions %d
+%s · Level %d,%s · Level %d
+%s · Level %d · %d holdings,%s · Level %d · %d holdings
+%s · Level %d · %s,%s · Level %d · %s
+A commander has joined your court.,A commander has joined your court.
+ARMY PRESET · choose the exact force you command into battle,ARMY PRESET · choose the exact force you command into battle
+Accept,Accept
+Accept Invitation · ,Accept Invitation · 
+Accepted,Accepted
+Aggressive,Aggressive
+Android,Android
+Announcement to members,Announcement to members
+Applicant · ,Applicant · 
+Application · %s · %s,Application · %s · %s
+Apply,Apply
+Appoint ,Appoint 
+Appoint another leader before leaving the clan.,Appoint another leader before leaving the clan.
+Appoint · %d Gold,Appoint · %d Gold
+Arden Vale,Arden Vale
+Army,Army
+Army capacity: %d / %d,Army capacity: %d / %d
+Assign ,Assign 
+Assign an appointed commander while organizing your army. Campaigns improve their leadership.,Assign an appointed commander while organizing your army. Campaigns improve their leadership.
+Assign siege engines before attacking a fortified holding.,Assign siege engines before attacking a fortified holding.
+Assign soldiers to this army first.,Assign soldiers to this army first.
+Awaiting Approval,Awaiting Approval
+Away,Away
+Balanced,Balanced
+Battle Line,Battle Line
+Battle of ,Battle of 
+Block Ruler,Block Ruler
+Border Garrison,Border Garrison
+Borderlands,Borderlands
+Borders Unchanged,Borders Unchanged
+Browse Clans,Browse Clans
+Build a Commander Hall to appoint this commander.,Build a Commander Hall to appoint this commander.
+Build a Hospital to treat the wounded.,Build a Hospital to treat the wounded.
+Build a civilization. Command an empire.,Build a civilization. Command an empire.
+Build lasting alliances and defend a shared region.,Build lasting alliances and defend a shared region.
+Buildings,Buildings
+Button,Button
+By Application,By Application
+Camera Sensitivity,Camera Sensitivity
+Capital,Capital
+Cavalry Wedge,Cavalry Wedge
+Chat,Chat
+CheckButton,CheckButton
+"Choose a name of the required length, without control characters.","Choose a name of the required length, without control characters."
+Claim Reward,Claim Reward
+Clan,Clan
+Clan Accomplishments,Clan Accomplishments
+Clan Fort,Clan Fort
+Clan charter,Clan charter
+Clan name (3–32 characters),Clan name (3–32 characters)
+Clan treasury · ,Clan treasury · 
+Clans could not be loaded.,Clans could not be loaded.
+Commanders,Commanders
+Complete the objective before claiming its reward.,Complete the objective before claiming its reward.
+Complete the prerequisite research first.,Complete the prerequisite research first.
+Completing…,Completing…
+Conclusion,Conclusion
+Connected,Connected
+Connected · realm restored,Connected · realm restored
+Construct,Construct
+Construct or upgrade the required building first.,Construct or upgrade the required building first.
+Construction,Construction
+Construction has begun.,Construction has begun.
+Contribute,Contribute
+Could not refresh realm. Retry when connected.,Could not refresh realm. Retry when connected.
+Create at ruler level 15 · Gold 500 · 63 member plots,Create at ruler level 15 · Gold 500 · 63 member plots
+Creating your permanent village…,Creating your permanent village…
+Declare War · ,Declare War · 
+Declare war before attacking a clan fort.,Declare war before attacking a clan fort.
+Decline,Decline
+Declined,Declined
+Defeat,Defeat
+Defeat.,Defeat.
+Defensive,Defensive
+Defensive Square,Defensive Square
+Deployment,Deployment
+Disband ,Disband 
+Dispatch marked as read.,Dispatch marked as read.
+Drag to survey your settlement. Tap a building to inspect it. Open the World to expand your borders.,Drag to survey your settlement. Tap a building to inspect it. Open the World to expand your borders.
+Draw,Draw
+Draw.,Draw.
+East,East
+Economic development %d · Research %d · Prestige %d,Economic development %d · Research %d · Prestige %d
+Email,Email
+Email or password is incorrect.,Email or password is incorrect.
+Empire,Empire
+Empire name,Empire name
+Empire tier reached. Endgame prestige and level progression continue.,Empire tier reached. Endgame prestige and level progression continue.
+Enter Your Realm,Enter Your Realm
+Enter a valid email address.,Enter a valid email address.
+Expand the Barracks to house more soldiers.,Expand the Barracks to house more soldiers.
+Expand the Warehouse before upgrading the Keep.,Expand the Warehouse before upgrading the Keep.
+Focus Capital,Focus Capital
+Food %d   Wood %d   Stone %d   Iron %d   Gold %d,Food %d   Wood %d   Stone %d   Iron %d   Gold %d
+Fort Secured,Fort Secured
+Found Clan,Found Clan
+Found Your Realm,Found Your Realm
+Goals,Goals
+Graphics Quality,Graphics Quality
+Holding Occupied,Holding Occupied
+Hospital · %d soldiers recovering,Hospital · %d soldiers recovering
+Idris Fen,Idris Fen
+Inappropriate message,Inappropriate message
+Inbox,Inbox
+Invite Ruler,Invite Ruler
+Join Clan,Join Clan
+Join a clan to use this channel.,Join a clan to use this channel.
+Kingdom,Kingdom
+Language · English,Language · English
+Leader,Leader
+Leave Clan,Leave Clan
+LineEdit,LineEdit
+Map,Map
+March · ,March · 
+Mark Read,Mark Read
+Melee,Melee
+Member,Member
+NEXT: %s,NEXT: %s
+Needed: ,Needed: 
+Next level needs %d total XP; prestige and achievements also apply at high levels.,Next level needs %d total XP; prestige and achievements also apply at high levels.
+No Commander,No Commander
+"No active construction, training or research.","No active construction, training or research."
+No dispatches in this channel yet.,No dispatches in this channel yet.
+No ruler with that name was found.,No ruler with that name was found.
+North,North
+Officer,Officer
+One of these clans is already at war.,One of these clans is already at war.
+Online,Online
+Online · %d rulers,Online · %d rulers
+Open Admission,Open Admission
+Open this section to load your latest records.,Open this section to load your latest records.
+Opening your village…,Opening your village…
+OptionButton,OptionButton
+Organize an Army,Organize an Army
+Organize an army before issuing a march order.,Organize an army before issuing a march order.
+Overview,Overview
+PRIME KINGDOMS,PRIME KINGDOMS
+Password · at least 10 characters,Password · at least 10 characters
+Pennant,Pennant
+Please wait a moment before trying again.,Please wait a moment before trying again.
+PopupMenu,PopupMenu
+Preparation,Preparation
+Preset name,Preset name
+Primary Heraldic Color,Primary Heraldic Color
+Production per hour: ,Production per hour: 
+Progress is saved online. Your queues continue while away.,Progress is saved online. Your queues continue while away.
+Publish Clan Charter,Publish Clan Charter
+Queues,Queues
+Ranged Exchange,Ranged Exchange
+Rankings,Rankings
+Reach Level 15 before founding a clan.,Reach Level 15 before founding a clan.
+Realm Prestige,Realm Prestige
+Reconnect,Reconnect
+Reconnect to sign out securely.,Reconnect to sign out securely.
+Reconnecting to your realm…,Reconnecting to your realm…
+Reconnecting…,Reconnecting…
+Refresh,Refresh
+Refresh ,Refresh 
+Region could not be loaded.,Region could not be loaded.
+Relocation is unavailable during a clan war.,Relocation is unavailable during a clan war.
+Relocation preserves your settlement. Server cooldowns and wars apply.,Relocation preserves your settlement. Server cooldowns and wars apply.
+Remove Member,Remove Member
+Report Message,Report Message
+Reports,Reports
+Requirements · Keep %d · Ruler level %d · %d territories · %d conquests,Requirements · Keep %d · Ruler level %d · %d territories · %d conquests
+Requires ,Requires 
+Requires Commander Hall Level %d,Requires Commander Hall Level %d
+Research,Research
+Research has begun.,Research has begun.
+Resource Holding,Resource Holding
+Restoring your realm…,Restoring your realm…
+Retry Order,Retry Order
+Retry the pending action before starting another.,Retry the pending action before starting another.
+Return to Realm,Return to Realm
+Return to Reports,Return to Reports
+Returning to your village…,Returning to your village…
+Reward Claimed,Reward Claimed
+Royal Council,Royal Council
+Royal Host,Royal Host
+Ruler,Ruler
+Ruler level %d · Keep %d · Conquests %d · Prestige %d,Ruler level %d · Keep %d · Conquests %d · Prestige %d
+Ruler name · for a new account,Ruler name · for a new account
+Ruler or realm name to invite,Ruler or realm name to invite
+Save Army,Save Army
+Save Heraldry,Save Heraldry
+Saving…,Saving…
+Secondary Heraldic Color,Secondary Heraldic Color
+Secure neighboring territory to reach this holding.,Secure neighboring territory to reach this holding.
+Send,Send
+Serah Rowan,Serah Rowan
+Settings,Settings
+Settlement,Settlement
+Settlement could not load. Retry your saved session.,Settlement could not load. Retry your saved session.
+Several rulers share that name. Ask for their realm name.,Several rulers share that name. Ask for their realm name.
+Shield Wall,Shield Wall
+Sign Out,Sign Out
+Signed out. Your realm is saved.,Signed out. Your realm is saved.
+Skirmish Line,Skirmish Line
+"Slot %d · %s · %s / %s%s
+%s","Slot %d · %s · %s / %s%s
+%s"
+Sound Volume,Sound Volume
+South,South
+SpinBox,SpinBox
+Square Banner,Square Banner
+Storage per resource: %d · XP: %d,Storage per resource: %d · XP: %d
+Summoning your realm…,Summoning your realm…
+Survey Region,Survey Region
+Survey the frontier to find resources and neighboring holdings.,Survey the frontier to find resources and neighboring holdings.
+Swallowtail Banner,Swallowtail Banner
+Territory Secured,Territory Secured
+The Advance,The Advance
+The Borderlands,The Borderlands
+The army preset has been disbanded.,The army preset has been disbanded.
+The clan charter has been published.,The clan charter has been published.
+The war is still in preparation. Prepare your armies.,The war is still in preparation. Prepare your armies.
+The wounded are receiving treatment.,The wounded are receiving treatment.
+There are not enough available soldiers for this army.,There are not enough available soldiers for this army.
+There are not enough wounded soldiers for this treatment.,There are not enough wounded soldiers for this treatment.
+These clans must recover before declaring another war.,These clans must recover before declaring another war.
+This account already exists. Sign in to continue.,This account already exists. Sign in to continue.
+This army has suffered losses. Update its composition before marching.,This army has suffered losses. Update its composition before marching.
+This clan is no longer available.,This clan is no longer available.
+This clan region has no free settlement plots.,This clan region has no free settlement plots.
+This historical report has no recorded replay.,This historical report has no recorded replay.
+This holding cannot be attacked now. Review its borders and protection.,This holding cannot be attacked now. Review its borders and protection.
+This holding is occupied. Wait for its recovery.,This holding is occupied. Wait for its recovery.
+This holding is protected. Choose another target.,This holding is protected. Choose another target.
+This improvement has reached its highest level.,This improvement has reached its highest level.
+This message is no longer available.,This message is no longer available.
+This name or tag is already in use.,This name or tag is already in use.
+This order conflicts with an earlier request. Refresh your realm.,This order conflicts with an earlier request. Refresh your realm.
+This reward has already been claimed.,This reward has already been claimed.
+This ruler's messages are hidden.,This ruler's messages are hidden.
+This territory already belongs to your realm.,This territory already belongs to your realm.
+This territory belongs to an ally.,This territory belongs to an ally.
+Train ,Train 
+Training,Training
+Transfer Leadership,Transfer Leadership
+Treat %d Wounded · %d Food · %d Gold,Treat %d Wounded · %d Food · %d Gold
+Unclaimed,Unclaimed
+Unclaimed Territory,Unclaimed Territory
+Unique tag (3–6 letters/digits),Unique tag (3–6 letters/digits)
+Upgrade,Upgrade
+Upgrade the Academy to support this research.,Upgrade the Academy to support this research.
+Upgrade the Keep before improving this building.,Upgrade the Keep before improving this building.
+Use a password of 10–256 characters.,Use a password of 10–256 characters.
+Use this preset as offline home defense,Use this preset as offline home defense
+Victory,Victory
+Victory.,Victory.
+View All Buildings,View All Buildings
+View Battle,View Battle
+View Result,View Result
+Wait a few seconds before sending another message.,Wait a few seconds before sending another message.
+War Cancelled,War Cancelled
+War Concluded,War Concluded
+War has been declared. Prepare your armies.,War has been declared. Prepare your armies.
+War in Progress,War in Progress
+Wars,Wars
+West,West
+Withdrawn,Withdrawn
+Work continues while you are away.,Work continues while you are away.
+Work is already in progress. Wait for this queue to finish.,Work is already in progress. Wait for this queue to finish.
+World,World
+Write a dispatch,Write a dispatch
+You already belong to a clan.,You already belong to a clan.
+Your Realm,Your Realm
+Your army orders are ready.,Your army orders are ready.
+Your campaigns will be recorded here. Organize an army and explore the frontier.,Your campaigns will be recorded here. Organize an army and explore the frontier.
+Your clan has been founded.,Your clan has been founded.
+Your clan is at peace. Officers may declare a war from the clan directory.,Your clan is at peace. Officers may declare a war from the clan directory.
+Your clan request has been received.,Your clan request has been received.
+Your clan role cannot issue this order.,Your clan role cannot issue this order.
+Your contribution has reached the treasury.,Your contribution has reached the treasury.
+Your couriers have no new dispatches.,Your couriers have no new dispatches.
+Your device could not save this order. Free some storage and try again.,Your device could not save this order. Free some storage and try again.
+Your forces changed. Review the army and try again.,Your forces changed. Review the army and try again.
+Your message has been sent.,Your message has been sent.
+Your order could not be completed. Refresh your realm and try again.,Your order could not be completed. Refresh your realm and try again.
+Your order has been issued.,Your order has been issued.
+Your realm bears its new heraldry.,Your realm bears its new heraldry.
+Your realm endures while you are away.,Your realm endures while you are away.
+Your realm has risen to ,Your realm has risen to 
+Your report has been received.,Your report has been received.
+Your reward has been claimed.,Your reward has been claimed.
+Your session expired. Sign in to continue.,Your session expired. Sign in to continue.
+Your settlement could not be loaded. Reconnect to continue.,Your settlement could not be loaded. Reconnect to continue.
+Your settlement must rest before another relocation.,Your settlement must rest before another relocation.
+Your soldiers are training.,Your soldiers are training.
+Your stores cannot cover this order yet.,Your stores cannot cover this order yet.
+[%s] %s · %d/63 members,[%s] %s · %d/63 members
+[%s] %s · %s · Level %d · %d members,[%s] %s · %s · Level %d · %d members
+[%s] %s · Level %d,[%s] %s · Level %d
