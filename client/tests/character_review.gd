@@ -86,7 +86,7 @@ func run() -> void:
 	for i in range(30): await physics_frame
 	check(player.actor.skeleton.get_bone_count()==49,"Production player rig missing")
 	var triangle_count = triangles(player.actor)
-	check(triangle_count<250000,"Player mesh exceeded the authored mobile geometry budget")
+	check(triangle_count<210000,"Player mesh exceeded the medium-quality geometry budget")
 	var identity: int = player.actor.wardrobe.sword.get_instance_id()
 	await capture("character-front",Vector3(1.0,1.32,3.30),Vector3(0,1.0,0))
 	await capture("character-face",Vector3(0.26,1.79,0.93),Vector3(0,1.69,0))

@@ -443,7 +443,6 @@ def build(role):
         head_faces = [(m, f) for m, f in skin_faces if all(transformed[v][1] > 1.525 for v, uv in f)]
         lower_faces = [(m, f) for m, f in skin_faces if not all(transformed[v][1] > 1.525 for v, uv in f)]
         hv, hu, hf, hw = hero_sculpt.subdivide(transformed, uvs, head_faces, weights)
-        hv, hu, hf, hw = hero_sculpt.refine_face(hv, hu, hf, hw)
         glb.mesh('Anatomy', transformed, uvs, lower_faces, weights, {0:skin, 1:boots, 2:glove, 3:scalp}, [[0.,0.,0.,1.] for _ in transformed])
         # Vertex masks deform with the rig, so prone/riding never changes where
         # the beard grows. No shading classification uses animated positions.

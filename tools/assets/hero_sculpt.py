@@ -149,7 +149,7 @@ def groom(glb, head_joint):
     """Layered parted waves with individual curved locks and tapered flyaways."""
     rng = random.Random(6172026)
     points, uvs, faces, weights = [], [], [], []
-    def lock(controls, width, number, depth=.28, segments=20, columns=6, wave=.004):
+    def lock(controls, width, number, depth=.28, segments=10, columns=4, wave=.004):
         start = len(points)
         phase = rng.random() * math.tau
         for row in range(segments + 1):
@@ -225,7 +225,7 @@ def groom(glb, head_joint):
         z = -.045+rng.random()*.125
         controls = [[side*.076, 1.817, z], [side*.113, 1.778, z+.014],
                     [side*.119, 1.730, z-.012], [side*.110, 1.683, z-.025]]
-        lock(controls, .001+rng.random()*.0015, number, depth=.6, segments=18, columns=4, wave=.006)
+        lock(controls, .001+rng.random()*.0015, number, depth=.6, segments=8, columns=3, wave=.006)
         number += 1
     material = glb.material('Groom', [.11, .061, .028, 1.], .72)
     glb.mesh('WavyGroom', points, uvs, faces, weights, {0: material})
@@ -244,7 +244,7 @@ def beard(glb, vertices, body_faces, head_joint):
         if not (1.627 < center[1] < 1.727 and center[2] > .057 and normal[2] > .05): continue
         tangent = unit(cross(normal, [0., 1., 0.]))
         bitangent = unit(cross(normal, tangent))
-        for _ in range(min(10, round(area * 45000))):
+        for _ in range(min(10, round(area * 14000))):
             u, v = rng.random(), rng.random()
             if u+v>1.: u,v=1.-u,1.-v
             root = add(a, add(mul(sub(b, a), u), mul(sub(c, a), v)))
