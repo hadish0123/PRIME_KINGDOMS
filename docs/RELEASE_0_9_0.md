@@ -19,9 +19,16 @@ App/backend version is 0.9.0 and Android version code is 14.
 
 ## Evidence and limits
 
-Backend unit, disposable SQL, native account, strategy camera, reconnect, queue,
-army and battle-report tests accompany the candidate. GitHub CI must separately
-certify real PostgreSQL concurrency, native rendering, APK export and signature.
+Source 790f737127ee7a0fad3d570ac125618af0cf6a42 passed Backend CI, GDScript Parse
+and Native 3D Android on 7 October 2026. Thirteen unit tests and seven native
+PostgreSQL 18 integration suites passed. All seven native Godot checks passed,
+including rendered kingdom commands, clan relocation, reconnect and bounded
+visual evidence. The APK exported successfully and signature schemes v2/v3
+verified. Evidence is attached to workflow run 37652820504 and candidate 58.
+
+The published APK uses a development certificate and a debuggable export;
+it is 156,056,123 bytes. Android metadata confirms version code 14, ARM32/ARM64,
+minimum SDK 24 and target SDK 36. It has not been installed on a physical device.
 
 Candidate APKs are development builds when private release-signing secrets are
 unavailable. A candidate is not the final production release. Environment art,
