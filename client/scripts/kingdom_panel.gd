@@ -332,7 +332,8 @@ func build_map(column: VBoxContainer) -> void:
 			selected_target = tile_copy
 			rebuild()
 			for i in range(tabs.get_tab_count()):
-				if tabs.get_tab_title(i) == "Map": tabs.current_tab = i)
+				if tabs.get_tab_title(i) == "Map": tabs.current_tab = i
+		)
 		)
 		grid.add_child(card)
 	if not selected_target.is_empty():
