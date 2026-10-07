@@ -4,6 +4,10 @@ const Actor = preload("res://scripts/actor.gd")
 const Npc = preload("res://scripts/npc.gd")
 const Architecture = preload("res://scripts/architecture.gd")
 const Surfaces = preload("res://scripts/visual_materials.gd")
+const Nature = preload("res://scripts/nature.gd")
+var garden_trunks: MultiMeshInstance3D
+var garden_leaves: MultiMeshInstance3D
+var garden_rocks: Array[Node3D] = []
 var village_id: String = ""
 var population: Array[Node] = []
 var palette: Dictionary = {}
@@ -101,7 +105,10 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		asset("house_3", Vector3(-26, 0, 6), 10.0, PI * 0.5)
 		asset("house_1", Vector3(28, 0, 14), 10.0, -PI * 0.5)
 		asset("blacksmith", Vector3(-27, 0, 32), 12.0, PI * 0.5)
-	for at in [Vector3(-15,0,22),Vector3(12,0,26),Vector3(-12,0,-19)]: asset("house_1",at,5.5)
+	# Residential scenery has no resource effects or construction levels.
+	var homes = [Vector3(-14,0,19),Vector3(12,0,26),Vector3(-12,0,-19),Vector3(-12,0,34),Vector3(12,0,17),Vector3(31,0,-5),Vector3(-31,0,-44)]
+	for index in range(homes.size()): asset("house_2" if index in [1,5] else "house_1",homes[index],6.8,PI*0.5 if index%2==0 else -PI*0.5)
+	build_gardens()
 	asset("well", Vector3(0, 0.1, 0), 3.3)
 	asset("market_stand_1", Vector3(12, 0, -7), 4.5, -PI * 0.5)
 	asset("market_stand_2", Vector3(-12, 0, -7), 4.2, PI * 0.5)
@@ -252,12 +259,14 @@ func apply_development(kingdom: Dictionary) -> void:
 			build_defenses(architecture,key,level_value)
 		elif level_value==0:
 			# Surveyed building sites are part of construction gameplay.
-			architecture.block(Vector3(7,0.12,6),Vector3(0,0.06,0),"stone")
 			for x in [-3,3]:
 				for z in [-2.5,2.5]: architecture.cylinder(0.08,1.1,Vector3(x,0.55,z),"wood")
 			architecture.collision(Vector3(7,0.25,6),Vector3(0,0.13,0))
 		elif key=="keep":
-			if level_value<4: architecture.house(11,9,1,1)
+			if level_value<4:
+				architecture.house(11,9,2 if level_value>=2 else 1,1)
+				for side in [-1,1]: architecture.block(Vector3(0.6,3.5,0.6),Vector3(side*5.0,1.75,5.5),"stone")
+				for step in range(4): architecture.block(Vector3(4.0,0.2,2.8-step*0.6),Vector3(0,step*0.2+0.1,5.5-step*0.3),"stone")
 			else:
 				architecture.keep(12,10)
 				if level_value>=12:
@@ -269,7 +278,10 @@ func apply_development(kingdom: Dictionary) -> void:
 			if level_value>=5:
 				architecture.position.x+=1
 				architecture.house(5,5,1,1)
+		elif key=="academy":
+			architecture.academy(level_value)
 		elif key=="farm":
+			build_wheat(architecture)
 			architecture.house(5,4,1,1)
 			architecture.fence()
 		elif key in ["quarry","iron_mine"]:
@@ -308,3 +320,69 @@ func apply_development(kingdom: Dictionary) -> void:
 			puff.material=material
 			smoke.mesh=puff
 			architecture.add_child(smoke)
+
+func build_gardens() -> void:
+	if Nature.tree_mesh==null: return
+	var rng = RandomNumberGenerator.new()
+	rng.seed = 4702
+	var trees: Array[Transform3D] = []
+	var leaves: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var sites = [Vector3(-49,0,-37),Vector3(46,0,32),Vector3(-9,0,-44),Vector3(11,0,-48),Vector3(46,0,-6),Vector3(-47,0,16),Vector3(-49,0,44),Vector3(-5,0,34),Vector3(9,0,39),Vector3(-24,0,46),Vector3(22,0,44),Vector3(48,0,19),Vector3(-48,0,-2),Vector3(47,0,-48)]
+	for at in sites:
+		var transform_value = Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*rng.randf_range(0.60,0.82)),at)
+		trees.append(transform_value)
+		for leaf in range(72):
+			var tier = leaf%7
+			var angle = rng.randf()*TAU
+			var radius = rng.randf_range(0.2,3.2-tier*0.40)
+			var local = Vector3(sin(angle)*radius,3.0+tier*0.86+rng.randf_range(-0.2,0.25),cos(angle)*radius)
+			var basis = Basis.from_euler(Vector3(rng.randf_range(-0.7,0.7),angle+PI*0.5,0)).scaled(Vector3.ONE*lerpf(1.1,0.55,tier/6.0))
+			leaves.append(transform_value*Transform3D(basis,local))
+			colors.append(Color(rng.randf(),0,0,0))
+	var helper = Nature.new()
+	helper.instance_batch(self,Nature.tree_mesh,trees,Surfaces.pbr("bark_brown_02",Color(0.70,0.66,0.56),0.65),[],true,220)
+	garden_trunks = get_child(get_child_count()-1)
+	helper.instance_batch(self,Nature.leaf_mesh,leaves,Nature.leaf_material,colors,false,190)
+	garden_leaves = get_child(get_child_count()-1)
+	for index in range(8):
+		var rock = Nature.rock_scenes[index%7].instantiate()
+		rock.position = sites[index]+Vector3(2.1,0,-1.7)
+		rock.scale = Vector3.ONE*rng.randf_range(0.45,0.78)
+		rock.rotation.y = rng.randf()*TAU
+		add_child(rock)
+		helper.dress_rock(rock)
+		garden_rocks.append(rock)
+	helper.free()
+
+func set_detail(quality: int) -> void:
+	if is_instance_valid(garden_trunks):
+		var count = [6,10,14,14][clampi(quality,0,3)]
+		garden_trunks.multimesh.visible_instance_count = count
+		garden_leaves.multimesh.visible_instance_count = count*72
+		garden_trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if quality==0 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	for index in range(garden_rocks.size()): garden_rocks[index].visible = index<[3,6,8,8][clampi(quality,0,3)]
+
+func build_wheat(parent: Node3D) -> void:
+	var source = Architecture.new()
+	source.begin()
+	source.cylinder(0.018,1.15,Vector3(0,0.575,0),"wood")
+	for index in range(4): source.cone(0.075-index*0.012,0.10,Vector3(0.04,1.02+index*0.07,0),"wood")
+	var mesh = source.batches.wood.commit()
+	source.free()
+	var instances = MultiMesh.new()
+	instances.transform_format = MultiMesh.TRANSFORM_3D
+	instances.mesh = mesh
+	instances.instance_count = 240
+	for index in range(240):
+		var at = Vector3((index%24)*0.40-4.6,0,(index/24)*0.74+4.0)
+		var scale_value = 0.80+float(index%7)*0.04
+		instances.set_instance_transform(index,Transform3D(Basis(Vector3.UP,float(index)*0.78).scaled(Vector3.ONE*scale_value),at))
+	var visual = MultiMeshInstance3D.new()
+	visual.multimesh = instances
+	var surface = ShaderMaterial.new()
+	surface.shader = load("res://shaders/wheat.gdshader")
+	visual.material_override = surface
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	visual.visibility_range_end = 165
+	parent.add_child(visual)

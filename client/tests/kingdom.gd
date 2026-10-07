@@ -129,6 +129,17 @@ func run() -> void:
 	check(not game.strategy_camera.enabled,"Lost connection left camera input active")
 	await game.recover_connection()
 	check(game.network_online and game.strategy_camera.enabled,"Strategy reconnect failed")
+	# Check the actual server-populated council at different viewport sizes.
+	for viewport_size in [Vector2i(1280,720),Vector2i(1536,864),Vector2i(960,540)]:
+		root.size = viewport_size
+		for section in ["Buildings","Research","Reports","Queues","Goals"]:
+			panel.visible = true
+			panel.select_section(section)
+			for frame in range(3): await process_frame
+			check_layout(game,panel,section)
+	root.size = Vector2i(1280,720)
+	game.preferences.quality = 1
+	game.preferences.apply(game)
 	if DisplayServer.get_name() != "headless":
 		await panel.open_section("Buildings")
 		for frame in range(3): await process_frame
@@ -157,3 +168,11 @@ func issue(panel: Control,path: String,body: Dictionary) -> void:
 		print("NATIVE_ORDER_RECOVERY ",path," ",panel.last_error)
 		await panel.game.recover_connection()
 		check(panel.game.network_online and panel.pending_path.is_empty(),"Interrupted order did not recover: "+panel.last_error)
+
+func check_layout(game: Node,panel: Control,section: String) -> void:
+	var viewport = root.get_visible_rect()
+	for node in [game.hud.get_node("RealmHeader"),game.hud.get_node("RealmNavigation"),panel]:
+		check(viewport.encloses(node.get_global_rect()),section+": interface extends beyond the viewport")
+	var page: ScrollContainer = panel.tabs.get_current_tab_control()
+	if page==null: return
+	check(page.get_child(0).size.x<=page.size.x+1.0,section+": council content requires horizontal scrolling")

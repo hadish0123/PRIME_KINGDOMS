@@ -1,0 +1,79 @@
+{
+  "version": "0.9.2",
+  "direction": "Original mature medieval materials and restrained royal presentation. The third user reference informs layout. No extracted reference art.",
+  "rasterMethod": "image_gen.imagegen; original 1254x1254 outputs preserved, no pixel editing. Shared 4x4 atlases sampled with AtlasTexture.",
+  "iconAtlas": [
+    "food",
+    "wood",
+    "stone",
+    "iron",
+    "gold",
+    "buildings",
+    "army",
+    "research",
+    "world",
+    "clan",
+    "goals",
+    "inbox",
+    "settings",
+    "crown",
+    "refresh",
+    "clock"
+  ],
+  "buildingAtlas": [
+    "academy",
+    "keep",
+    "farm",
+    "lumber_mill",
+    "quarry",
+    "iron_mine",
+    "market",
+    "warehouse",
+    "barracks",
+    "archery_range",
+    "stable",
+    "siege_workshop",
+    "hospital",
+    "blacksmith",
+    "embassy",
+    "commander_hall"
+  ],
+  "assets": [
+    {
+      "path": "client/assets/ui/royal-icons.png",
+      "sha256": "5f3354e74610660229d26b2312e5b70b479008a424b54d406d49a9d3059497d0",
+      "bytes": 2550190,
+      "source": "Original OpenAI image generation"
+    },
+    {
+      "path": "client/assets/ui/royal-ruler.png",
+      "sha256": "2d3373c061ceeca6d27804e33637cd815a2b09a635baaf89502c20fca57e7f14",
+      "bytes": 2581381,
+      "source": "Original OpenAI image generation"
+    },
+    {
+      "path": "client/assets/ui/royal-buildings.png",
+      "sha256": "c71f97ba0095a7719250e053efd4fec50521f5df41812b391d31ee7ff776cac9",
+      "bytes": 4272883,
+      "source": "Original OpenAI image generation"
+    },
+    {
+      "path": "client/assets/ui/royal-frame.svg",
+      "sha256": "b135b870514160f6538e96854009ab777c61aaf33df7054bf4b888923cb835bf",
+      "bytes": 1341,
+      "source": "Original hand-drawn SVG"
+    },
+    {
+      "path": "client/assets/ui/royal-gold.svg",
+      "sha256": "0e1aada37265230c8fde53ebf2b80f1a74ef793b9482bf8915b809c52c99c154",
+      "bytes": 1341,
+      "source": "Original hand-drawn SVG"
+    },
+    {
+      "path": "client/assets/ui/royal-tools.svg",
+      "sha256": "9a08c9ad3353b3a7979970a3008957629690d2c906a79c76e97b8a53614a3000",
+      "bytes": 620,
+      "source": "Original hand-drawn SVG"
+    }
+  ]
+}

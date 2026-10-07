@@ -43,5 +43,6 @@ func apply(game: Node) -> void:
 	if is_instance_valid(game.terrain):
 		game.terrain.set_radius(profile.radius)
 		if game.terrain.nature: game.terrain.nature.set_quality(mini(quality,2))
+	for settlement in game.villages.values(): settlement.set_detail(quality)
 	if game.in_world and is_instance_valid(game.kingdom_panel) and not game.kingdom_panel.kingdom.is_empty():
 		game.update_garrison(game.kingdom_panel.kingdom)

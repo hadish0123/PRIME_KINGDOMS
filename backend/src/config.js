@@ -26,7 +26,7 @@ export function loadConfig(env = process.env) {
     databasePoolMax: integer(env, 'DATABASE_POOL_MAX', 5, 1, 50),
     startupAttempts: integer(env, 'DATABASE_STARTUP_ATTEMPTS', 12, 1, 30),
     startupRetryMs: integer(env, 'DATABASE_RETRY_MS', 3000, 100, 10000),
-    version: '0.9.1',
+    version: '0.9.2',
     commit: env.RAILWAY_GIT_COMMIT_SHA || 'local',
   });
 }
