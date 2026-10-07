@@ -24,7 +24,7 @@ func run() -> void:
 	game.player.position.x = 3.0
 	game.player.position.y = 0.1
 	var actor = game.player.actor
-	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 19, "Anatomical character rig did not load")
+	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 49, "Anatomical character rig did not load")
 	var inn = game.villages[fixture.state.village.id].get_node("inn")
 	var gable_present = false
 	for visual in inn.get_children():
@@ -81,7 +81,7 @@ func run() -> void:
 	game.terrain.nature.set_quality(0)
 	for frame in range(15): await process_frame
 	check(game.terrain.nature.grass.size() <= 25 and game.terrain.nature.groves.size() <= 9, "Low scenery did not release higher quality allocations")
-	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 19, "motion_clips": 16, "horse_clips":5, "bounded_foliage": true}))
+	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 49, "motion_clips": 16, "horse_clips":5, "bounded_foliage": true}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

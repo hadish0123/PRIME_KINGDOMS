@@ -31,6 +31,7 @@ func run() -> void:
 	await take("human",camera,p.position+Vector3(1.1,1.65,-2.75),p.position+Vector3(0,1.05,0))
 	p.actor.set_weapon_drawn(true)
 	pose(p.actor,"attack",0.35)
+	p.actor.update_weapon("attack",0.35/0.90)
 	await take("sword",camera,p.position+Vector3(2.5,1.65,2.8),p.position+Vector3(0,1.15,0))
 	p.actor.set_weapon_drawn(false)
 	pose(p.actor,"prone",0.5)

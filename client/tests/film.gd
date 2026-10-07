@@ -42,13 +42,13 @@ func run() -> void:
 	var horse_motions: Dictionary = {}
 	var started = Time.get_ticks_msec()
 	for frame in range(600):
-		p.touch_move = Vector2(0,-1) if (frame >= 180 and frame < 235) or (frame >= 280 and frame < 380) else Vector2.ZERO
+		p.touch_move = Vector2(0,-1) if (frame >= 225 and frame < 260) or (frame >= 300 and frame < 380) else Vector2.ZERO
 		p.touch_sprint = frame >= 320 and frame < 380
-		if frame == 125:
+		if frame == 150:
 			check(target.health==50,"Recorded controller strikes did not damage the practice target twice")
-		if frame in [30,125]: game.touch_controls.actions[0].pressed.emit()
-		if frame in [65,95]: game.touch_controls.actions[2].pressed.emit()
-		if frame in [155,245]: game.touch_controls.actions[4].pressed.emit()
+		if frame in [30,150]: game.touch_controls.actions[0].pressed.emit()
+		if frame in [80,112]: game.touch_controls.actions[2].pressed.emit()
+		if frame in [205,275]: game.touch_controls.actions[4].pressed.emit()
 		if frame in [330,362,505]: p.jump_requested = true
 		if frame == 420:
 			p.position = game.horse.position
@@ -60,7 +60,7 @@ func run() -> void:
 		if frame == 575:
 			p.apply_mount(false)
 			p.position.x += 1.35
-		if frame < 155:
+		if frame < 205:
 			camera.current = true
 			camera.position = p.position + Vector3(2.2,1.8,3.2)
 			camera.look_at(p.position + Vector3(0,1.1,0))

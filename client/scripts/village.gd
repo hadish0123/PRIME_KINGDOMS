@@ -54,9 +54,10 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	var road = ShaderMaterial.new()
 	road.shader = load("res://shaders/road.gdshader")
 	road.set_shader_parameter("soil_map", load("res://assets/textures/brown_mud_diff.jpg"))
-	road.set_shader_parameter("soil_normal", load("res://assets/textures/brown_mud_normal.jpg"))
-	road.set_shader_parameter("soil_rough", load("res://assets/textures/brown_mud_rough.jpg"))
-	road.set_shader_parameter("stone_map", load("res://assets/textures/rocky_terrain_02_diff.jpg"))
+	road.set_shader_parameter("soil_normal", load("res://assets/textures/cobblestone_normal.jpg"))
+	road.set_shader_parameter("soil_rough", load("res://assets/textures/cobblestone_rough.jpg"))
+	road.set_shader_parameter("stone_map", load("res://assets/textures/cobblestone_diff.jpg"))
+	road.set_shader_parameter("height_map", load("res://assets/textures/cobblestone_height.jpg"))
 	palette.road = road
 	palette.wood = Surfaces.pbr("wood_planks", Color(0.58, 0.46, 0.33), 0.7)
 	palette.gold = material(Color(0.66, 0.47, 0.20), 0.48)

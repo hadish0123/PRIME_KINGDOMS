@@ -2,6 +2,9 @@ extends Node3D
 
 const Api = preload("res://scripts/api.gd")
 const Terrain = preload("res://scripts/terrain.gd")
+const SettlementTerrain = preload("res://scripts/settlement_terrain.gd")
+const KingdomPanel = preload("res://scripts/kingdom_panel.gd")
+const EmpireVisuals = preload("res://scripts/empire_visuals.gd")
 const Player = preload("res://scripts/player.gd")
 const Village = preload("res://scripts/village.gd")
 const Actor = preload("res://scripts/actor.gd")
@@ -11,6 +14,7 @@ const Preferences = preload("res://scripts/preferences.gd")
 const Contract = preload("res://scripts/contract.gd")
 const Minimap = preload("res://scripts/minimap.gd")
 const Horse = preload("res://scripts/horse.gd")
+const Npc = preload("res://scripts/npc.gd")
 const Practice = preload("res://scripts/practice.gd")
 var api: Node
 var terrain: Node3D
@@ -66,6 +70,11 @@ var minimap: Control
 var residents_panel: Control
 var horse: Node3D
 var mount_busy = false
+var strategy_mode = false
+var kingdom_panel: Control
+var population_label: Label
+var army_display: Node3D
+var army_display_signature = ""
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -75,6 +84,9 @@ func _ready() -> void:
 	setup_lighting()
 	build_ui()
 	build_settings()
+	kingdom_panel = KingdomPanel.new()
+	kingdom_panel.game = self
+	hud.add_child(kingdom_panel)
 	preferences.apply(self)
 	if "--smoke" in OS.get_cmdline_user_args(): return
 	build_auth_stage()
@@ -85,9 +97,10 @@ func _ready() -> void:
 func attempt_saved_session() -> void:
 	if api.token.is_empty() or in_world: return
 	set_auth_busy(true, "Returning to your village…")
-	var response: Dictionary = await api.call_api("/v1/game")
+	var response: Dictionary = await api.call_api("/v2/scene")
 	if response.ok:
 		await enter_world(response.data)
+		await kingdom_panel.refresh()
 	else:
 		if response.status == 401: api.save_session("")
 		set_auth_busy(false, error_message(response.error))
@@ -138,7 +151,7 @@ func setup_lighting() -> void:
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_energy = 0.34
-	environment.ambient_light_color = Color(0.76, 0.82, 0.89)
+	environment.ambient_light_color = Color(0.82, 0.80, 0.77)
 	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
@@ -151,8 +164,8 @@ func setup_lighting() -> void:
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-34, -24, 0)
-	sun.light_color = Color(1.0, 0.95, 0.86)
-	sun.light_energy = 1.12
+	sun.light_color = Color(1.0, 0.92, 0.80)
+	sun.light_energy = 0.82
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04
@@ -261,7 +274,7 @@ func build_ui() -> void:
 	saved_session_button = button("RETRY SAVED SESSION", attempt_saved_session)
 	saved_session_button.visible = false
 	column.add_child(saved_session_button)
-	status_label = label("8 soldiers · 5 villagers · one permanent home", 15, Color(0.69, 0.76, 0.72))
+	status_label = label("Build your village · Command your army · Expand your kingdom", 15, Color(0.69, 0.76, 0.72))
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.custom_minimum_size = Vector2(420, 45)
 	column.add_child(status_label)
@@ -295,7 +308,8 @@ func build_ui() -> void:
 	population_style.content_margin_top = 9
 	population_style.content_margin_bottom = 9
 	population.add_theme_stylebox_override("panel",population_style)
-	population.add_child(label("8 SOLDIERS     ·     5 VILLAGERS     ·     65.5 km WORLD",16,Color(0.91,0.82,0.62)))
+	population_label = label("YOUR VILLAGE · YOUR KINGDOM",16,Color(0.91,0.82,0.62))
+	population.add_child(population_label)
 	hud.add_child(population)
 	minimap = Minimap.new()
 	minimap.game = self
@@ -359,6 +373,10 @@ func build_residents() -> void:
 	residents_panel.visible = false
 
 func toggle_residents() -> void:
+	if strategy_mode:
+		if kingdom_panel.visible: kingdom_panel.close()
+		else: kingdom_panel.open()
+		return
 	if not in_world: return
 	residents_panel.visible = not residents_panel.visible
 	map_panel.visible = false
@@ -517,14 +535,54 @@ func authenticate_user(registering: bool) -> void:
 	if response.ok:
 		api.save_session(str(response.data.session.token))
 		password.clear()
-		await enter_world(response.data.state)
+		await enter_authenticated()
 	else: set_auth_busy(false, error_message(response.error))
+
+func enter_authenticated() -> void:
+	var response: Dictionary = await api.call_api("/v2/scene")
+	if response.ok:
+		await enter_world(response.data)
+		await kingdom_panel.refresh()
+	else:
+		set_auth_busy(false,"Settlement could not load. Retry your saved session.")
+		saved_session_button.visible = true
+
+func apply_empire(empire: Dictionary) -> void:
+	if not in_world: return
+	EmpireVisuals.apply(world_root,empire)
+	population_label.text = str(empire.name)+" · SETTLEMENT"
+
+func update_garrison(kingdom: Dictionary) -> void:
+	if not strategy_mode or not villages.has(state.village.id): return
+	var signature = JSON.stringify(kingdom.units)
+	if signature == army_display_signature: return
+	army_display_signature = signature
+	var settlement = villages[state.village.id]
+	if is_instance_valid(army_display):
+		for npc in army_display.get_children(): settlement.population.erase(npc)
+		army_display.queue_free()
+	army_display = Node3D.new()
+	settlement.add_child(army_display)
+	var count = 0
+	for unit in kingdom.units:
+		var remaining = maxi(0,int(unit.alive)-(8 if unit.type == "swordsman" else 0))
+		for index in range(mini(remaining,32-count)):
+			var npc = Npc.new()
+			army_display.add_child(npc)
+			var at = Vector3(-40+(count%8)*3,0.1,38+floorf(count/8.0)*3)
+			npc.setup({"id":"army:%s:%d"%[unit.type,index],"name":str(unit.type).replace("_"," ").capitalize(),"role":"soldier","ordinal":count+8},at)
+			npc.terrain = terrain
+			settlement.population.append(npc)
+			count += 1
+		if count >= 32: break
+	EmpireVisuals.apply(army_display,kingdom.empire)
 
 func enter_world(game_state: Dictionary) -> void:
 	if not Contract.state(game_state):
 		set_auth_busy(false, error_message("invalid_response"))
 		return
 	world_epoch += 1
+	if is_instance_valid(kingdom_panel): kingdom_panel.clear_session()
 	if is_instance_valid(world_root): world_root.queue_free()
 	if is_instance_valid(auth_stage): auth_stage.queue_free()
 	auth_stage = null
@@ -534,12 +592,15 @@ func enter_world(game_state: Dictionary) -> void:
 	known_villages.clear()
 	remote_players.clear()
 	state = game_state
+	strategy_mode = game_state.has("scene")
+	army_display = null
+	army_display_signature = ""
 	var vp: Dictionary = state.village.position
 	origin = Vector3(float(vp.x), float(vp.y), float(vp.z))
 	world_root = Node3D.new()
 	world_root.name = "PersistentWorld"
 	add_child(world_root)
-	terrain = Terrain.new()
+	terrain = SettlementTerrain.new() if strategy_mode else Terrain.new()
 	world_root.add_child(terrain)
 	terrain.configure(state.world, origin, [state.village])
 	known_villages[state.village.id] = state.village
@@ -548,6 +609,7 @@ func enter_world(game_state: Dictionary) -> void:
 	player.terrain = terrain
 	player.game = self
 	player.half_world = float(state.world.sizeM) / 2.0 - 20.0
+	player.scene_half_size = float(state.scene.halfSize) if strategy_mode else 0.0
 	player.position = decode_position(state.player.position)
 	# Models face +Z, while the orbit camera looks toward -Z.
 	player.yaw = wrapf(float(state.player.yaw) - PI, -PI, PI)
@@ -628,7 +690,7 @@ func update_settlements() -> void:
 
 func apply_control_state() -> void:
 	if not in_world or not is_instance_valid(player): return
-	var blocked: bool = not network_online or app_paused or signing_out or quitting or mount_busy or map_panel.visible or settings_panel.visible or residents_panel.visible
+	var blocked: bool = (is_instance_valid(kingdom_panel) and kingdom_panel.visible) or not network_online or app_paused or signing_out or quitting or mount_busy or map_panel.visible or settings_panel.visible or residents_panel.visible
 	if blocked:
 		player.cancel_actions()
 		player.touch_move = Vector2.ZERO
@@ -664,7 +726,7 @@ func toggle_horse() -> void:
 	if epoch != world_epoch or not in_world: return
 	mount_busy = true
 	apply_control_state()
-	var response: Dictionary = await api.call_api("/v1/player/mount",{"mounted":not occupied})
+	var response: Dictionary = await api.call_api("/v2/scene/mount" if strategy_mode else "/v1/player/mount",{"mounted":not occupied,"requestId":KingdomPanel.request_id()} if strategy_mode else {"mounted":not occupied})
 	if epoch != world_epoch or not in_world: return
 	mount_busy = false
 	if response.ok:
@@ -720,7 +782,7 @@ func sync_position() -> bool:
 	var epoch = world_epoch
 	saving = true
 	var p = terrain.to_canonical(player.position) + origin
-	var response: Dictionary = await api.call_api("/v1/player/move", {"position": {"x": p.x, "y": p.y, "z": p.z}, "yaw": player.actor.rotation.y})
+	var response: Dictionary = await api.call_api("/v2/scene/move" if strategy_mode else "/v1/player/move", {"position": {"x": p.x, "y": p.y, "z": p.z}, "yaw": player.actor.rotation.y})
 	if epoch != world_epoch or not in_world: return false
 	saving = false
 	if response.ok:
@@ -739,7 +801,7 @@ func recover_connection() -> void:
 	var epoch = world_epoch
 	reconnecting = true
 	reconnect_clock = 0.0
-	var response: Dictionary = await api.call_api("/v1/game")
+	var response: Dictionary = await api.call_api("/v2/scene" if strategy_mode else "/v1/game")
 	if epoch != world_epoch or not in_world: return
 	reconnecting = false
 	if response.status == 401:
@@ -773,6 +835,7 @@ func recover_connection() -> void:
 	apply_control_state()
 
 func poll_world() -> void:
+	if strategy_mode: return
 	if not in_world or polling or not network_online: return
 	var epoch = world_epoch
 	polling = true
@@ -843,6 +906,10 @@ func apply_confirmed_army(units: Array) -> void:
 			if not npc.visible: npc.position = npc.home+Vector3(0,0.1,0)
 
 func toggle_map() -> void:
+	if strategy_mode:
+		if kingdom_panel.visible: kingdom_panel.close()
+		else: kingdom_panel.open()
+		return
 	if not in_world: return
 	residents_panel.visible = false
 	map_panel.visible = not map_panel.visible
@@ -853,6 +920,7 @@ func toggle_map() -> void:
 	map_text.text = "65.536 × 65.536 km · shared persistent terrain\n\nYour location:  X %d   /   Z %d\nYour village:   X %d   /   Z %d\nHome distance:  %.0f m\n\nOwned land: %d plots\nLand centers are 512 m apart. March with eight soldiers to claim unoccupied land.\nOccupied homes require a future warfare system." % [p.x, p.z, v.x, v.z, Vector2(p.x - float(v.x), p.z - float(v.z)).length(),int(state.get("territories",{}).get("owned",1))]
 
 func toggle_settings() -> void:
+	if is_instance_valid(kingdom_panel): kingdom_panel.visible = false
 	if not in_world: return
 	residents_panel.visible = false
 	settings_panel.visible = not settings_panel.visible
@@ -863,7 +931,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if in_world and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_M or event.keycode == KEY_TAB: toggle_map()
 		elif event.keycode == KEY_ESCAPE:
-			if residents_panel.visible: toggle_residents()
+			if is_instance_valid(kingdom_panel) and kingdom_panel.visible: kingdom_panel.close()
+			elif residents_panel.visible: toggle_residents()
 			elif map_panel.visible: toggle_map()
 			else: toggle_settings()
 
@@ -895,6 +964,7 @@ func sign_out() -> void:
 
 func leave_world(message: String) -> void:
 	world_epoch += 1
+	if is_instance_valid(kingdom_panel): kingdom_panel.clear_session()
 	in_world = false
 	mount_busy = false
 	residents_panel.visible = false

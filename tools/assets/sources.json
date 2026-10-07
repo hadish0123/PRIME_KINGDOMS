@@ -546,5 +546,303 @@
     "author": "Lyndon Daniels; rig by ChadM",
     "page": "https://opengameart.org/content/rigged-horse",
     "sha256": "9cca670b93a74d50e89263e50d55ab035a6c46aa7d2b21e354bdac6987037f4a"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      262788935,
+      265695478
+    ],
+    "deflate": true,
+    "sha256": "e8dc25d90f8f62467e8630420e1240a400d070054fb7c3f1d3f7bf3e457d6c2c",
+    "destination": "human/system/hair/long01/long01_diffuse.png",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/long01/long01_diffuse.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      265696270,
+      265768541
+    ],
+    "deflate": true,
+    "sha256": "7f1d6dadbdf9e96435251955d6657e77ea5433c9bc7c85a5c5f5e4eae0cb9a8c",
+    "destination": "human/system/hair/long01/long01.obj",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/long01/long01.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "range": [
+      265768624,
+      265841770
+    ],
+    "deflate": true,
+    "sha256": "94ecbebfd834da2cbee2ce90b730972590eb22a252ecd9592038ea736e063646",
+    "destination": "human/system/hair/long01/long01.mhclo",
+    "license": "CC0-1.0",
+    "author": "MakeHuman Community",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "archive_member": "hair/long01/long01.mhclo"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cobblestone_floor_01/cobblestone_floor_01_diff_2k.jpg",
+    "destination": "textures/cobblestone_diff.jpg",
+    "license": "CC0-1.0",
+    "author": "Rob Tuytel / Poly Haven",
+    "page": "https://polyhaven.com/a/cobblestone_floor_01",
+    "sha256": "c0e10581fa805b3fb316c26082e534e8aa6f8f5dd74c28a6b838659f37194d1a"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cobblestone_floor_01/cobblestone_floor_01_nor_gl_2k.jpg",
+    "destination": "textures/cobblestone_normal.jpg",
+    "license": "CC0-1.0",
+    "author": "Rob Tuytel / Poly Haven",
+    "page": "https://polyhaven.com/a/cobblestone_floor_01",
+    "sha256": "2a40f79ce71d39834aace659313e691230744985ec677ee367d35d0bafb200bf"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cobblestone_floor_01/cobblestone_floor_01_rough_2k.jpg",
+    "destination": "textures/cobblestone_rough.jpg",
+    "license": "CC0-1.0",
+    "author": "Rob Tuytel / Poly Haven",
+    "page": "https://polyhaven.com/a/cobblestone_floor_01",
+    "sha256": "507c28bf00e8addaf529170b254f3d4f874fff7e0e6bc12aacd25b9b13cb6585"
+  },
+  {
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cobblestone_floor_01/cobblestone_floor_01_disp_2k.jpg",
+    "destination": "textures/cobblestone_height.jpg",
+    "license": "CC0-1.0",
+    "author": "Rob Tuytel / Poly Haven",
+    "page": "https://polyhaven.com/a/cobblestone_floor_01",
+    "sha256": "843298cf1500e9360f6a8db45a4cc2b4a408a8d63ceffe5aa1fd44077f328797"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip",
+    "range": [
+      1336058,
+      1336312
+    ],
+    "deflate": true,
+    "sha256": "8d5bd8b0ba2bbfbf9322295804ac9060cffa59d153e9bdbbb93dcb8ea82d9a81",
+    "destination": "human/detail/bodyparts05/clothes/wdg_scruffy_beard/scruffy_beard.mhmat",
+    "license": "CC0-1.0",
+    "author": "WDG",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/bodyparts05.html",
+    "archive_member": "clothes/wdg_scruffy_beard/scruffy_beard.mhmat"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip",
+    "range": [
+      1336423,
+      2142940
+    ],
+    "deflate": true,
+    "sha256": "16b952b26327428c26c0fb6b7712af350ccbb0f93ebab9a1cf2d9a0a8f859f6f",
+    "destination": "human/detail/bodyparts05/clothes/wdg_scruffy_beard/beard2_texture-SMUDGE2.png",
+    "license": "CC0-1.0",
+    "author": "WDG",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/bodyparts05.html",
+    "archive_member": "clothes/wdg_scruffy_beard/beard2_texture-SMUDGE2.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip",
+    "range": [
+      2143048,
+      2195730
+    ],
+    "deflate": true,
+    "sha256": "d17d455c62e79f905ed5b953c338f6ced397af142f6283ced135c3d917fe35b3",
+    "destination": "human/detail/bodyparts05/clothes/wdg_scruffy_beard/wdg_scruffy_beard.mhclo",
+    "license": "CC0-1.0",
+    "author": "WDG",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/bodyparts05.html",
+    "archive_member": "clothes/wdg_scruffy_beard/wdg_scruffy_beard.mhclo"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip",
+    "range": [
+      2195832,
+      2230563
+    ],
+    "deflate": true,
+    "sha256": "03df2bc4be18525e2e54408bdbb1b38021645c198d095dcebdad302c90a7f5fd",
+    "destination": "human/detail/bodyparts05/clothes/wdg_scruffy_beard/scruffy_beard.obj",
+    "license": "CC0-1.0",
+    "author": "WDG",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/bodyparts05.html",
+    "archive_member": "clothes/wdg_scruffy_beard/scruffy_beard.obj"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/skins02/skins02_cc0.zip",
+    "range": [
+      26779579,
+      26780036
+    ],
+    "deflate": true,
+    "sha256": "ed79cb17edbb5929dd83474a46f045df7d5f31d0b9c1156c87f563bd2bbbfab6",
+    "destination": "human/detail/skins02/skins/mindfront_aksel_skin/mindfront_aksel_skin.mhmat",
+    "license": "CC0-1.0",
+    "author": "Mindfront",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/skins02.html",
+    "archive_member": "skins/mindfront_aksel_skin/mindfront_aksel_skin.mhmat"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/skins02/skins02_cc0.zip",
+    "range": [
+      26780144,
+      31021591
+    ],
+    "deflate": true,
+    "sha256": "268ee6d1ea9665f8050d040c7b47971884428628021418ae52f68912859f5e60",
+    "destination": "human/detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png",
+    "license": "CC0-1.0",
+    "author": "Mindfront",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/skins02.html",
+    "archive_member": "skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/skins02/skins02_cc0.zip",
+    "range": [
+      31021695,
+      35720871
+    ],
+    "deflate": true,
+    "sha256": "2bf3632a4bfb1631d9ae15568c7de5c7254c780e5168f1546827f32d50f5212d",
+    "destination": "human/detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png",
+    "license": "CC0-1.0",
+    "author": "Mindfront",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/skins02.html",
+    "archive_member": "skins/mindfront_aksel_skin/Aksel_Skin_NRM.png"
+  },
+  {
+    "url": "https://files2.makehumancommunity.org/asset_packs/skins02/skins02_cc0.zip",
+    "range": [
+      35720976,
+      37759694
+    ],
+    "deflate": true,
+    "sha256": "d34638826d48d6fdb632f3a18296999630edf2879e7301356dfa60e6d61808f7",
+    "destination": "human/detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_SPEC.png",
+    "license": "CC0-1.0",
+    "author": "Mindfront",
+    "page": "https://static.makehumancommunity.org/assets/assetpacks/skins02.html",
+    "archive_member": "skins/mindfront_aksel_skin/Aksel_Skin_SPEC.png"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/head/head-square.target",
+    "sha": "8d156ed42db13219844e01bf4ab3185d9205befa",
+    "destination": "human/core/targets/head/head-square.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/chin/chin-width-incr.target",
+    "sha": "ce13cc1c443cf705c5ef50ac6360a73801315fd7",
+    "destination": "human/core/targets/chin/chin-width-incr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/chin/chin-prominent-incr.target",
+    "sha": "06038d8062647d7845c9b14599c969d180062211",
+    "destination": "human/core/targets/chin/chin-prominent-incr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/cheek/l-cheek-bones-incr.target",
+    "sha": "b239a7d2b2e186ac39628d30fa085e407e44894e",
+    "destination": "human/core/targets/cheek/l-cheek-bones-incr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/cheek/r-cheek-bones-incr.target",
+    "sha": "6bfa79028e0a5cae65deb782c733e75c65ae020a",
+    "destination": "human/core/targets/cheek/r-cheek-bones-incr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/cheek/l-cheek-volume-decr.target",
+    "sha": "cfdffa3a12d995e7ab79fc29ccfb9a47e4ab4d42",
+    "destination": "human/core/targets/cheek/l-cheek-volume-decr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/cheek/r-cheek-volume-decr.target",
+    "sha": "b115fe9ecc0790daaf773d5f61e7ec51ebf71fb1",
+    "destination": "human/core/targets/cheek/r-cheek-volume-decr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/nose/nose-greek-incr.target",
+    "sha": "10730c3dad68b19c3559bd556684dffa74bb5c9f",
+    "destination": "human/core/targets/nose/nose-greek-incr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/nose/nose-width1-decr.target",
+    "sha": "ccdacedc38a0366d665c1e0e7605d84521e499f4",
+    "destination": "human/core/targets/nose/nose-width1-decr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/eyes/l-eye-eyefold-down.target",
+    "sha": "7cdfecb231e7ccd4f2dc5f59e95a0dc5a1a64e8c",
+    "destination": "human/core/targets/eyes/l-eye-eyefold-down.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/eyes/r-eye-eyefold-down.target",
+    "sha": "3e176da0176d58a141efae631649f381fe58c228",
+    "destination": "human/core/targets/eyes/r-eye-eyefold-down.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/eyes/l-eye-height2-decr.target",
+    "sha": "8f61d233b9ac805da40315b9ae25f22b55fac605",
+    "destination": "human/core/targets/eyes/l-eye-height2-decr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/eyes/r-eye-height2-decr.target",
+    "sha": "dc8a8cd33556d89fc4f9436136dcbb40f078fed0",
+    "destination": "human/core/targets/eyes/r-eye-height2-decr.target",
+    "license": "CC0-1.0"
+  },
+  {
+    "repository": "makehumancommunity/makehuman",
+    "ref": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "path": "makehuman/data/targets/eyebrows/eyebrows-angle-down.target",
+    "sha": "277df665253475ad716d6e004231a6fd1ad173fe",
+    "destination": "human/core/targets/eyebrows/eyebrows-angle-down.target",
+    "license": "CC0-1.0"
   }
 ]

@@ -20,3 +20,4 @@ client/assets/**/*.hdr
 client/assets/**/*.import
 client/assets/**/*.ttf
 !client/assets/textures/meadow_alpha.png
+!client/assets/heraldry/royal-textile.png

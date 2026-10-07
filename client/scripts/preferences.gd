@@ -4,6 +4,7 @@ const PROFILES = [
 	{"name": "LOW · 30 FPS", "fps": 30, "radius": 4, "distance": 320.0, "msaa": Viewport.MSAA_DISABLED, "shadows": false},
 	{"name": "BALANCED · 60 FPS", "fps": 60, "radius": 5, "distance": 480.0, "msaa": Viewport.MSAA_2X, "shadows": true},
 	{"name": "HIGH · 60 FPS", "fps": 60, "radius": 6, "distance": 720.0, "msaa": Viewport.MSAA_4X, "shadows": true},
+	{"name": "ULTRA · 60 FPS", "fps": 60, "radius": 6, "distance": 900.0, "msaa": Viewport.MSAA_8X, "shadows": true},
 ]
 var quality: int = 1
 var sensitivity: float = 1.0
@@ -14,7 +15,7 @@ func load_preferences() -> void:
 	var config = ConfigFile.new()
 	if config.load(path) != OK: return
 	var saved_quality = config.get_value("graphics", "quality", 1)
-	if saved_quality is int: quality = clampi(saved_quality, 0, 2)
+	if saved_quality is int: quality = clampi(saved_quality, 0, 3)
 	var saved_sensitivity = config.get_value("controls", "sensitivity", 1.0)
 	if (saved_sensitivity is float or saved_sensitivity is int) and is_finite(float(saved_sensitivity)):
 		sensitivity = clampf(float(saved_sensitivity), 0.5, 2.0)
@@ -37,7 +38,7 @@ func apply(game: Node) -> void:
 	game.render_distance = profile.distance
 	if is_instance_valid(game.terrain):
 		game.terrain.set_radius(profile.radius)
-		if game.terrain.nature: game.terrain.nature.set_quality(quality)
+		if game.terrain.nature: game.terrain.nature.set_quality(mini(quality,2))
 	if is_instance_valid(game.player):
 		game.player.look_sensitivity = sensitivity
 		game.player.invert_y = invert_y

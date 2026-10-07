@@ -5,6 +5,9 @@ import { authenticate } from './auth.js';
 import { register, login, gameState, movePlayer, nearbyWorld } from './game.js';
 import { readJSON, createAuthLimiter } from './http.js';
 import { commandArmy, claimTerritory, mountHorse } from './strategy.js';
+import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
+import { getScene, moveScene, mountScene } from './kingdom/scene.js';
+import { getMap } from './kingdom/world_map.js';
 
 function json(res, status, value, requestId, headers = {}) {
   res.writeHead(status, {
@@ -26,6 +29,9 @@ export function createApplication({ pool, config, logger = console }) {
     ['/v1/game', ['GET']], ['/v1/player/move', ['POST']], ['/v1/world/nearby', ['GET']],
     ['/v1/player/order',['POST']], ['/v1/territory/claim',['POST']],
     ['/v1/player/mount',['POST']],
+    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']],
+    ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
+    ['/v2/empire/customize',['POST']], ['/v2/scene/move',['POST']], ['/v2/scene/mount',['POST']],
   ]);
   const server = createServer(async (req, res) => {
     const requestId = randomUUID();
@@ -77,6 +83,22 @@ export function createApplication({ pool, config, logger = console }) {
       }
       if (path !== '/v1/world') {
         const identity = await authenticate(pool, req.headers.authorization);
+        if (path.startsWith('/v2/')) {
+          const body = req.method === 'POST' ? await readJSON(req) : {};
+          const handlers = {
+            '/v2/kingdom': () => getKingdom(pool, identity),
+            '/v2/world/map': () => getMap(pool, identity),
+            '/v2/scene': () => getScene(pool, identity),
+            '/v2/scene/move': () => moveScene(pool, identity, body),
+            '/v2/scene/mount': () => mountScene(pool, identity, body),
+            '/v2/buildings/upgrade': () => enqueue(pool, identity, body, 'building'),
+            '/v2/research/start': () => enqueue(pool, identity, body, 'research'),
+            '/v2/units/train': () => enqueue(pool, identity, body, 'training'),
+            '/v2/empire/customize': () => customize(pool, identity, body),
+          };
+          json(res, 200, await handlers[path](), requestId);
+          return;
+        }
         if (path === '/v1/auth/logout') {
           await pool.query('DELETE FROM sessions WHERE token_hash = $1', [identity.tokenHash]);
           json(res, 200, { status: 'signed_out' }, requestId);

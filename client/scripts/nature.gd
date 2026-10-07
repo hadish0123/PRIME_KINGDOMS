@@ -118,7 +118,7 @@ static func make_blades() -> ArrayMesh:
 				var y = float(segment + pair[0])
 				surface.set_normal(basis * Vector3(0, 0.78, 0.62).normalized())
 				surface.set_uv(Vector2(pair[1], 1.0-y))
-				surface.add_vertex(basis * Vector3((float(pair[1]) - 0.5) * 0.44, y * 0.65-0.02, y * y * 0.04))
+				surface.add_vertex(basis * Vector3((float(pair[1]) - 0.5) * 0.26, y * 0.26-0.01, y * y * 0.018))
 	return surface.commit()
 
 func seeded(key: Vector2i, salt: int) -> RandomNumberGenerator:
@@ -133,7 +133,7 @@ func build_grass(key: Vector2i) -> void:
 	var colors: Array[Color] = []
 	var corner = Vector2(key.x, key.y) * GRASS_TILE - Vector2(terrain.origin.x, terrain.origin.z)
 	var base = Vector3(corner.x, terrain.height_at(corner.x + 12, corner.y + 12), corner.y)
-	for i in range([160, 260, 420][quality]):
+	for i in range([280, 440, 620][quality]):
 		var p = corner + Vector2(rng.randf_range(0, GRASS_TILE), rng.randf_range(0, GRASS_TILE))
 		if not clear_at(p, false): continue
 		var basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.65, 1.4))
