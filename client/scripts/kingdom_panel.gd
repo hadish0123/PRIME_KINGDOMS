@@ -4,6 +4,8 @@ var game: Node
 var kingdom: Dictionary = {}
 var map_data: Dictionary = {}
 var clan_data: Dictionary = {}
+var command_data: Dictionary = {}
+var selected_target: Dictionary = {}
 var tabs: TabContainer
 var status: Label
 var busy = false
@@ -43,6 +45,8 @@ func clear_session() -> void:
 	kingdom.clear()
 	map_data.clear()
 	clan_data.clear()
+	command_data.clear()
+	selected_target.clear()
 	pending_path = ""
 	pending_body.clear()
 	busy = false
@@ -55,20 +59,26 @@ func refresh() -> void:
 	var epoch: int = game.world_epoch
 	var response: Dictionary = await game.api.call_api("/v2/kingdom")
 	if epoch != game.world_epoch or not game.in_world: return
-	busy = false
 	if response.ok:
 		kingdom = response.data
 		game.apply_empire(kingdom.empire)
+		game.apply_realm(kingdom.realm)
 		game.update_garrison(kingdom)
+		var command_response: Dictionary = await game.api.call_api("/v2/command")
+		if epoch != game.world_epoch or not game.in_world: return
+		if command_response.ok: command_data = command_response.data
+		busy = false
 		rebuild()
-	elif response.status == 401: game.expire_session()
+	elif response.status == 401:
+		busy = false
+		game.expire_session()
 	else:
+		busy = false
 		rebuild()
-		status.text = "Could not refresh settlement. Retry when connected."
+		status.text = "Could not refresh realm. Retry when connected."
 
 func submit(path: String, body: Dictionary) -> void:
 	if busy or not game.network_online: return
-	# Keep the exact request after a lost response; a retry replays rather than pays twice.
 	var requested = body.duplicate(true)
 	requested.erase("requestId")
 	var previous = pending_body.duplicate(true)
@@ -95,12 +105,22 @@ func submit(path: String, body: Dictionary) -> void:
 		if response.data.has("kingdom"):
 			kingdom = response.data.kingdom
 			game.apply_empire(kingdom.empire)
+			game.apply_realm(kingdom.realm)
 			game.update_garrison(kingdom)
 		if response.data.has("clans"):
 			clan_data = response.data.clans
+		if response.data.has("command"):
+			command_data = response.data.command
+		if response.data.has("realm"):
+			game.apply_realm(response.data.realm)
+		if response.data.has("battle"):
+			var battle: Dictionary = response.data.battle
+			status.text = "Victory." if battle.result == "attacker" else ("Draw." if battle.result == "draw" else "Defeat.")
+			selected_target.clear()
 			map_data.clear()
+		else:
+			status.text = "Saved by the server."
 		rebuild()
-		status.text = "Saved by the server."
 		await refresh()
 	else:
 		last_error = str(response.error)
@@ -145,18 +165,19 @@ func rebuild() -> void:
 		child.queue_free()
 	var column = VBoxContainer.new()
 	add_child(column)
-	column.add_child(game.label("YOUR KINGDOM",25,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("REALM COMMAND",25,Color(0.94,0.80,0.50)))
 	status = game.label("",14)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(status)
 	if not kingdom.is_empty():
-		column.add_child(game.label("%s · Level %d · %s" % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.stage).replace("_"," ")],17))
+		column.add_child(game.label("%s · Level %d · %s" % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17))
 		column.add_child(game.label("Food %d   Wood %d   Stone %d   Iron %d   Gold %d" % [kingdom.resources.food,kingdom.resources.wood,kingdom.resources.stone,kingdom.resources.iron,kingdom.resources.gold],16))
 	tabs = TabContainer.new()
 	tabs.custom_minimum_size.y = 350
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(tabs)
 	if not kingdom.is_empty():
+		build_overview(page("Overview"))
 		build_queue(page("Queues"))
 		build_upgrades(page("Buildings"),"building","/v2/buildings/upgrade")
 		build_units(page("Army"))
@@ -164,18 +185,31 @@ func rebuild() -> void:
 		build_empire(page("Empire"))
 		build_clans(page("Clan"))
 		build_map(page("Map"))
+		build_reports(page("Reports"))
 	tabs.current_tab = mini(selected,maxi(0,tabs.get_tab_count()-1))
 	var actions = HBoxContainer.new()
 	column.add_child(actions)
 	actions.add_child(game.button("REFRESH",refresh))
 	actions.add_child(game.button("RETRY PENDING",func():
 		if not pending_path.is_empty(): submit(pending_path,pending_body)))
-	actions.add_child(game.button("RETURN TO SETTLEMENT",close))
+	actions.add_child(game.button("RETURN TO REALM",close))
 
 func cost_text(cost: Dictionary) -> String:
 	var values: Array[String] = []
 	for key in cost: values.append("%s %d" % [str(key).capitalize(),int(cost[key])])
 	return ", ".join(values)
+
+func build_overview(column: VBoxContainer) -> void:
+	var realm: Dictionary = kingdom.realm
+	column.add_child(game.label("%s · %d controlled territories" % [realm.name,int(realm.ownedTiles)],20,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("Ruler level %d · Keep %d · Conquests %d · Prestige %d" % [kingdom.progression.level,kingdom.buildings.keep,kingdom.progression.conquests,kingdom.progression.prestige],15))
+	if realm.next != null:
+		var next: Dictionary = realm.next
+		column.add_child(game.label("NEXT: %s" % next.name,17))
+		column.add_child(game.label("Requirements · Keep %d · Ruler level %d · %d territories · %d conquests" % [next.keep,next.playerLevel,next.ownedTiles,next.conquests],14))
+	else:
+		column.add_child(game.label("Empire tier reached. Endgame prestige and level progression continue.",14))
+	column.add_child(game.label("The ruler is represented in the 3D settlement, but command decisions—not joystick movement—control progression.",14))
 
 func build_queue(column: VBoxContainer) -> void:
 	column.add_child(game.label("Production per hour: "+cost_text(kingdom.productionPerHour),15))
@@ -199,15 +233,55 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		column.add_child(action)
 
 func build_units(column: VBoxContainer) -> void:
-	var orders = HBoxContainer.new()
-	column.add_child(orders)
-	orders.add_child(game.button("FOLLOW RULER",func(): game.command_army("follow")))
-	orders.add_child(game.button("HOLD POSITION",func(): game.command_army("guard")))
-	var alive = 0
+	var alive := 0
+	var selectors: Dictionary = {}
 	for unit in kingdom.units:
 		alive += int(unit.alive)
 		column.add_child(game.label("%s · %d alive · %d wounded · %d dead" % [str(unit.type).replace("_"," ").capitalize(),unit.alive,unit.wounded,unit.dead],15))
+		if int(unit.alive) > 0:
+			var row = HBoxContainer.new()
+			column.add_child(row)
+			row.add_child(game.label("Assign "+str(unit.type).replace("_"," ").capitalize(),13))
+			var amount = SpinBox.new()
+			amount.min_value = 0
+			amount.max_value = int(unit.alive)
+			amount.value = mini(int(unit.alive),8)
+			amount.custom_minimum_size.x = 120
+			row.add_child(amount)
+			selectors[str(unit.type)] = amount
 	column.add_child(game.label("Army capacity: %d / %d" % [alive,kingdom.armyCapacity],16))
+	column.add_child(game.label("ARMY PRESET · choose the exact force you command into battle",16,Color(0.94,0.80,0.50)))
+	var slot = SpinBox.new()
+	slot.min_value = 1
+	slot.max_value = 5
+	slot.value = 1
+	column.add_child(slot)
+	var preset_name = game.input_field("Preset name")
+	preset_name.text = "Royal Host"
+	column.add_child(preset_name)
+	var formation = OptionButton.new()
+	for value in ["balanced","line","wedge","shield"]: formation.add_item(value)
+	column.add_child(formation)
+	var stance = OptionButton.new()
+	for value in ["balanced","aggressive","defensive"]: stance.add_item(value)
+	column.add_child(stance)
+	var defense = CheckButton.new()
+	defense.text = "Use this preset as offline home defense"
+	column.add_child(defense)
+	column.add_child(game.button("SAVE ARMY PRESET",func():
+		var chosen: Array = []
+		for key in selectors:
+			var quantity := int(selectors[key].value)
+			if quantity > 0: chosen.append({"type":key,"quantity":quantity})
+		submit("/v2/army/preset",{"slot":int(slot.value),"name":preset_name.text,"formation":formation.get_item_text(formation.selected),"stance":stance.get_item_text(stance.selected),"isDefense":defense.button_pressed,"units":chosen})))
+	if not command_data.is_empty():
+		for preset in command_data.presets:
+			var parts: Array[String] = []
+			for unit in preset.units: parts.append("%s×%d"%[str(unit.type).replace("_"," "),int(unit.quantity)])
+			column.add_child(game.label("Slot %d · %s · %s / %s%s\n%s" % [preset.slot,preset.name,preset.formation,preset.stance," · DEFENSE" if preset.isDefense else "",", ".join(parts)],14))
+			var delete_slot := int(preset.slot)
+			column.add_child(game.button("DELETE SLOT %d"%delete_slot,func(): submit("/v2/army/preset/delete",{"slot":delete_slot})))
+	column.add_child(game.label("TRAINING",16,Color(0.94,0.80,0.50)))
 	for entry in kingdom.catalog:
 		if entry.kind != "unit": continue
 		var key_value: String = entry.key
@@ -235,22 +309,40 @@ func build_empire(column: VBoxContainer) -> void:
 	column.add_child(game.button("SAVE EMPIRE",func(): submit("/v2/empire/customize",{"name":name_input.text,"primaryColor":primary.text,"secondaryColor":secondary.text,"emblem":emblem.get_item_text(emblem.selected),"bannerStyle":banner.get_item_text(banner.selected)})))
 
 func build_map(column: VBoxContainer) -> void:
-	column.add_child(game.button("LOAD STRATEGIC REGION",load_map))
+	column.add_child(game.button("REFRESH STRATEGIC REGION",load_map))
 	if map_data.is_empty(): return
 	column.add_child(game.label("%s · Settlement plot %d" % [map_data.region.name,map_data.region.ownPlot],17))
+	column.add_child(game.label("Select an adjacent hostile/neutral tile to issue an attack order. Ownership and results are server authoritative.",13))
 	var grid = GridContainer.new()
 	grid.columns = 7
 	column.add_child(grid)
 	for tile in map_data.tiles:
-		var card = PanelContainer.new()
-		card.custom_minimum_size = Vector2(94,57)
+		var tile_copy: Dictionary = tile.duplicate(true)
+		var card = Button.new()
+		card.custom_minimum_size = Vector2(100,62)
 		var color = Color(str(tile.primaryColor)) if tile.primaryColor != null else Color(0.12,0.17,0.15)
-		card.add_theme_stylebox_override("panel",game.panel_style(color.darkened(0.55)))
+		card.add_theme_stylebox_override("normal",game.panel_style(color.darkened(0.55)))
+		card.add_theme_stylebox_override("hover",game.panel_style(color.darkened(0.35),Color(0.9,0.75,0.35)))
 		var title = "%d,%d\n%s" % [tile.x,tile.z,str(tile.kind).capitalize()]
 		if tile.ownerPlayerId == game.state.player.id: title += " · YOURS"
-		card.add_child(game.label(title,12))
+		elif bool(tile.get("online",false)): title += " · ONLINE"
+		card.text = title
+		card.disabled = not bool(tile.get("attackable",false))
+		card.pressed.connect(func():
+			selected_target = tile_copy
+			rebuild()
+			for i in range(tabs.get_tab_count()):
+				if tabs.get_tab_title(i) == "Map": tabs.current_tab = i)
+		)
 		grid.add_child(card)
-	column.add_child(game.label("Starter settlements are protected. Colors show confirmed ownership.",13))
+	if not selected_target.is_empty():
+		column.add_child(game.label("TARGET · %d,%d · %s" % [selected_target.x,selected_target.z,str(selected_target.kind).capitalize()],16,Color(0.96,0.68,0.45)))
+		if command_data.is_empty() or command_data.presets.is_empty():
+			column.add_child(game.label("Create an army preset in the Army tab before attacking.",14))
+		else:
+			for preset in command_data.presets:
+				var slot_value := int(preset.slot)
+				column.add_child(game.button("ATTACK WITH SLOT %d · %s"%[slot_value,str(preset.name)],func(): submit("/v2/battles/attack",{"x":int(selected_target.x),"z":int(selected_target.z),"presetSlot":slot_value})))
 
 func build_clans(column: VBoxContainer) -> void:
 	column.add_child(game.label("Your player ID: "+str(game.state.player.id),12))
@@ -317,6 +409,16 @@ func build_clans(column: VBoxContainer) -> void:
 		if group.role == "leader" or (group.role == "officer" and member.role == "member"):
 			actions.add_child(game.button("KICK",func(): submit("/v2/clans/kick",{"playerId":target})))
 	if group.role != "leader": column.add_child(game.button("LEAVE AND RESETTLE",func(): submit("/v2/clans/leave",{})))
+
+func build_reports(column: VBoxContainer) -> void:
+	if command_data.is_empty() or command_data.reports.is_empty():
+		column.add_child(game.label("No battle reports yet.",15))
+		return
+	for report in command_data.reports:
+		var outcome := "VICTORY" if report.won else ("DRAW" if report.result == "draw" else "DEFEAT")
+		var enemy := str(report.defenderName) if report.perspective == "attacker" else str(report.attackerName)
+		if enemy == "<null>" or enemy == "": enemy = "Neutral Forces"
+		column.add_child(game.label("%s · %s · %s at %d,%d\nPower %d vs %d · %s" % [outcome,enemy,str(report.target.kind).capitalize(),report.target.x,report.target.z,report.attackerPower,report.defenderPower,str(report.territoryChange).replace("_"," ")],14))
 
 func load_clans() -> void:
 	if busy: return
