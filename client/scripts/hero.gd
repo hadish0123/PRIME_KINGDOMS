@@ -1,6 +1,8 @@
 extends "res://scripts/regalia.gd"
 
 const SwordRig = preload("res://scripts/sword_rig.gd")
+const Ornament = preload("res://scripts/hero_ornament.gd")
+var ornament: RefCounted
 var actor: Node3D
 var sword: Node3D
 var scabbard: Node3D
@@ -16,14 +18,15 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	skeleton = target
 	role = kind
 	variant = appearance
-	materials.steel = metal(Color(0.53,0.56,0.58))
-	materials.gold = metal(Color(0.72,0.49,0.17),true)
+	materials.steel = hero_metal(Color(0.36,0.38,0.40))
+	materials.gold = hero_metal(Color(0.64,0.43,0.16),true)
 	materials.leather = ShaderMaterial.new()
 	materials.leather.shader = load("res://shaders/leather.gdshader")
 	materials.dark = Surfaces.plain(Color(0.03,0.022,0.017),0.93)
 	materials.chain = ShaderMaterial.new()
 	materials.chain.shader = load("res://shaders/chainmail.gdshader")
-	materials.hair = Surfaces.plain(Color(0.038,0.022,0.015),0.85)
+	materials.hair = Surfaces.plain(Color(0.10,0.051,0.027),0.88)
+	ornament = Ornament.new(self)
 	for side in ["L","R"]:
 		boots(side)
 		limbs(side)
@@ -36,10 +39,18 @@ func prepare(target: Skeleton3D, kind: String, appearance: int = 0) -> void:
 	rig.wardrobe = self
 	skeleton.add_child(rig)
 
+func hero_metal(color_value: Color,gilded: bool = false) -> ShaderMaterial:
+	var surface = ShaderMaterial.new()
+	surface.shader = load("res://shaders/hero_metal.gdshader")
+	surface.set_shader_parameter("color",color_value)
+	surface.set_shader_parameter("gilded",1.0 if gilded else 0.0)
+	return surface
+
 func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: Basis, surface: String, taper: float = 0.82, arc: float = TAU) -> void:
 	# Profiled metal shells with a rolled edge and an embossed central ridge.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	var rows = 8
 	var columns = 32
 	for y in range(rows):
@@ -48,31 +59,132 @@ func shell(bone: String, radius: float, length_value: float, at: Vector3, axis: 
 				var u = float(x+pair[1])/columns
 				var v = float(y+pair[0])/rows
 				var angle = (u-0.5)*arc
-				var edge = pow(absf(v-0.5)*2.0,12.0)*0.0025
-				var r = radius*lerpf(1.0,taper,v)+edge
-				var ridge = pow(maxf(cos(angle),0),16)*radius*0.09
 				builder.set_uv(Vector2(u,v))
-				builder.add_vertex(Vector3(sin(angle)*r,(v-0.5)*length_value,cos(angle)*r*0.86+ridge))
+				builder.add_vertex(shell_point(angle,v,radius,length_value,taper,surface=="steel"))
 	builder.generate_normals()
 	builder.generate_tangents()
 	builder.index()
 	piece(bone,builder.commit(),at,surface,axis)
+	if surface == "steel": ornament.plate(bone,radius,length_value,at,axis,taper,arc)
+
+func shell_point(angle: float,v: float,radius: float,length_value: float,taper: float,sculpted: bool = true) -> Vector3:
+	var rolled = pow(absf(v-0.5)*2.0,16.0)*0.0030
+	var swell = sin(v*PI)*radius*0.035 if sculpted else 0.0
+	var r = radius*lerpf(1.0,taper,v)+rolled+swell
+	var front = maxf(cos(angle),0.0)
+	var ridge = pow(front,18.0)*radius*0.10
+	var flute = cos(angle*8.0)*sin(v*PI)*front*0.0015 if sculpted else 0.0
+	# Shoulder lames curve into a pointed centre instead of a cylindrical cuff.
+	var scallop = pow(front,4.0)*(v-0.5)*0.018 if sculpted and length_value<0.10 else 0.0
+	return Vector3(sin(angle)*r,(v-0.5)*length_value+scallop,cos(angle)*r*0.86+ridge+flute)
+
+func boots(side: String) -> void:
+	var bone = "foot."+side
+	var foot = CapsuleMesh.new()
+	foot.radius = 0.058
+	foot.height = 0.276
+	foot.radial_segments = 32
+	foot.rings = 10
+	piece(bone,foot,Vector3(0,-0.025,0.082),"leather",Basis(Vector3.RIGHT,PI*0.5))
+	tube(bone,0.068,0.17,Vector3(0,0.051,0),"leather",Basis.IDENTITY,0.062)
+	# Curved overlapping sabatons follow the instep and toe, with rolled rims.
+	for layer in range(5):
+		var builder = SurfaceTool.new()
+		builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+		builder.set_smooth_group(0)
+		var center_z = 0.199-layer*0.040
+		var width_value = 0.051+sin(float(layer)/4.0*PI)*0.010
+		for row in range(6):
+			for col in range(24):
+				for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
+					var u = float(col+pair[1])/24.0
+					var v = float(row+pair[0])/6.0
+					var angle = (u-0.5)*PI
+					builder.set_uv(Vector2(u,v))
+					builder.add_vertex(Vector3(sin(angle)*width_value,-0.041+cos(angle)*(0.034+layer*0.004)+pow(absf(v-0.5)*2,14)*0.0018,center_z+(v-0.5)*0.055))
+		builder.generate_normals()
+		builder.generate_tangents()
+		builder.index()
+		piece(bone,builder.commit(),Vector3.ZERO,"steel")
+		var edge = PackedVector3Array()
+		for i in range(25):
+			var a = (float(i)/24.0-0.5)*PI
+			edge.append(Vector3(sin(a)*width_value,-0.038+cos(a)*(0.034+layer*0.004),center_z+0.027))
+		ornament.cord(bone,edge,0.0016)
+		for direction in [-1,1]: sphere(bone,0.0025,Vector3(direction*width_value,-0.029,center_z),"gold")
+	# A bevelled rounded sole closes the toe without a rectangular block.
+	var sole = CapsuleMesh.new()
+	sole.radius = 0.064
+	sole.height = 0.30
+	sole.radial_segments = 32
+	sole.rings = 10
+	piece(bone,sole,Vector3(0,-0.066,0.080),"dark",Basis(Vector3.RIGHT,PI*0.5).scaled(Vector3(1,1,0.16)))
+
+func joint_guard(bone: String,radius: float) -> void:
+	var builder = SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
+	for row in range(12):
+		for col in range(40):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/40.0
+				var v = float(row+pair[0])/12.0
+				var a = u*TAU
+				builder.set_uv(Vector2(u,v))
+				builder.add_vertex(Vector3(sin(a)*radius*v,cos(a)*radius*v*(0.83+maxf(-cos(a),0)*0.35),0.024+radius*0.97+cos(v*PI*0.5)*radius*0.25))
+	builder.generate_normals()
+	builder.generate_tangents()
+	builder.index()
+	piece(bone,builder.commit(),Vector3.ZERO,"steel")
+	var border = PackedVector3Array()
+	for i in range(41):
+		var a = float(i)/40.0*TAU
+		border.append(Vector3(sin(a)*radius,cos(a)*radius*(0.83+maxf(-cos(a),0)*0.35),0.025+radius*0.97))
+	ornament.cord(bone,border,0.002)
+	ornament.lion(bone,Vector3(0,0,0.025+radius*1.23),radius*0.36)
+
+func armor_axis(direction: Vector3) -> Basis:
+	# Keep the open rear seam behind the limb, including downward arm rests.
+	var up = direction.normalized()
+	var forward = Vector3.BACK-up*Vector3.BACK.dot(up)
+	if forward.length_squared()<0.01: forward = Vector3.RIGHT-up*Vector3.RIGHT.dot(up)
+	forward = forward.normalized()
+	return Basis(up.cross(forward).normalized(),up,forward)
+
+func shoulder_cap(bone: String,radius: float,at: Vector3,axis: Basis) -> void:
+	# Convex crown closes the uppermost pauldron over the shoulder joint.
+	var builder = SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
+	for row in range(10):
+		for col in range(40):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/40.0
+				var v = float(row+pair[0])/10.0
+				var angle = u*TAU
+				var theta = v*PI*0.5
+				builder.set_uv(Vector2(u,v))
+				builder.add_vertex(Vector3(sin(angle)*sin(theta)*radius,-cos(theta)*radius*0.66,cos(angle)*sin(theta)*radius*0.86))
+	builder.generate_normals()
+	builder.generate_tangents()
+	builder.index()
+	piece(bone,builder.commit(),at,"steel",axis)
 
 func limbs(side: String) -> void:
 	for names in [["upperarm01","lowerarm01"],["lowerarm01","wrist"],["upperleg01","lowerleg01"],["lowerleg01","foot"]]:
 		var bone: String = names[0]+"."+side
 		var direction = rest(names[1]+"."+side)-rest(bone)
 		var length_value = direction.length()
-		var axis = Basis(Quaternion(Vector3.UP,direction.normalized()))
+		var axis = armor_axis(direction)
 		var leg: bool = str(names[0]).contains("leg")
 		var radius = (0.101 if names[0]=="upperleg01" else 0.078) if leg else (0.078 if names[0]=="upperarm01" else 0.061)
 		shell(bone,radius*0.96,length_value*0.95,direction*0.5,axis,"chain",0.85)
 		if names[0] == "upperarm01":
+			shoulder_cap(bone,0.125,direction.normalized()*0.002,axis)
 			for layer in range(5):
 				var r = 0.125-layer*0.009
 				var center = direction.normalized()*(0.04+layer*0.043)
-				shell(bone,r,0.084,center,axis,"steel",0.88)
-				ring(bone,r*0.88,0.003,center+direction.normalized()*0.038,"gold",axis.scaled(Vector3(1,1,0.86)))
+				shell(bone,r,0.084,center,axis,"steel",0.88,PI*1.42)
 				for angle in [-1.0,1.0]:
 					sphere(bone,0.003,center+axis*Vector3(sin(angle)*r,0.034,cos(angle)*r*0.87),"gold")
 		elif names[0] == "upperleg01":
@@ -80,8 +192,8 @@ func limbs(side: String) -> void:
 		else:
 			shell(bone,radius*1.12,length_value*0.74,direction*0.49,axis,"steel",0.81)
 			for t in [0.12,0.84]: ring(bone,radius*(1.10-t*0.2),0.0035,direction*t,"gold",axis.scaled(Vector3(1,1,0.87)))
-			# Flared elbow/knee couter plus gold perimeter and rivets.
-			sphere(bone,radius*1.24,Vector3(0,0,0.025),"steel",Vector3(1.12,0.90,0.92))
+			# Convex pointed couters, relief lions, rolled edges and rivets.
+			joint_guard(bone,radius*1.13)
 			for i in range(7):
 				var a = (i-3)*0.34
 				sphere(bone,0.0035,Vector3(sin(a)*radius*1.15,-0.008,0.028+cos(a)*radius*1.08),"gold")
@@ -95,11 +207,11 @@ func limbs(side: String) -> void:
 
 func cuirass() -> void:
 	# Dark fitted mail under the heraldic textile, rather than a plain breast box.
-	shell("spine01",0.222,0.51,Vector3(0,-0.015,0.04),Basis.IDENTITY.scaled(Vector3(1,1,0.81)),"chain",0.85)
+	shell("spine01",0.215,0.41,Vector3(0,-0.065,0.04),Basis.IDENTITY.scaled(Vector3(1,1,0.81)),"chain",0.85)
 	textile_panel("TabardChest",1.53,1.015,0.116,0.170,0.24,false)
 	textile_panel("TabardSkirt",1.03,0.40,0.157,0.168,0.20,true)
 	# Cross-body strap, double belts, loops, buckles and suspended leather pouch.
-	beam("spine01",Vector3(-0.20,0.16,0.218),Vector3(0.17,-0.15,0.235),0.036,"leather")
+	beam("spine01",Vector3(-0.20,0.16,0.275),Vector3(0.17,-0.15,0.287),0.043,"leather")
 	for y in [-0.11,-0.15]:
 		ring("spine03",0.195,0.021,Vector3(0,y,0.024),"leather",Basis.IDENTITY.scaled(Vector3(1,1,1.12)))
 	for x in [-0.10,0.10]:
@@ -109,22 +221,30 @@ func cuirass() -> void:
 	for i in range(13): sphere("spine03",0.0024,Vector3(-0.16+i*0.026,-0.15,0.199),"gold")
 	box("spine03",Vector3(0.091,0.123,0.055),Vector3(0.21,-0.224,0.073),"leather",Basis(Vector3.UP,0.33))
 	box("spine03",Vector3(0.080,0.021,0.061),Vector3(0.21,-0.174,0.073),"leather",Basis(Vector3.UP,0.33))
+	# Leather edges, brass stitches and embossed waist fittings.
+	for row in [-0.131,-0.172]:
+		for i in range(24):
+			var a = (float(i)/23.0-0.5)*PI*0.83
+			sphere("spine03",0.0015,Vector3(sin(a)*0.197,row,0.024+cos(a)*0.221),"gold")
+	for i in range(7):
+		var t = float(i)/6.0
+		sphere("spine01",0.0020,Vector3(lerpf(-0.188,0.16,t),lerpf(0.151,-0.14,t),lerpf(0.285,0.297,t)),"gold")
 	for side in [-1,1]:
-		sphere("spine01",0.037,Vector3(side*0.174,0.149,0.180),"gold",Vector3(1,1,0.30))
-		ring("spine01",0.035,0.003,Vector3(side*0.174,0.149,0.191),"steel",Basis(Vector3.RIGHT,PI/2))
+		ornament.lion("spine01",Vector3(side*0.174,0.149,0.247))
 
 func beam(bone: String,a: Vector3,b: Vector3,width: float,surface: String) -> void:
 	box(bone,Vector3(width,a.distance_to(b),0.011),(a+b)*0.5,surface,Basis(Quaternion(Vector3.UP,(b-a).normalized())))
 
-func textile_surface() -> ShaderMaterial:
+func textile_surface(skirt: bool = false) -> ShaderMaterial:
 	var material = ShaderMaterial.new()
 	material.shader = load("res://shaders/royal_textile.gdshader")
-	material.set_shader_parameter("albedo_map",load("res://assets/heraldry/royal-textile.png"))
+	material.set_shader_parameter("albedo_map",load("res://assets/heraldry/royal-skirt.svg" if skirt else "res://assets/heraldry/royal-textile.png"))
 	return material
 
 func textile_panel(name_value: String,top: float,bottom: float,top_width: float,bottom_width: float,depth: float,skirt: bool) -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	var hips = skeleton.find_bone("spine03")
 	var chest = skeleton.find_bone("spine01")
 	var left = skeleton.find_bone("upperleg01.L")
@@ -137,7 +257,8 @@ func textile_panel(name_value: String,top: float,bottom: float,top_width: float,
 				var width_value = lerpf(top_width,bottom_width,v) if skirt else (lerpf(top_width,0.220,smoothstep(0,0.25,v)) if v < 0.25 else lerpf(0.220,bottom_width,(v-0.25)/0.75))
 				var px = (u-0.5)*2.0*width_value
 				var center_depth = depth if skirt else (lerpf(0.135,depth,smoothstep(0,0.25,v)) if v < 0.25 else lerpf(depth,0.192,(v-0.25)/0.75))
-				var pz = center_depth-(0.065 if not skirt else 0.0)*pow(absf(u-0.5)*2,2)+sin(u*TAU*3)*0.009*(v if skirt else 0.3)
+				var fold = sin(u*TAU*3.0+v*1.7)*0.011+sin(u*TAU*6.0-v*1.5)*0.003
+				var pz = center_depth-(0.065 if not skirt else 0.0)*pow(absf(u-0.5)*2,2)+fold*(v if skirt else 0.45)
 				builder.set_uv(Vector2(u,v))
 				if skirt:
 					var leg_weight = v*0.42
@@ -153,18 +274,19 @@ func textile_panel(name_value: String,top: float,bottom: float,top_width: float,
 	var visual = MeshInstance3D.new()
 	visual.name = name_value
 	visual.mesh = builder.commit()
-	visual.material_override = textile_surface()
+	visual.material_override = textile_surface(skirt)
 	visual.skin = skeleton.create_skin_from_rest_transforms()
 	visual.skeleton = NodePath("..")
 	skeleton.add_child(visual)
 
 func headpiece() -> void:
-	# The fitted beard is part of hero.glb; no floating facial primitives or crown.
+	# The fitted source groom supplies the silhouette and animated roots.
 	pass
 
 func cape() -> void:
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for y in range(26):
 		for x in range(24):
 			for pair in [[0,0],[1,0],[0,1],[0,1],[1,0],[1,1]]:
@@ -181,20 +303,32 @@ func cape() -> void:
 	visual.material_override = textile_surface()
 	visual.material_override.set_shader_parameter("cape",true)
 	attach("spine01").add_child(visual)
-	# Pleated red mantle around the shoulders.
-	for i in range(4):
-		var mesh = TorusMesh.new()
-		mesh.inner_radius = 0.068+i*0.009
-		mesh.outer_radius = mesh.inner_radius+0.030
-		mesh.rings = 36
-		mesh.ring_segments = 8
-		var cloth = Surfaces.plain(Color(0.19,0.011,0.018),0.9)
-		var node = MeshInstance3D.new()
-		node.mesh = mesh
-		node.material_override = cloth
-		node.position = Vector3(0,0.25-i*0.018,0.036)
-		node.scale = Vector3(1.65,0.75,1.1)
-		attach("spine01").add_child(node)
+	# One continuous folded mantle, fitted between the neck and shoulder clasps.
+	var folds = SurfaceTool.new()
+	folds.begin(Mesh.PRIMITIVE_TRIANGLES)
+	folds.set_smooth_group(0)
+	for row in range(16):
+		for col in range(80):
+			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
+				var u = float(col+pair[1])/80.0
+				var v = float(row+pair[0])/16.0
+				var angle = u*TAU
+				var wave = sin(v*PI*5.0+sin(angle*3)*0.8)*0.010+sin(angle*9+v*4)*0.0025
+				var radius = lerpf(0.072,0.182,v)+wave
+				folds.set_uv(Vector2(u*3,v))
+				folds.add_vertex(Vector3(sin(angle)*radius*1.34,0.254-v*0.106+sin(angle*2+0.4)*0.014,0.045+cos(angle)*radius*1.08))
+	folds.generate_normals()
+	folds.generate_tangents()
+	folds.index()
+	var cloth = ShaderMaterial.new()
+	cloth.shader = load("res://shaders/hero_mantle.gdshader")
+	cloth.set_shader_parameter("albedo_map",load("res://assets/textures/rough_linen_diff.jpg"))
+	cloth.set_shader_parameter("normal_map",load("res://assets/textures/rough_linen_normal.jpg"))
+	cloth.set_shader_parameter("tint",Color(0.42,0.024,0.041))
+	var mantle = MeshInstance3D.new()
+	mantle.mesh = folds.commit()
+	mantle.material_override = cloth
+	attach("spine01").add_child(mantle)
 
 func make_weapon() -> void:
 	var direction = Vector3(-0.57,0.77,-0.17).normalized()
@@ -206,6 +340,7 @@ func make_weapon() -> void:
 	# Hollow elliptical sleeve: its mouth stays open and its walls hide the blade.
 	var builder = SurfaceTool.new()
 	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder.set_smooth_group(0)
 	for row in range(12):
 		for col in range(24):
 			for pair in [[0,0],[0,1],[1,0],[0,1],[1,1],[1,0]]:
@@ -269,7 +404,7 @@ func make_weapon() -> void:
 	visual.mesh = blade.commit()
 	visual.material_override = materials.steel
 	sword.add_child(visual)
-	for item in [[Vector3(0.028,0.135,0.027),Vector3(0,-0.005,0),"leather"],[Vector3(0.26,0.022,0.025),Vector3(0,-0.09,0),"gold"]]:
+	for item in [[Vector3(0.028,0.135,0.027),Vector3(0,-0.005,0),"leather"]]:
 		var mesh = BoxMesh.new()
 		mesh.size = item[0]
 		var node = MeshInstance3D.new()
@@ -277,6 +412,19 @@ func make_weapon() -> void:
 		node.position = item[1]
 		node.material_override = materials[item[2]]
 		sword.add_child(node)
+	# Ornament is geometry on the same sword; no detached or swapped prop.
+	for side in [-1.0,1.0]:
+		var curve = PackedVector3Array()
+		for i in range(17):
+			var t = float(i)/16.0
+			curve.append(Vector3(side*(0.015+t*0.126),-0.087-0.030*sin(t*PI*0.9),0))
+		ornament.cord("wrist.R",curve,0.009)
+	ornament.lion("wrist.R",Vector3(0,-0.086,0.011),0.018)
+	var guard_attachment: Node3D = flush()["wrist.R"]
+	var guard_mesh: Node3D = guard_attachment.get_child(0)
+	guard_mesh.reparent(sword,false)
+	guard_mesh.name = "SculptedCrossguard"
+	guard_attachment.queue_free()
 	for y in [0.075,-0.089]:
 		var pommel = SphereMesh.new()
 		pommel.radius = 0.024 if y>0 else 0.016

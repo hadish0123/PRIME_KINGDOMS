@@ -46,7 +46,10 @@ func run() -> void:
 	check(p.action_motion.is_empty(),"Sheathed sword could attack")
 	game.touch_controls.actions[0].pressed.emit()
 	check(p.action_motion == "draw","Sword button did not start drawing animation")
-	await ticks(100)
+	p.jump_requested = true
+	await ticks(2)
+	check(p.is_on_floor(),"Drawing the sword allowed a jump")
+	await ticks(98)
 	check(p.actor.weapon_drawn and p.actor.wardrobe.sword.visible and p.actor.wardrobe.scabbard.visible,"Draw did not complete with one continuous sword and an open scabbard")
 	var target = get_nodes_in_group("practice_targets")[0]
 	p.position = target.position+Vector3(0,0.1,-1.6)
@@ -66,8 +69,12 @@ func run() -> void:
 	p.position = Vector3(0,0.1,20)
 	p.velocity = Vector3.ZERO
 	await ticks(6)
+	p.toggle_weapon()
+	await ticks(100)
 	p.toggle_lying()
-	await ticks(60)
+	check(p.action_motion == "sheathe" and not p.lying and p.actor.weapon_drawn,"Entering prone teleported the sword to its scabbard")
+	await ticks(160)
+	check(not p.actor.weapon_drawn,"Prone did not finish sheathing the sword")
 	check(p.lying and p.collider.shape==p.prone_shape and p.actor.current_motion=="prone","Lying did not change posture and collision shape")
 	var head = p.actor.skeleton.find_bone("head")
 	check(p.actor.skeleton.get_bone_global_pose(head).origin.y<0.7,"Prone clip did not lower the actual skeleton to the ground")
@@ -94,6 +101,19 @@ func run() -> void:
 	p.toggle_lying()
 	await ticks(60)
 	check(not p.lying and p.collider.shape==p.standing_shape,"Standing did not restore full-height collision")
+	var obstacle = StaticBody3D.new()
+	game.world_root.add_child(obstacle)
+	var obstruction = CollisionShape3D.new()
+	var wall = BoxShape3D.new()
+	wall.size = Vector3(0.6,1.0,0.2)
+	obstruction.shape = wall
+	obstacle.add_child(obstruction)
+	obstacle.position = p.position+p.actor.basis*Vector3(0,0.5,0.8)
+	await ticks(2)
+	p.toggle_lying()
+	check(not p.lying,"Prone collision expanded through an obstacle")
+	obstacle.queue_free()
+	await ticks(2)
 	# Local fixture exercises the same rider controller; real API persistence
 	# and distance/ownership checks are covered separately by PostgreSQL tests.
 	p.position = game.horse.position

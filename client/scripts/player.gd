@@ -27,6 +27,7 @@ var action_clock = 0.0
 var action_elapsed = 0.0
 var action_event_done = false
 var action_duration = 0.0
+var prone_after_sheathe = false
 var game: Node3D
 var horse: Node3D
 
@@ -114,6 +115,8 @@ func _physics_process(delta: float) -> void:
 	if jump_requested and lying:
 		toggle_lying()
 		jump_buffer = 0.0
+	if not action_motion.is_empty():
+		jump_buffer = 0.0
 	if grounded_seconds > 0.0 and jump_buffer > 0.0:
 		velocity.y = 6.0
 		jump_buffer = 0.0
@@ -122,7 +125,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 	else: velocity.y -= 20.0 * delta
 	jump_requested = false
-	if direction.length_squared() > 0.001:
+	if action_motion.is_empty() and direction.length_squared() > 0.001:
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), minf(1.0, delta * 12.0))
 	move_and_slide()
 	var horizontal_speed = Vector2(velocity.x, velocity.z).length()
@@ -134,6 +137,9 @@ func _physics_process(delta: float) -> void:
 			if action_motion in ["draw","sheathe"]: actor.set_weapon_drawn(action_motion == "draw")
 			action_motion = ""
 			actor.update_weapon("",0)
+			if prone_after_sheathe:
+				prone_after_sheathe = false
+				toggle_lying()
 	elif horse:
 		actor.play_motion("ride")
 		horse.rotation.y = actor.rotation.y
@@ -152,6 +158,10 @@ func _physics_process(delta: float) -> void:
 		position.z = clampf(position.z, -half_world - terrain.origin.z, half_world - terrain.origin.z)
 
 func start_action(motion: String) -> void:
+	velocity.x = 0.0
+	velocity.z = 0.0
+	jump_buffer = 0.0
+	jump_requested = false
 	action_motion = motion
 	action_clock = actor.animation.get_animation(motion).length
 	action_duration = action_clock
@@ -161,6 +171,7 @@ func start_action(motion: String) -> void:
 	actor.update_weapon(motion,0)
 
 func cancel_actions() -> void:
+	prone_after_sheathe = false
 	action_motion = ""
 	actor.update_weapon("",0)
 	jump_requested = false
@@ -216,6 +227,17 @@ func can_mount_at(mount: Node3D) -> bool:
 func toggle_lying() -> void:
 	if frozen or horse or not action_motion.is_empty() or not is_on_floor(): return
 	if lying and not can_stand(global_position): return
+	if not lying:
+		var query = PhysicsShapeQueryParameters3D.new()
+		query.shape = prone_shape
+		query.transform = Transform3D(Basis(Vector3.UP,actor.rotation.y),global_position+Vector3(0,0.30,0))
+		query.collision_mask = collision_mask
+		query.exclude = [get_rid()]
+		if not get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(): return
+		if actor.weapon_drawn:
+			prone_after_sheathe = true
+			start_action("sheathe")
+			return
 	lying = not lying
 	collider.shape = prone_shape if lying else standing_shape
 	collider.position.y = 0.30 if lying else 0.90
