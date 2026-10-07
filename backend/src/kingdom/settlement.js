@@ -3,6 +3,7 @@ import { transaction, integer, text } from './transaction.js';
 import { settle, levels, spend, scaledCost, storageCapacity } from './economy.js';
 import { progression } from './progression.js';
 import { realmStage } from './realm.js';
+import { availableUnits } from './campaign_inventory.js';
 
 export async function snapshot(db, profile, now) {
   const economy = await settle(db, profile, now);
@@ -10,7 +11,7 @@ export async function snapshot(db, profile, now) {
   const research = await levels(db, profile.player_id, 'research');
   const healing = (await db.query('SELECT id,unit_type,quantity,finishes_at FROM kingdom_healing WHERE player_id=$1 AND completed_at IS NULL', [profile.player_id])).rows;
   const tasks = (await db.query('SELECT id,kind,key,target_level,quantity,started_at,finishes_at FROM kingdom_tasks WHERE player_id=$1 AND completed_at IS NULL ORDER BY finishes_at', [profile.player_id])).rows;
-  const units = (await db.query('SELECT * FROM kingdom_units WHERE player_id=$1 ORDER BY type', [profile.player_id])).rows.map(({ player_id, ...r }) => r);
+  const units = await availableUnits(db,profile.player_id);
   const catalog = (await db.query('SELECT kind,key,data FROM kingdom_catalog ORDER BY kind,key')).rows;
   const purposes = {
     keep:'Unlocks settlement improvements and realm advancement.', farm:'Produces food for troops and treatment.', lumber_mill:'Produces timber for buildings and equipment.',
@@ -28,7 +29,17 @@ export async function snapshot(db, profile, now) {
   };
   const quotes = catalog.filter(c => c.kind !== 'unit').map(c => {
     const current = (c.kind === 'building' ? buildings : research)[c.key] ?? 0;
-    return { purpose: c.kind==='building' ? purposes[c.key] : 'Strengthens the corresponding realm capability.', currentEffect:effects(c.key,current),nextEffect:effects(c.key,current+1),prerequisite:c.data.prerequisite??null, kind: c.kind, key: c.key, current, next: current + 1, maxLevel: c.data.maxLevel, cost: scaledCost(c.data.baseCost, current + 1), durationSeconds: Math.ceil(c.data.seconds * Math.pow(1.6, current) / (1 + (research.construction ?? 0) * .03)) };
+    const requirements=[];
+    const require=(kind,key,level)=>requirements.push({kind,key,level,current:(kind==='building'?buildings:research)[key]??0});
+    if (c.kind==='building') {
+      if (c.key!=='keep') require('building','keep',current+1);
+      if (c.data.prerequisite) require('building',c.data.prerequisite,1);
+      if (c.key==='keep' && current+1>3) require('building','warehouse',Math.floor((current+1)/3));
+    } else {
+      require('building','academy',current+1);
+      if (c.data.prerequisite) require('research',c.data.prerequisite,current+1);
+    }
+    return { requirements, purpose: c.kind==='building' ? purposes[c.key] : 'Strengthens the corresponding realm capability.', currentEffect:effects(c.key,current),nextEffect:effects(c.key,current+1),prerequisite:c.data.prerequisite??null, kind: c.kind, key: c.key, current, next: current + 1, maxLevel: c.data.maxLevel, cost: scaledCost(c.data.baseCost, current + 1), durationSeconds: Math.ceil(c.data.seconds * Math.pow(1.6, current) / (1 + (research.construction ?? 0) * .03)) };
   });
   const progress = await progression(db, profile);
   const realm = await realmStage(db, profile, buildings, progress);

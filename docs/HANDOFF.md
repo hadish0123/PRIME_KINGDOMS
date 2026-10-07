@@ -1,10 +1,25 @@
-# Production strategy handoff — 0.9.0 candidate
+# Production strategy handoff — 0.9.1 campaign candidate
 
 Base implementation: feature/strategic-command-online-08 at
 90c34eb3f3c6a00705375ab106381d7b5518d986.
 Work branch: feature/production-strategy-polish.
 
-## Implemented changes
+## Current campaign milestone
+
+Version 0.9.1 adds persistent timed marches, recalls, reserved troops and commanders,
+allied defense and participation reports. Migration 010 is additive. Incoming allied
+armies return when their host relocates; own armies must first come home. A conquered
+former home now receives a free starter plot rather than blocking clan departure.
+The native Army/World screens show campaign routes and timers, and garrison visuals
+use available troops. Defensive building visuals follow actual level milestones.
+Construction previews include exact prerequisite levels and queue explanations.
+
+Local Node.js checks and all 13 unit tests pass. Eight supplementary integration
+suites pass with serialized PGlite. Native PostgreSQL, exact-commit Godot rendering,
+Android export and signature validation for 0.9.1 remain pending. Do not carry 0.9.0
+CI results forward as proof of these new changes.
+
+## Established 0.9.0 systems
 
 Direct-control client scripts, movement HUD, avatar action inputs, old controller
 settings/tutorial logic, direct movement/horse API writes and follow-to-claim combat
@@ -28,7 +43,7 @@ allocation, in the existing transaction; queues, inventory, economy and research
 remain attached to their original player. Battle plunder debits defender stores,
 respecting protected resources. Rewards and war resolution cannot replay twice.
 
-## Validation status
+## Previous 0.9.0 validation evidence
 
 Source commit 790f737127ee7a0fad3d570ac125618af0cf6a42 passed all three GitHub
 workflows on 7 October 2026: Backend CI 37652818724, GDScript Parse 37652818772
@@ -70,8 +85,8 @@ the required v2 API, so the APK is not a usable new production game yet.
   Distinct premium commanders, cavalry, ranged and siege visuals are not certified.
 - Battle presentation consumes recorded server results but still needs class-specific
   animation, deployment/flanking/siege choreography and retreat presentation.
-- Timed marches, recalls, reinforcement armies, equipment and full season operations
-  are not complete.
+- Equipment and full season operations remain incomplete. Campaign authority and
+  presentation have been implemented for 0.9.1; their release gates remain pending.
 - Realm promotions have persisted title/rewards and visual building milestones;
   final ceremonies and realm-wide architectural transformations remain.
 - Chat persistence, block/report and moderation storage work; a staffed moderation

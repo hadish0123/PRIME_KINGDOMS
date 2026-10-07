@@ -125,13 +125,14 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		flag.position = Vector3(x + 0.9, 4.1, 42)
 		flag.rotation.x = PI * 0.5
 		add_child(flag)
-	# The stone enclosure leaves the existing central road and all resident homes clear.
-	for side in [-1, 1]:
-		asset("wall", Vector3(side * 51, 0, 0), 106.0, PI * 0.5)
-		for z in [-53.0, 53.0]: asset("tower", Vector3(side * 51, 0, z), 5.0)
-	asset("wall", Vector3(0, 0, -53), 102.0)
-	for side in [-1, 1]: asset("wall", Vector3(side * 29, 0, 53), 44.0)
-	asset("gate", Vector3(0, 0, 53), 16.0)
+	if not owner:
+		# The stone enclosure leaves the existing central road and all resident homes clear.
+		for side in [-1, 1]:
+			asset("wall", Vector3(side * 51, 0, 0), 106.0, PI * 0.5)
+			for z in [-53.0, 53.0]: asset("tower", Vector3(side * 51, 0, z), 5.0)
+		asset("wall", Vector3(0, 0, -53), 102.0)
+		for side in [-1, 1]: asset("wall", Vector3(side * 29, 0, 53), 44.0)
+		asset("gate", Vector3(0, 0, 53), 16.0)
 	for at in [Vector3(-19,0,-15), Vector3(20,0,-17), Vector3(-18,0,31), Vector3(33,0,6)]:
 		asset("props", at, 3.5)
 	for index in range(3): asset("fence", Vector3(31,0,25 + index * 10), 7.7)
@@ -159,6 +160,64 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 			npc.position = npc.home
 		population.append(npc)
 
+func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
+	architecture.set_meta("defense_level",level_value)
+	if key=="walls":
+		architecture.position=Vector3.ZERO
+		var segments=[
+			[Vector3(-51,0,-53),Vector3(-51,0,53)],
+			[Vector3(51,0,-53),Vector3(51,0,53)],
+			[Vector3(-51,0,-53),Vector3(51,0,-53)],
+			[Vector3(-51,0,53),Vector3(-8,0,53)],
+			[Vector3(8,0,53),Vector3(51,0,53)]]
+		for segment in segments:
+			var from: Vector3=segment[0]
+			var to: Vector3=segment[1]
+			var length_value=from.distance_to(to)
+			if level_value<4:
+				for index in range(ceili(length_value/0.5)):
+					var at=from.lerp(to,float(index)*0.5/length_value)
+					var height_value=2.7+float(index%3)*0.08
+					architecture.beam(at,at+Vector3(0,height_value,0),0.22)
+					architecture.cone(0.22,0.35,at+Vector3(0,height_value+0.15,0),"wood")
+				for y in [0.8,1.9]: architecture.beam(from+Vector3(0,y,0),to+Vector3(0,y,0),0.12)
+			else:
+				var direction=to-from
+				var center=(from+to)*0.5
+				var rotation_value=Vector3(0,atan2(-direction.z,direction.x),0)
+				var height_value=4.0 if level_value<12 else 5.8
+				architecture.block(Vector3(length_value,height_value,1.7),center+Vector3(0,height_value*0.5,0),"stone",rotation_value)
+				architecture.block(Vector3(length_value+0.2,0.24,2.0),center+Vector3(0,height_value,0),"stone",rotation_value)
+				for index in range(ceili(length_value/2.0)):
+					var at=from.lerp(to,float(index)*2.0/length_value)+Vector3(0,height_value+0.35,0)
+					architecture.block(Vector3(0.9,0.7,1.9),at,"stone",rotation_value)
+			var direction=to-from
+			architecture.collision(Vector3(absf(direction.x)+1.8,3,absf(direction.z)+1.8),(from+to)*0.5+Vector3(0,1.5,0))
+	elif key=="watch_towers":
+		architecture.position=Vector3.ZERO
+		for x in [-51,51]:
+			for z in [-53,53]:
+				var at=Vector3(x,0,z)
+				if level_value<4:
+					for dx in [-1.5,1.5]:
+						for dz in [-1.5,1.5]: architecture.beam(at+Vector3(dx,0,dz),at+Vector3(dx,5.5,dz),0.20)
+					architecture.block(Vector3(3.7,0.2,3.7),at+Vector3(0,4.0,0),"wood")
+					architecture.block(Vector3(3.8,0.16,4.0),at+Vector3(0,5.8,0),"roof")
+				else: architecture.tower(2.1,8.0 if level_value<12 else 11.0,at,level_value>=12)
+				architecture.collision(Vector3(4.2,6,4.2),at+Vector3(0,3,0))
+	else:
+		if level_value<4:
+			for side in [-1,1]:
+				architecture.block(Vector3(0.65,4,0.65),Vector3(side*7.5,2,0),"wood")
+				architecture.block(Vector3(2.6,2.1,2.8),Vector3(side*9,1.05,0),"wood")
+			architecture.beam(Vector3(-7.5,3.7,0),Vector3(7.5,3.7,0),0.24)
+			architecture.collision(Vector3(1,4,2),Vector3(-7.5,2,0))
+			architecture.collision(Vector3(1,4,2),Vector3(7.5,2,0))
+		else:
+			architecture.gate()
+			if level_value>=12:
+				for side in [-1,1]: architecture.tower(2.5,10,Vector3(side*9,0,0),true)
+
 func apply_development(kingdom: Dictionary) -> void:
 	var active: Dictionary = {}
 	for task in kingdom.tasks:
@@ -180,10 +239,8 @@ func apply_development(kingdom: Dictionary) -> void:
 		architecture.position=SLOTS[key]
 		building_nodes[key]=architecture
 		architecture.begin()
-		if key in ["walls","watch_towers","gatehouse"]:
-			# Existing defensive silhouettes are selected through their upgrade stations.
-			architecture.block(Vector3(3,0.15,3),Vector3(0,0.1,0),"stone")
-			architecture.collision(Vector3(3,3,3),Vector3(0,1.5,0))
+		if key in ["walls","watch_towers","gatehouse"] and level_value>0:
+			build_defenses(architecture,key,level_value)
 		elif level_value==0:
 			# Surveyed building sites are part of construction gameplay.
 			architecture.block(Vector3(7,0.12,6),Vector3(0,0.06,0),"stone")

@@ -22,6 +22,27 @@ func run() -> void:
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
 	await game.enter_world(fixture.state)
+	var settlement = game.villages[fixture.state.village.id]
+	var development={"tasks":[],"buildings":{"keep":1,"walls":0,"watch_towers":0,"gatehouse":0},"realm":{"rank":1}}
+	settlement.apply_development(development)
+	check(not settlement.building_nodes.walls.has_meta("defense_level"),"Unbuilt walls displayed a completed enclosure")
+	var survey_triangles=triangles(settlement.building_nodes.walls)
+	development.buildings.walls=1
+	development.buildings.watch_towers=1
+	development.buildings.gatehouse=1
+	settlement.apply_development(development)
+	check(settlement.building_nodes.walls.get_meta("defense_level")==1,"Timber walls did not follow the completed level")
+	check(triangles(settlement.building_nodes.walls)>survey_triangles,"Construction did not replace the surveyed site with defenses")
+	check(settlement.building_nodes.watch_towers.get_meta("defense_level")==1,"Watchtowers ignored their building level")
+	development.buildings.walls=4
+	development.buildings.watch_towers=4
+	development.buildings.gatehouse=4
+	settlement.apply_development(development)
+	check(settlement.building_nodes.walls.get_meta("defense_level")==4,"Stone wall milestone did not persist")
+	check(settlement.building_nodes.gatehouse.get_meta("defense_level")==4,"Gatehouse milestone did not follow the actual level")
+	development.buildings.walls=12
+	settlement.apply_development(development)
+	check(settlement.population.size()==13,"Architectural progression replaced resident identities")
 	var actor = game.ruler
 	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 49, "Anatomical character rig did not load")
 	for name_value in ["idle","walk","guard","work","attack","death","block","hit"]:
@@ -71,7 +92,16 @@ func run() -> void:
 	game.terrain.nature.set_quality(0)
 	for frame in range(15): await process_frame
 	check(game.terrain.nature.grass.size() <= 25 and game.terrain.nature.groves.size() <= 9, "Low scenery did not release higher quality allocations")
-	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 49, "simulation_motions":5, "horse_clips":5, "bounded_foliage": true}))
+	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 49, "simulation_motions":5, "horse_clips":5, "bounded_foliage": true,"defense_milestones":[0,1,4,12]}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)
+
+func triangles(node: Node) -> int:
+	var total=0
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var arrays=node.mesh.surface_get_arrays(surface)
+			total+=arrays[Mesh.ARRAY_INDEX].size()/3
+	for child in node.get_children(): total+=triangles(child)
+	return total

@@ -82,3 +82,17 @@ Clan invitations accept a rulerName without exposing player IDs to players.
 
 Obsolete direct-character write endpoints are removed. Historical read records
 remain available; older action clients must upgrade to the strategy client.
+
+## Campaign endpoints in 0.9.1
+
+POST /v2/army/march accepts requestId, presetSlot, x, z and kind (attack or reinforce).
+The response contains marchId and a full command snapshot. Departure does not return
+an instant battle result. POST /v2/army/recall accepts requestId and marchId.
+The legacy /v2/battles/attack route now starts an attack march; older cached requests
+still replay their original responses. Clients must use the new campaign presentation.
+
+GET /v2/command includes serverTime, marches and incoming campaigns alongside
+realm, presets and reports. Active routes include from/to, startedAt, arrivesAt,
+current position, phase, units and optional reportId. Stationed reinforcements have
+no arrival deadline. GET /v2/kingdom adds available and deployed to healthy troop
+counts. UI timers extrapolate server time only; a client timer cannot complete a march.

@@ -5,6 +5,7 @@ import { levels, settle } from './economy.js';
 import { grantXP, progression } from './progression.js';
 import { territoryName } from './locations.js';
 import { notify, settleWars, eligibleWar } from './wars.js';
+import { campaignSnapshot, commanderAway, marchUnits } from './campaign_inventory.js';
 
 const FORMATIONS = new Set(['balanced', 'line', 'wedge', 'shield', 'square', 'skirmish']);
 const STANCES = new Set(['aggressive', 'balanced', 'defensive']);
@@ -110,6 +111,7 @@ async function reportsSnapshot(db, playerId) {
     defenderPower: Number(r.defender_power),
     attackerLosses: r.attacker_losses,
     defenderLosses: r.defender_losses,
+    reinforcementLosses:r.reinforcement_losses,
     rewards: r.rewards,
     territoryChange: r.territory_change,
     resolvedAt: r.resolved_at,
@@ -118,15 +120,18 @@ async function reportsSnapshot(db, playerId) {
 }
 
 export function getCommandState(pool, identity) {
-  return transaction(pool, identity, 'command_state', {}, async (db, profile) => {
+  return transaction(pool, identity, 'command_state', {}, commandSnapshot, { replay: false });
+}
+
+export async function commandSnapshot(db, profile, now) {
     const buildings = await levels(db, profile.player_id, 'building');
     const progress = await progression(db, profile);
     return {
       realm: await realmStage(db, profile, buildings, progress),
       presets: await presetSnapshot(db, profile.player_id),
       reports: await reportsSnapshot(db, profile.player_id),
+      ...await campaignSnapshot(db,profile.player_id,now),
     };
-  }, { replay: false });
 }
 
 export function saveArmyPreset(pool, identity, body) {
@@ -166,19 +171,19 @@ export function saveArmyPreset(pool, identity, body) {
       'INSERT INTO kingdom_army_preset_units(preset_id,unit_type,quantity) VALUES($1,$2,$3)',
       [preset.id, unit.type, unit.quantity],
     );
-    return { command: { realm: await realmStage(db, profile), presets: await presetSnapshot(db, profile.player_id), reports: await reportsSnapshot(db, profile.player_id) } };
+    return { command: { realm: await realmStage(db, profile), presets: await presetSnapshot(db, profile.player_id), reports: await reportsSnapshot(db, profile.player_id), ...await campaignSnapshot(db,profile.player_id,now) } };
   });
 }
 
 export function deleteArmyPreset(pool, identity, body) {
-  return transaction(pool, identity, 'army_preset_delete', body, async (db, profile) => {
+  return transaction(pool, identity, 'army_preset_delete', body, async (db, profile, now) => {
     const slot = integer(body.slot, 1, 5, 'invalid_preset_slot');
     await db.query('DELETE FROM kingdom_army_presets WHERE player_id=$1 AND slot=$2', [profile.player_id, slot]);
-    return { command: { realm: await realmStage(db, profile), presets: await presetSnapshot(db, profile.player_id), reports: await reportsSnapshot(db, profile.player_id) } };
+    return { command: { realm: await realmStage(db, profile), presets: await presetSnapshot(db, profile.player_id), reports: await reportsSnapshot(db, profile.player_id), ...await campaignSnapshot(db,profile.player_id,now) } };
   });
 }
 
-async function combatPower(db, playerId, composition, formation, stance, targetKind, defending = false, commander = null, enemies = []) {
+async function combatPower(db, playerId, composition, formation, stance, targetKind, defending = false, commander = null, enemies = [], fortificationOwner = playerId) {
   if (!composition.length) return 0;
   const keys = [...new Set([...composition,...enemies].map(u => u.type))];
   const defs = new Map((await db.query("SELECT key,data FROM kingdom_catalog WHERE kind='unit' AND key=ANY($1::text[])", [keys])).rows.map(r => [r.key, r.data]));
@@ -214,13 +219,15 @@ async function combatPower(db, playerId, composition, formation, stance, targetK
     power += unit.quantity * quality * category * (1+(buildings.blacksmith??0)*.01);
   }
   const stanceMultiplier = stance === 'aggressive' ? 1.06 : (stance === 'defensive' ? (defending ? 1.10 : .96) : 1);
+  const fortBuildings=fortificationOwner===playerId?buildings:await levels(db,fortificationOwner,'building');
+  const fortResearch=fortificationOwner===playerId?research:await levels(db,fortificationOwner,'research');
   let fortification = 1;
-  if (defending && targetKind === 'settlement') fortification += Math.min(.55, (buildings.walls ?? 0) * .02+(buildings.gatehouse??0)*.01+(buildings.watch_towers??0)*.01 + (research.defense ?? 0) * .015);
-  if (defending && targetKind === 'fort') fortification += .55 + Math.min(.30, (research.defense ?? 0) * .015);
+  if (defending && targetKind === 'settlement') fortification += Math.min(.55, (fortBuildings.walls ?? 0) * .02+(fortBuildings.gatehouse??0)*.01+(fortBuildings.watch_towers??0)*.01 + (fortResearch.defense ?? 0) * .015);
+  if (defending && targetKind === 'fort') fortification += .55 + Math.min(.30, (fortResearch.defense ?? 0) * .015);
   return power * stanceMultiplier * fortification;
 }
 
-async function loadPreset(db, playerId, slot) {
+export async function loadPreset(db, playerId, slot) {
   const preset = (await db.query(
     'SELECT id,slot,name,formation,stance,is_defense,commander FROM kingdom_army_presets WHERE player_id=$1 AND slot=$2',
     [playerId, slot],
@@ -229,7 +236,7 @@ async function loadPreset(db, playerId, slot) {
   const units = (await db.query('SELECT unit_type,quantity FROM kingdom_army_preset_units WHERE preset_id=$1 ORDER BY unit_type', [preset.id])).rows
     .map(r => ({ type: r.unit_type, quantity: r.quantity }));
   if (!units.length) throw new ApiError(409, 'army_preset_empty');
-  const owned = new Map((await db.query('SELECT type,alive FROM kingdom_units WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
+  const owned = new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
   if (units.some(u => (owned.get(u.type) ?? 0) < u.quantity)) throw new ApiError(409, 'army_preset_stale');
   return { ...preset, units };
 }
@@ -239,11 +246,11 @@ async function defenseComposition(db, playerId) {
   if (preset) {
     const units = (await db.query('SELECT unit_type,quantity FROM kingdom_army_preset_units WHERE preset_id=$1 ORDER BY unit_type', [preset.id])).rows
       .map(r => ({ type: r.unit_type, quantity: r.quantity }));
-    const owned = new Map((await db.query('SELECT type,alive FROM kingdom_units WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
+    const owned = new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
     const legal = units.map(u => ({ type: u.type, quantity: Math.min(u.quantity, owned.get(u.type) ?? 0) })).filter(u => u.quantity > 0);
-    if (legal.length) return { formation: preset.formation, stance: preset.stance, commander:preset.commander, units: legal };
+    if (legal.length) return { formation: preset.formation, stance: preset.stance, commander:await commanderAway(db,playerId,preset.commander)?null:preset.commander, units: legal };
   }
-  const rows = (await db.query('SELECT type,alive FROM kingdom_units WHERE player_id=$1 AND alive>0 ORDER BY type', [playerId])).rows;
+  const rows = (await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1 AND available>0 ORDER BY type', [playerId])).rows;
   return {
     formation: 'shield',
     stance: 'defensive',
@@ -288,30 +295,33 @@ function npcPower(kind, x, z) {
   return base * (1 + ((Math.abs(x * 13 + z * 7) % 9) / 20));
 }
 
-export function attackTerritory(pool, identity, body) {
-  return transaction(pool, identity, 'battle_attack', body, async (db, profile, now) => {
+export async function attackTarget(db, identity, profile, x, z, army, now) {
+  const connected=(await db.query('SELECT 1 FROM strategic_tiles WHERE world_id=$1 AND owner_player_id=$2 AND abs(x-$3::integer)+abs(z-$4::integer)=1 LIMIT 1',[identity.world_id,profile.player_id,x,z])).rows.length;
+  if (!connected) throw new ApiError(409,'target_not_connected');
+  const target=(await db.query('SELECT * FROM strategic_tiles WHERE world_id=$1 AND x=$2 AND z=$3 FOR UPDATE',[identity.world_id,x,z])).rows[0];
+  if (!target) throw new ApiError(404,'target_unavailable');
+  if (target.owner_player_id===profile.player_id) throw new ApiError(409,'already_owned');
+  if (target.protected_until && target.protected_until>now) throw new ApiError(409,'target_protected');
+  if (target.occupied_until && target.occupied_until>now) throw new ApiError(409,'target_occupied');
+  const ownClan=await clanId(db,profile.player_id);
+  const otherClan=target.owner_clan_id??(target.owner_player_id?await clanId(db,target.owner_player_id):null);
+  if (ownClan && ownClan===otherClan) throw new ApiError(409,'friendly_territory');
+  const war=await eligibleWar(db,ownClan,otherClan,now);
+  if (target.kind==='fort' && !war) throw new ApiError(409,'clan_war_required');
+  if (target.kind==='fort' && !army.units.some(u=>['battering_ram','ballista','catapult','siege_tower','trebuchet'].includes(u.type))) throw new ApiError(409,'siege_required');
+  return target;
+}
+
+export async function resolveBattle(db,profile,now,identity,body,attacker) {
     await settleWars(db,identity.world_id,now);
     Object.assign(profile,(await db.query("SELECT * FROM kingdoms WHERE player_id=$1",[profile.player_id])).rows[0]);
     const targetX = integer(body.x, -100000, 100000, 'invalid_target');
     const targetZ = integer(body.z, -100000, 100000, 'invalid_target');
     const slot = integer(body.presetSlot, 1, 5, 'invalid_preset_slot');
     const economy = await settle(db, profile, now);
-    const attacker = await loadPreset(db, profile.player_id, slot);
 
-    const connected = (await db.query(`
-      SELECT 1 FROM strategic_tiles
-      WHERE world_id=$1 AND owner_player_id=$2 AND abs(x-$3::integer)+abs(z-$4::integer)=1 LIMIT 1
-    `, [identity.world_id, profile.player_id, targetX, targetZ])).rows.length > 0;
-    if (!connected) throw new ApiError(409, 'target_not_connected');
-
-    const target = (await db.query(
-      'SELECT * FROM strategic_tiles WHERE world_id=$1 AND x=$2 AND z=$3 FOR UPDATE',
-      [identity.world_id, targetX, targetZ],
-    )).rows[0];
-    if (!target) throw new ApiError(404, 'target_unavailable');
-    if (target.owner_player_id === profile.player_id) throw new ApiError(409, 'already_owned');
-    if (target.protected_until && target.protected_until > now) throw new ApiError(409, 'target_protected');
-    if (target.occupied_until && target.occupied_until > now) throw new ApiError(409, 'target_occupied');
+    const target = await attackTarget(db,identity,profile,targetX,targetZ,attacker,now);
+    if (Object.hasOwn(body,'expectedOwner') && target.owner_player_id!==body.expectedOwner) throw new ApiError(409,'target_changed');
 
     const attackerClan = await clanId(db, profile.player_id);
     const defenderId = target.owner_player_id ?? null;
@@ -332,12 +342,25 @@ export function attackTerritory(pool, identity, body) {
     if (target.kind==='fort' && !war) throw new ApiError(409,'clan_war_required');
     if (target.kind==='fort' && !attacker.units.some(u=>['battering_ram','ballista','catapult','siege_tower','trebuchet'].includes(u.type))) throw new ApiError(409,'siege_required');
 
+    const guards = defender && target.kind==='settlement' ? (await db.query(`
+      SELECT m.*,k.empire_name FROM kingdom_marches m JOIN kingdoms k ON k.player_id=m.player_id
+      JOIN clan_members cm ON cm.player_id=m.player_id
+      WHERE m.target_owner_id=$1 AND m.target_x=$2 AND m.target_z=$3 AND m.kind='reinforce'
+      AND m.phase='stationed' AND cm.clan_id=$4 ORDER BY m.player_id,m.id FOR UPDATE OF m`,
+      [defenderId,targetX,targetZ,defenderClan])).rows : [];
+    for (const guard of guards) {
+      await db.query('SELECT id FROM players WHERE id=$1 FOR UPDATE',[guard.player_id]);
+      await db.query('SELECT player_id FROM kingdoms WHERE player_id=$1 FOR UPDATE',[guard.player_id]);
+      guard.units=await marchUnits(db,guard.id);
+    }
+    const defendingUnits=[...(defenderArmy?.units??[]),...guards.flatMap(g=>g.units)];
     const battleId = randomUUID();
     const seed = createHash('sha256').update(battleId + ':' + identity.world_id).digest('hex');
-    const attackerPower = await combatPower(db, profile.player_id, attacker.units, attacker.formation, attacker.stance, target.kind, false,attacker.commander,defenderArmy?.units??[]);
+    const attackerPower = await combatPower(db, profile.player_id, attacker.units, attacker.formation, attacker.stance, target.kind, false,attacker.commander,defendingUnits);
     let defenderPower;
     if (defender) defenderPower = await combatPower(db, defenderId, defenderArmy.units, defenderArmy.formation, defenderArmy.stance, target.kind, true,defenderArmy.commander,attacker.units);
     else defenderPower = npcPower(target.kind, targetX, targetZ);
+    for (const guard of guards) defenderPower+=await combatPower(db,guard.player_id,guard.units,guard.formation,guard.stance,target.kind,true,guard.commander,attacker.units,defenderId);
 
     const attackRoll = .93 + deterministic(seed, 'attack') * .14;
     const defenseRoll = .93 + deterministic(seed, 'defense') * .14;
@@ -352,6 +375,16 @@ export function attackTerritory(pool, identity, body) {
     const npcQuantity=Math.max(1,Math.round(defenderPower/28));
     const npcAffected=Math.min(npcQuantity,Math.floor(npcQuantity*defenderRate*(.85+deterministic(seed,'defender:garrison')*.30)));
     const defenderLosses = defender ? await applyCasualties(db, defenderId, defenderArmy.units, defenderRate, seed, 'defender') : {garrison:{wounded:Math.round(npcAffected*.68),dead:npcAffected-Math.round(npcAffected*.68)}};
+    const reinforcementLosses=[];
+    for (const guard of guards) {
+      const losses=await applyCasualties(db,guard.player_id,guard.units,defenderRate,seed,'guard:'+guard.id);
+      reinforcementLosses.push({playerId:guard.player_id,realmName:guard.empire_name,armyName:guard.name,losses});
+      for (const [type,loss] of Object.entries(losses)) {
+        await db.query('UPDATE kingdom_march_units SET quantity=quantity-$3 WHERE march_id=$1 AND unit_type=$2',[guard.id,type,loss.wounded+loss.dead]);
+        const total=defenderLosses[type]??={wounded:0,dead:0};
+        total.wounded+=loss.wounded; total.dead+=loss.dead;
+      }
+    }
 
     let territoryChange = 'none';
     let rewards = {};
@@ -403,12 +436,17 @@ export function attackTerritory(pool, identity, body) {
       attackerPower, defenderPower, result, attackerLosses, defenderLosses, rewards, territoryChange, now]);
     await db.query("INSERT INTO kingdom_battle_reports(battle_id,player_id,perspective) VALUES($1,$2,'attacker')", [battleId, profile.player_id]);
     if (defenderId) await db.query("INSERT INTO kingdom_battle_reports(battle_id,player_id,perspective) VALUES($1,$2,'defender')", [battleId, defenderId]);
+    for (const guard of guards) {
+      await db.query("INSERT INTO kingdom_battle_reports(battle_id,player_id,perspective) VALUES($1,$2,'defender') ON CONFLICT DO NOTHING",[battleId,guard.player_id]);
+      await db.query('UPDATE kingdom_marches SET report_id=$2 WHERE id=$1',[guard.id,battleId]);
+      await notify(db,guard.player_id,'battle:'+battleId,'battle','Your reinforcements defended an ally','Open the report to review the battle and your soldiers’ losses.',battleId);
+    }
 
     const replay = {version:1,seed,formation:attacker.formation,stance:attacker.stance,commander:attacker.commander??null,
-      attacker:attacker.units,defender:defenderArmy?.units??[{type:'garrison',quantity:npcQuantity}],
+      attacker:attacker.units,defender:defender?defendingUnits:[{type:'garrison',quantity:npcQuantity}],
       phases:[{key:'deployment',duration:2},{key:'ranged',duration:2},{key:'advance',duration:2},{key:'melee',duration:3},{key:'conclusion',duration:2}],
       result,attackerLosses,defenderLosses,territoryChange};
-    await db.query('UPDATE kingdom_battles SET replay=$2,war_id=$3 WHERE id=$1',[battleId,replay,war?.id??null]);
+    await db.query('UPDATE kingdom_battles SET replay=$2,war_id=$3,reinforcement_losses=$4 WHERE id=$1',[battleId,replay,war?.id??null,JSON.stringify(reinforcementLosses)]);
     if (attacker.commander) await db.query('UPDATE kingdom_commanders SET xp=xp+25 WHERE player_id=$1 AND key=$2',[profile.player_id,attacker.commander]);
     if (war && result==='attacker') {
       const score=target.kind==='fort'?50:target.kind==='settlement'?20:5;
@@ -436,7 +474,6 @@ export function attackTerritory(pool, identity, body) {
       realm: await realmStage(db, profile, buildings, progress),
       command: { presets: await presetSnapshot(db, profile.player_id), reports: await reportsSnapshot(db, profile.player_id) },
     };
-  }, { globalLock: true });
 }
 
 export function getPresence(pool, identity) {

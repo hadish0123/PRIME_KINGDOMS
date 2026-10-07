@@ -164,18 +164,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.9.0.apk 2>&1 | tee client/builds/export.log
+          Godot_v4.7.2-stable_linux.x86_64 --headless --path client --export-"$PRIME_EXPORT_MODE" Android builds/PRIME-KINGDOMS-0.9.1.apk 2>&1 | tee client/builds/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/export.log; then exit 1; fi
-          test -s client/builds/PRIME-KINGDOMS-0.9.0.apk
-          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.9.0.apk
-          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.9.0.apk > client/builds/apk-metadata.log
+          test -s client/builds/PRIME-KINGDOMS-0.9.1.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose client/builds/PRIME-KINGDOMS-0.9.1.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging client/builds/PRIME-KINGDOMS-0.9.1.apk > client/builds/apk-metadata.log
           sed -n '1,15p' client/builds/apk-metadata.log
-          (cd client/builds && sha256sum PRIME-KINGDOMS-0.9.0.apk kingdom.png settlement.png human.png login.png settings.png character-front.png character-face.png character-profile.png character-back.png > SHA256SUMS.txt)
+          (cd client/builds && sha256sum PRIME-KINGDOMS-0.9.1.apk kingdom.png settlement.png human.png login.png settings.png character-front.png character-face.png character-profile.png character-back.png > SHA256SUMS.txt)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-Android-0.9.0-${{ github.run_number }}
+          name: PRIME-KINGDOMS-Android-0.9.1-${{ github.run_number }}
           path: |
-            client/builds/PRIME-KINGDOMS-0.9.0.apk
+            client/builds/PRIME-KINGDOMS-0.9.1.apk
             client/builds/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
@@ -183,7 +183,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: PRIME-KINGDOMS-0.9.0-evidence-${{ github.run_number }}
+          name: PRIME-KINGDOMS-0.9.1-evidence-${{ github.run_number }}
           path: |
             client/builds/*.png
             client/builds/*.log
@@ -197,7 +197,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          prime_candidate_tag="v0.9.0-candidate-${GITHUB_RUN_NUMBER}"
+          prime_candidate_tag="v0.9.1-candidate-${GITHUB_RUN_NUMBER}"
           if ! gh release view "$prime_candidate_tag" >/dev/null 2>&1; then
-            gh release create "$prime_candidate_tag" client/builds/PRIME-KINGDOMS-0.9.0.apk client/builds/SHA256SUMS.txt client/builds/kingdom.png client/builds/settlement.png --target "$PRIME_CANDIDATE_SHA" --prerelease --title 'PRIME KINGDOMS 0.9.0 — Strategy candidate' --notes-file docs/RELEASE_0_9_0.md
+            gh release create "$prime_candidate_tag" client/builds/PRIME-KINGDOMS-0.9.1.apk client/builds/SHA256SUMS.txt client/builds/kingdom.png client/builds/settlement.png --target "$PRIME_CANDIDATE_SHA" --prerelease --title 'PRIME KINGDOMS 0.9.1 — Strategy candidate' --notes-file docs/RELEASE_0_9_1.md
           fi

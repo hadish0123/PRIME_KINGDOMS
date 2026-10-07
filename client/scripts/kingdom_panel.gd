@@ -1,6 +1,7 @@
 extends PanelContainer
 
 const Text = preload("res://scripts/game_text.gd")
+const CampaignMap = preload("res://scripts/campaign_map.gd")
 const BattleReplay = preload("res://scripts/battle_replay.gd")
 var game: Node
 var kingdom: Dictionary = {}
@@ -347,6 +348,12 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		column.add_child(game.button("View All Buildings",func():
 			selected_building=""
 			rebuild()))
+	var queue: Array = kingdom.tasks.filter(func(task): return task.kind==kind)
+	if not queue.is_empty():
+		column.add_child(game.label(Text.copy("%s is in progress. This queue can begin another order when it finishes.") % catalog_name(kind,str(queue[0].key)),14))
+		var queue_timer = game.label("",15)
+		column.add_child(queue_timer)
+		countdowns.append({"label":queue_timer,"ends":Time.get_unix_time_from_datetime_string(str(queue[0].finishes_at))})
 	for quote in quotes:
 		var key_value: String = quote.key
 		var card = PanelContainer.new()
@@ -361,7 +368,12 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		if not effect.is_empty():
 			details.add_child(game.label(Text.copy("%d → %d %s") % [effect.value,next_effect.value,str(effect.unit)],15))
 		details.add_child(game.label(cost_text(quote.cost)+" · "+Text.duration(int(quote.durationSeconds)),14))
-		if quote.get("prerequisite")!=null: details.add_child(game.label("Requires "+catalog_name(kind,str(quote.prerequisite)),13))
+		var unmet = false
+		for requirement in quote.get("requirements",[]):
+			var missing: bool = int(requirement.current)<int(requirement.level)
+			unmet = unmet or missing
+			details.add_child(game.label(Text.copy("Requires %s · Level %d (%d reached)") % [catalog_name(str(requirement.kind),str(requirement.key)),int(requirement.level),int(requirement.current)],13,Color(0.82,0.56,0.43) if missing else Color(0.66,0.76,0.62)))
+		if quote.current>=quote.maxLevel: details.add_child(game.label("This improvement has reached its highest level.",14))
 		var shortfall: Dictionary = {}
 		for resource in quote.cost:
 			if int(quote.cost[resource])>int(kingdom.resources[resource]): shortfall[resource]=int(quote.cost[resource])-int(kingdom.resources[resource])
@@ -372,27 +384,66 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 			details.add_child(timer)
 			countdowns.append({"label":timer,"ends":Time.get_unix_time_from_datetime_string(str(task[0].finishes_at))})
 		var action = game.button("Research" if kind=="research" else ("Construct" if quote.current==0 else "Upgrade"),func(): submit(path,{"key":key_value}))
-		action.disabled = quote.current>=quote.maxLevel or not task.is_empty() or not shortfall.is_empty()
+		action.disabled = quote.current>=quote.maxLevel or not task.is_empty() or not shortfall.is_empty() or unmet
 		details.add_child(action)
 
+func build_marches(column: VBoxContainer) -> void:
+	column.add_child(game.label("Army Campaigns",18,Color(0.94,0.80,0.50)))
+	var marches: Array = command_data.get("marches",[])
+	if marches.is_empty(): column.add_child(game.label("Your armies are home. Select a holding on the world map to issue an order.",14))
+	for march in marches:
+		var card = PanelContainer.new()
+		card.add_theme_stylebox_override("panel",game.panel_style(Color(0.07,0.066,0.057)))
+		column.add_child(card)
+		var details = VBoxContainer.new()
+		card.add_child(details)
+		details.add_child(game.label(str(march.name)+" · "+Text.name_for(str(march.phase)),17))
+		details.add_child(game.label(Text.copy("%s · %s") % [Text.name_for(str(march.kind)),str(march.target.name)],14))
+		var count = 0
+		for unit in march.units: count+=int(unit.quantity)
+		details.add_child(game.label(Text.copy("%d soldiers on duty") % count,14))
+		if march.route.arrivesAt!=null:
+			var timer = game.label("",15)
+			details.add_child(timer)
+			countdowns.append({"label":timer,"ends":Time.get_unix_time_from_datetime_string(str(march.route.arrivesAt))})
+		if march.phase=="returning":
+			details.add_child(game.label("Survivors become available when they reach your settlement.",13))
+			if march.get("returnReason") not in [null,"recalled","battle_resolved"]:
+				details.add_child(game.label(Text.error(str(march.returnReason)),13))
+		else:
+			var march_id: String = march.id
+			details.add_child(game.button("Recall Army",func(): submit("/v2/army/recall",{"marchId":march_id})))
+		var reports: Array = command_data.get("reports",[]).filter(func(report): return report.id==march.get("reportId"))
+		if not reports.is_empty():
+			var report: Dictionary = reports[0]
+			details.add_child(game.button("View Report",func(): show_replay(report)))
+	for arriving in command_data.get("incoming",[]):
+		var friendly: bool = arriving.kind=="reinforce"
+		column.add_child(game.label(Text.copy("%s · %s · %s") % [str(arriving.realmName),Text.copy("Allied Guard" if friendly else "Enemy Army"),Text.name_for(str(arriving.phase))],14,Color(0.73,0.83,0.69) if friendly else Color(0.90,0.55,0.45)))
+		if arriving.route.arrivesAt!=null:
+			var timer = game.label("",14)
+			column.add_child(timer)
+			countdowns.append({"label":timer,"ends":Time.get_unix_time_from_datetime_string(str(arriving.route.arrivesAt))})
+
 func build_units(column: VBoxContainer) -> void:
+	build_marches(column)
 	var alive = 0
 	var selectors: Dictionary = {}
 	for unit in kingdom.units:
 		alive += int(unit.alive)
-		column.add_child(game.label(Text.copy("%s · %d alive · %d wounded · %d dead") % [catalog_name("unit",str(unit.type)),unit.alive,unit.wounded,unit.dead],15))
+		column.add_child(game.label(Text.copy("%s · %d ready · %d away · %d wounded · %d fallen") % [catalog_name("unit",str(unit.type)),unit.get("available",unit.alive),unit.get("deployed",0),unit.wounded,unit.dead],15))
 		if int(unit.wounded)>0:
 			var heal_key: String = unit.type
 			var heal_count = mini(100,int(unit.wounded))
 			column.add_child(game.button(Text.copy("Treat %d Wounded · %d Food · %d Gold") % [heal_count,heal_count*10,heal_count*2],func(): submit("/v2/units/heal",{"key":heal_key,"quantity":heal_count})))
-		if int(unit.alive) > 0:
+		if int(unit.get("available",unit.alive)) > 0:
 			var row = HBoxContainer.new()
 			column.add_child(row)
 			row.add_child(game.label("Assign "+catalog_name("unit",str(unit.type)),13))
 			var amount = SpinBox.new()
 			amount.min_value = 0
-			amount.max_value = int(unit.alive)
-			amount.value = mini(int(unit.alive),8)
+			amount.max_value = int(unit.get("available",unit.alive))
+			amount.value = mini(int(unit.get("available",unit.alive)),8)
 			amount.custom_minimum_size.x = 120
 			row.add_child(amount)
 			selectors[str(unit.type)] = amount
@@ -490,6 +541,20 @@ func build_map(column: VBoxContainer) -> void:
 		column.add_child(game.label("Survey the frontier to find resources and neighboring holdings.",15))
 		return
 	column.add_child(game.label(str(map_data.region.name),20,Color(0.94,0.80,0.50)))
+	var routes = CampaignMap.new()
+	routes.tiles = map_data.tiles
+	routes.campaigns = command_data.get("marches",[])+command_data.get("incoming",[])
+	routes.server_time = server_seconds
+	routes.received_ticks = received_ticks
+	routes.player_id = str(game.state.player.id)
+	routes.custom_minimum_size.y = 220
+	routes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	routes.target_selected.connect(func(tile):
+		selected_target = tile
+		desired_section = "Map"
+		rebuild())
+	column.add_child(routes)
+	build_marches(column)
 	var navigation = HBoxContainer.new()
 	column.add_child(navigation)
 	for direction in [["West",-7,0],["North",0,-7],["Capital",0,0],["South",0,7],["East",7,0]]:
@@ -522,7 +587,8 @@ func build_map(column: VBoxContainer) -> void:
 	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+Text.name_for(str(selected_target.kind)),20,Color(0.94,0.80,0.50)))
 	var owner: String = str(selected_target.empireName) if selected_target.empireName!=null else "Unclaimed Territory"
 	column.add_child(game.label(owner,15))
-	if not selected_target.attackable:
+	var friendly = selected_target.kind=="settlement" and selected_target.ownerPlayerId!=game.state.player.id and selected_target.get("ownerClanId")!=null and selected_target.get("ownerClanId")==map_data.region.get("clanId")
+	if not selected_target.attackable and not friendly:
 		column.add_child(game.label("This holding cannot be attacked now. Review its borders and protection.",14))
 		return
 	if command_data.get("presets",[]).is_empty():
@@ -530,7 +596,10 @@ func build_map(column: VBoxContainer) -> void:
 	else:
 		for preset in command_data.presets:
 			var slot_value = int(preset.slot)
-			column.add_child(game.button("March · "+str(preset.name),func(): submit("/v2/battles/attack",{"x":int(selected_target.x),"z":int(selected_target.z),"presetSlot":slot_value})))
+			var target_x = int(selected_target.x)
+			var target_z = int(selected_target.z)
+			var march_kind = "reinforce" if friendly else "attack"
+			column.add_child(game.button(("Reinforce · " if friendly else "March · ")+str(preset.name),func(): submit("/v2/army/march",{"x":target_x,"z":target_z,"presetSlot":slot_value,"kind":march_kind})))
 
 func build_clans(column: VBoxContainer) -> void:
 	column.add_child(game.label("Build lasting alliances and defend a shared region.",14))

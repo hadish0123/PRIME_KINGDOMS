@@ -2,7 +2,7 @@
 
 ## Strategy branch rollout
 
-The 0.9.0 strategy candidate is developed on feature/production-strategy-polish.
+The 0.9.1 strategy candidate is developed on feature/production-strategy-polish.
 It has not been deployed to production by this work. Existing Railway main deployment
 and player data remain intact. The new APK requires the v2 backend for scene entry.
 

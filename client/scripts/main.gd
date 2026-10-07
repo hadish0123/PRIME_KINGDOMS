@@ -352,7 +352,7 @@ func update_garrison(kingdom: Dictionary) -> void:
 	settlement.apply_development(kingdom)
 	var base_soldiers = 0
 	for unit in kingdom.units:
-		if unit.type=="swordsman": base_soldiers = mini(8,int(unit.alive))
+		if unit.type=="swordsman": base_soldiers = mini(8,int(unit.get("available",unit.alive)))
 	for npc in settlement.population:
 		if npc.get_parent()==settlement and npc.role=="soldier":
 			npc.present_in_garrison = npc.ordinal<base_soldiers
@@ -368,7 +368,7 @@ func update_garrison(kingdom: Dictionary) -> void:
 	var count = 0
 	var budget: int = [8,16,24,32][preferences.quality]
 	for unit in kingdom.units:
-		var remaining = maxi(0,int(unit.alive)-(8 if unit.type=="swordsman" else 0))
+		var remaining = maxi(0,int(unit.get("available",unit.alive))-(8 if unit.type=="swordsman" else 0))
 		for index in range(mini(remaining,budget-count)):
 			var npc = Npc.new()
 			army_display.add_child(npc)

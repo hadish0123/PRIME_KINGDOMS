@@ -3,6 +3,7 @@ import { transaction, UUID, text, integer } from './transaction.js';
 import { progression } from './progression.js';
 import { settle, spend, levels, RESOURCES } from './economy.js';
 import { settleWars, notify } from './wars.js';
+import { prepareRelocation } from './campaign_inventory.js';
 
 const DAY = 86400000;
 const emblems = ['lion', 'eagle', 'crown', 'stag', 'sun', 'wolf'];
@@ -39,6 +40,7 @@ async function targetProfile(db, player, world) {
 }
 
 async function relocate(db, profile, destination, plot, reason, now, ownerClan = null) {
+  await prepareRelocation(db,profile.player_id,now);
   const previous = (await db.query('SELECT p.*,r.kind FROM strategic_plots p JOIN strategic_regions r ON r.id=p.region_id WHERE p.player_id=$1 FOR UPDATE OF p', [profile.player_id])).rows[0];
   if (!previous) throw new Error('Settlement has no strategic plot');
   const home = (await db.query('SELECT world_id FROM players WHERE id=$1', [profile.player_id])).rows[0];
@@ -80,10 +82,22 @@ async function resettle(db, profile, reason, now) {
   const location = (await db.query('SELECT cell_x,cell_z FROM territories WHERE owner_player_id=$1 AND is_home', [profile.player_id])).rows[0];
   let plot = (await db.query('SELECT * FROM strategic_plots WHERE region_id=$1 AND plot=$2 FOR UPDATE', [region.id, preferred])).rows[0];
   let slot = preferred;
-  if (plot?.player_id && plot.player_id !== profile.player_id) slot = Math.max(64, Number((await db.query('SELECT coalesce(max(plot),63)+1 AS n FROM strategic_plots WHERE region_id=$1', [region.id])).rows[0].n));
+  let mapX=location.cell_x, mapZ=location.cell_z;
+  const original=(await db.query('SELECT owner_player_id,owner_clan_id FROM strategic_tiles WHERE world_id=$1 AND x=$2 AND z=$3',[home.world_id,mapX,mapZ])).rows[0];
+  if ((plot?.player_id && plot.player_id !== profile.player_id) || (original?.owner_player_id && original.owner_player_id!==profile.player_id) || original?.owner_clan_id) {
+    // A former home can be conquered after joining a clan. Leaving must allocate
+    // a free starter plot without stealing that holding or resetting the village.
+    const available=(await db.query(`SELECT n AS plot,$3::integer+64+(n-64)%32 AS x,$4::integer+64+(n-64)/32 AS z
+      FROM generate_series(greatest(64,(SELECT coalesce(max(plot),63)+1 FROM strategic_plots WHERE region_id=$1)),1023) n
+      WHERE NOT EXISTS(SELECT 1 FROM strategic_tiles t WHERE t.world_id=$2 AND t.x=$3::integer+64+(n-64)%32 AND t.z=$4::integer+64+(n-64)/32 AND (t.owner_player_id IS NOT NULL OR t.owner_clan_id IS NOT NULL))
+      AND NOT EXISTS(SELECT 1 FROM strategic_plots sp JOIN strategic_regions sr ON sr.id=sp.region_id WHERE sr.world_id=$2 AND sp.map_x=$3::integer+64+(n-64)%32 AND sp.map_z=$4::integer+64+(n-64)/32)
+      ORDER BY n LIMIT 1`,[region.id,home.world_id,mapX,mapZ])).rows[0];
+    if (!available) throw new ApiError(409,'starter_region_full');
+    slot=available.plot; mapX=available.x; mapZ=available.z;
+  }
   if (slot > 1023) throw new ApiError(409, 'starter_region_full');
-  await db.query('INSERT INTO strategic_plots(region_id,plot,map_x,map_z) VALUES($1,$2,$3,$4) ON CONFLICT(region_id,plot) DO NOTHING', [region.id, slot, location.cell_x, location.cell_z]);
-  await db.query('UPDATE strategic_plots SET map_x=$3,map_z=$4 WHERE region_id=$1 AND plot=$2 AND player_id IS NULL', [region.id, slot, location.cell_x, location.cell_z]);
+  await db.query('INSERT INTO strategic_plots(region_id,plot,map_x,map_z) VALUES($1,$2,$3,$4) ON CONFLICT(region_id,plot) DO NOTHING', [region.id, slot, mapX, mapZ]);
+  await db.query('UPDATE strategic_plots SET map_x=$3,map_z=$4 WHERE region_id=$1 AND plot=$2 AND player_id IS NULL', [region.id, slot, mapX, mapZ]);
   await relocate(db, profile, region.id, slot, reason, now);
 }
 

@@ -59,7 +59,15 @@ func run() -> void:
 	var targets: Array = panel.map_data.tiles.filter(func(tile): return bool(tile.get("attackable",false)) and tile.ownerPlayerId == null)
 	check(not targets.is_empty(),"Strategic map exposed no connected target")
 	if not targets.is_empty():
-		await issue(panel,"/v2/battles/attack",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1})
+		await issue(panel,"/v2/army/march",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1,"kind":"attack"})
+		check(not panel.command_data.get("marches",[]).is_empty(),"March did not reserve a real army")
+		check(panel.command_data.get("reports",[]).is_empty(),"Departure fabricated an immediate battle")
+		check(panel.kingdom.units[0].available<panel.kingdom.units[0].alive,"Deployed troops remained at home")
+		var arrived = Time.get_ticks_msec()
+		while panel.command_data.get("reports",[]).is_empty() and Time.get_ticks_msec()-arrived<60000:
+			await create_timer(1.0).timeout
+			await panel.refresh()
+		if not panel.command_data.get("reports",[]).is_empty(): panel.show_replay(panel.command_data.reports[0])
 		check(not panel.command_data.reports.is_empty(),"Battle result did not create a command report")
 		check(panel.kingdom.realm.ownedTiles>=2,"Successful strategic battle did not expand territory")
 		check(not panel.command_data.reports.is_empty() and panel.command_data.reports[0].replay!=null,"Server did not persist replay input")
@@ -68,6 +76,11 @@ func run() -> void:
 			await RenderingServer.frame_post_draw
 			check(root.get_texture().get_image().save_png("res://builds/battle.png")==OK,"Battle replay could not be rendered")
 	panel.close_replay()
+	var returned = Time.get_ticks_msec()
+	while not panel.command_data.get("marches",[]).is_empty() and Time.get_ticks_msec()-returned<60000:
+		await create_timer(1.0).timeout
+		await panel.refresh()
+	check(panel.command_data.get("marches",[]).is_empty(),"Army never released its reservation after returning")
 	await panel.load_clans()
 	check(not panel.clan_data.is_empty() and panel.clan_data.creationLevel==15,"Clan contract did not reach the native client")
 	await issue(panel,"/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
@@ -121,7 +134,7 @@ func run() -> void:
 		for frame in range(3): await process_frame
 		await RenderingServer.frame_post_draw
 		check(root.get_texture().get_image().save_png("res://builds/kingdom.png")==OK,"Strategy screenshot could not be written")
-	print("NATIVE_KINGDOM ",JSON.stringify({"failures":failures,"bounded_chunks":4,"direct_control":false,"strategic_command":true,"server_tasks":2,"empire_emblems":true,"strategic_map":true,"battle_reports":true,"graphics_profiles":4,"reconnect":true}))
+	print("NATIVE_KINGDOM ",JSON.stringify({"failures":failures,"bounded_chunks":4,"direct_control":false,"strategic_command":true,"server_tasks":2,"empire_emblems":true,"strategic_map":true,"battle_reports":true,"timed_marches":true,"reservations_released":true,"graphics_profiles":4,"reconnect":true}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

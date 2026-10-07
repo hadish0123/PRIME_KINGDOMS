@@ -8,7 +8,8 @@ import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
 import { getScene } from './kingdom/scene.js';
 import { getMap } from './kingdom/world_map.js';
 import { getClans, clanAction } from './kingdom/clans.js';
-import { getCommandState, saveArmyPreset, deleteArmyPreset, attackTerritory, getPresence } from './kingdom/realm.js';
+import { getCommandState, saveArmyPreset, deleteArmyPreset, getPresence } from './kingdom/realm.js';
+import { startMarch, recallMarch, processDueMarches } from './kingdom/campaigns.js';
 import { getCommanders, recruitCommander, healUnits, getGoals, claimGoal, getInbox, readInbox, getRankings, getChat, socialAction } from './kingdom/experience.js';
 import { getWars, declareWar } from './kingdom/wars.js';
 
@@ -35,6 +36,7 @@ export function createApplication({ pool, config, logger = console }) {
     ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
     ['/v2/empire/customize',['POST']],
     ['/v2/army/preset',['POST']], ['/v2/army/preset/delete',['POST']], ['/v2/battles/attack',['POST']],
+    ['/v2/army/march',['POST']], ['/v2/army/recall',['POST']],
     ['/v2/commanders',['GET']], ['/v2/commanders/recruit',['POST']], ['/v2/units/heal',['POST']],
     ['/v2/goals',['GET']], ['/v2/goals/claim',['POST']], ['/v2/inbox',['GET']], ['/v2/inbox/read',['POST']],
     ['/v2/rankings',['GET']], ['/v2/chat',['GET']], ...['send','block','report'].map(a=>[`/v2/chat/${a}`,['POST']]),
@@ -94,6 +96,7 @@ export function createApplication({ pool, config, logger = console }) {
         if (path.startsWith('/v2/')) {
           gameLimit(identity.player_id, req.method, path);
           const body = req.method === 'POST' ? await readJSON(req) : {};
+          await processDueMarches(pool,{playerId:identity.player_id});
           const handlers = {
             '/v2/kingdom': () => getKingdom(pool, identity),
             '/v2/world/map': () => getMap(pool, identity, new URL(req.url,'http://localhost').searchParams),
@@ -106,7 +109,9 @@ export function createApplication({ pool, config, logger = console }) {
             '/v2/presence': () => getPresence(pool, identity),
             '/v2/army/preset': () => saveArmyPreset(pool, identity, body),
             '/v2/army/preset/delete': () => deleteArmyPreset(pool, identity, body),
-            '/v2/battles/attack': () => attackTerritory(pool, identity, body),
+            '/v2/battles/attack': () => startMarch(pool, identity, body, true),
+            '/v2/army/march': () => startMarch(pool, identity, body),
+            '/v2/army/recall': () => recallMarch(pool, identity, body),
             '/v2/clans': () => getClans(pool, identity),
             '/v2/commanders': () => getCommanders(pool, identity),
             '/v2/commanders/recruit': () => recruitCommander(pool, identity, body),
