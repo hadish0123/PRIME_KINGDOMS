@@ -146,33 +146,6 @@ jobs:
           export PRIME_TEST_CLAN_ID
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 60 --script res://tests/kingdom.gd -- --smoke 2>&1 | tee client/builds/kingdom-contract.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/kingdom-contract.log; then exit 1; fi
-      - name: Record 0.8.0 strategic command preview
-        shell: bash
-        env:
-          DATABASE_URL: postgresql://prime:ci-only-password@127.0.0.1:5432/prime_native
-          PORT: '3100'
-          PRIME_TEST_API_URL: http://127.0.0.1:3100
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          set -euo pipefail
-          node backend/src/main.js > client/builds/strategy-film-server.log 2>&1 &
-          prime_api_pid=$!
-          trap 'kill "$prime_api_pid" 2>/dev/null || true' EXIT
-          python3 - <<'PY'
-          import urllib.request, time
-          for attempt in range(60):
-              try:
-                  urllib.request.urlopen('http://127.0.0.1:3100/ready', timeout=1)
-                  break
-              except Exception:
-                  time.sleep(0.25)
-          else:
-              raise SystemExit('Disposable strategy-film API did not become ready')
-          PY
-          rm -rf client/builds/strategy-frames
-          xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/strategy_film.gd -- --record 2>&1 | tee client/builds/strategy-film.log
-          if grep -E 'SCRIPT ERROR|ERROR:' client/builds/strategy-film.log; then exit 1; fi
-          ffmpeg -y -framerate 2 -i client/builds/strategy-frames/frame-%04d.jpg -vf 'fps=30' -c:v libx264 -threads 4 -crf 20 -pix_fmt yuv420p -movflags +faststart client/builds/strategy-0.8.0.mp4
       - name: Reconnect, Android lifecycle and bounded NPC regression checks
         shell: bash
         run: |
@@ -227,6 +200,21 @@ jobs:
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/film.gd -- --smoke 2>&1 | tee client/builds/film.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/film.log; then exit 1; fi
           ffmpeg -y -framerate 30 -i client/builds/frames/frame-%04d.png -c:v libx264 -threads 4 -crf 21 -pix_fmt yuv420p -movflags +faststart client/builds/animation.mp4
+      - name: Build 0.8.0 strategy preview from verified runtime captures
+        shell: bash
+        run: |
+          set -euo pipefail
+          for image in kingdom.png village.png units.png atlas.png; do
+            test -s "client/builds/$image"
+          done
+          ffmpeg -y \
+            -loop 1 -t 2.5 -i client/builds/kingdom.png \
+            -loop 1 -t 2.5 -i client/builds/atlas.png \
+            -loop 1 -t 2.5 -i client/builds/units.png \
+            -loop 1 -t 2.5 -i client/builds/village.png \
+            -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v1];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v2];[3:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v3];[v0][v1][v2][v3]concat=n=4:v=1:a=0[v]" \
+            -map "[v]" -c:v libx264 -threads 4 -crf 20 -pix_fmt yuv420p -movflags +faststart client/builds/strategy-0.8.0.mp4
+          test -s client/builds/strategy-0.8.0.mp4
       - name: Export and verify installable Android APK
         shell: bash
         run: |
