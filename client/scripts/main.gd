@@ -136,6 +136,69 @@ func emoji_label(text_value: String, font_size: int = 24) -> Label:
 	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return item
 
+func icon_badge(icon_text: String, icon_size: int = 26, badge_size: Vector2 = Vector2(42,42)) -> PanelContainer:
+	var badge = PanelContainer.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.custom_minimum_size = badge_size
+	var badge_style = panel_style(Color(0.105,0.078,0.032,0.98),Color(0.72,0.53,0.20))
+	badge_style.set_corner_radius_all(10)
+	badge_style.shadow_size = 2
+	badge.add_theme_stylebox_override("panel",badge_style)
+	var icon = emoji_label(icon_text,icon_size)
+	icon.custom_minimum_size = badge_size
+	badge.add_child(icon)
+	return badge
+
+func nav_button(section: String, callback: Callable) -> Button:
+	var item = button("",callback)
+	item.custom_minimum_size = Vector2(116,64)
+	for child in item.get_children():
+		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center = CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	item.add_child(center)
+	var row = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation",8)
+	center.add_child(row)
+	var icon = emoji_label(nav_icon(section),24)
+	icon.custom_minimum_size = Vector2(30,36)
+	row.add_child(icon)
+	var title = label(section,14,Color(0.96,0.88,0.70))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(title)
+	return item
+
+func resource_card(key: String) -> PanelContainer:
+	var card = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(116,68)
+	var style = panel_style(Color(0.052,0.044,0.030,0.97),Color(0.57,0.42,0.18))
+	style.set_corner_radius_all(9)
+	style.shadow_size = 3
+	card.add_theme_stylebox_override("panel",style)
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation",8)
+	card.add_child(row)
+	row.add_child(icon_badge(resource_icon(key),27,Vector2(40,40)))
+	var values = VBoxContainer.new()
+	values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	values.add_theme_constant_override("separation",0)
+	row.add_child(values)
+	var title = label(key.capitalize(),11,Color(0.77,0.68,0.49))
+	title.add_theme_color_override("font_shadow_color",Color(0,0,0,0.65))
+	title.add_theme_constant_override("shadow_offset_x",1)
+	title.add_theme_constant_override("shadow_offset_y",1)
+	values.add_child(title)
+	var amount = label("—",20,Color(1.0,0.93,0.78))
+	amount.add_theme_color_override("font_shadow_color",Color(0,0,0,0.75))
+	amount.add_theme_constant_override("shadow_offset_x",1)
+	amount.add_theme_constant_override("shadow_offset_y",1)
+	values.add_child(amount)
+	resource_labels[key] = amount
+	return card
+
 func label(text_value: String, font_size: int = 18, color: Color = Color(0.86,0.84,0.76)) -> Label:
 	var item = Label.new()
 	item.text = Text.copy(text_value)
@@ -250,50 +313,45 @@ func build_ui() -> void:
 	top.offset_left = 14
 	top.offset_right = -14
 	top.offset_top = 10
-	top.add_theme_stylebox_override("panel",panel_style(Color(0.022,0.021,0.018,0.96),Color(0.62,0.47,0.22)))
+	var top_style = panel_style(Color(0.028,0.025,0.020,0.965),Color(0.68,0.51,0.22))
+	top_style.set_corner_radius_all(10)
+	top_style.shadow_size = 6
+	top.add_theme_stylebox_override("panel",top_style)
 	hud.add_child(top)
 	var top_row = HBoxContainer.new()
-	top_row.add_theme_constant_override("separation",12)
+	top_row.add_theme_constant_override("separation",9)
 	top.add_child(top_row)
+	var identity_card = PanelContainer.new()
+	identity_card.custom_minimum_size.x = 235
+	identity_card.add_theme_stylebox_override("panel",panel_style(Color(0.052,0.042,0.027,0.92),Color(0.42,0.31,0.15)))
+	top_row.add_child(identity_card)
 	var identity = VBoxContainer.new()
-	identity.custom_minimum_size.x = 225
-	village_label = label("Strategy Ruler · Village",19,Color(0.96,0.82,0.51))
-	population_label = label("",13,Color(0.84,0.81,0.72))
+	identity.add_theme_constant_override("separation",2)
+	identity_card.add_child(identity)
+	village_label = label("Strategy Ruler · Village",19,Color(0.98,0.84,0.52))
+	population_label = label("",13,Color(0.86,0.82,0.72))
 	identity.add_child(village_label)
 	identity.add_child(population_label)
-	top_row.add_child(identity)
 	var wallets = HBoxContainer.new()
 	wallets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wallets.add_theme_constant_override("separation",7)
 	top_row.add_child(wallets)
 	for key in ["food","wood","stone","iron","gold"]:
-		var wallet_card = PanelContainer.new()
-		wallet_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		wallet_card.custom_minimum_size.x = 112
-		wallet_card.add_theme_stylebox_override("panel",panel_style(Color(0.040,0.037,0.031,0.94),Color(0.40,0.31,0.17)))
-		wallets.add_child(wallet_card)
-		var wallet_row = HBoxContainer.new()
-		wallet_row.add_theme_constant_override("separation",7)
-		wallet_card.add_child(wallet_row)
-		var glyph = emoji_label(resource_icon(key),24)
-		glyph.custom_minimum_size.x = 30
-		wallet_row.add_child(glyph)
-		var values = VBoxContainer.new()
-		values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		values.add_theme_constant_override("separation",0)
-		wallet_row.add_child(values)
-		values.add_child(label(key.capitalize(),11,Color(0.72,0.66,0.54)))
-		var amount = label("—",18,Color(0.96,0.90,0.78))
-		values.add_child(amount)
-		resource_labels[key] = amount
+		wallets.add_child(resource_card(key))
+	var status_card = PanelContainer.new()
+	status_card.custom_minimum_size.x = 190
+	status_card.add_theme_stylebox_override("panel",panel_style(Color(0.043,0.040,0.030,0.94),Color(0.42,0.31,0.15)))
+	top_row.add_child(status_card)
 	var status_box = VBoxContainer.new()
-	status_box.custom_minimum_size.x = 185
-	connection_label = label("● Connected · realm restored",13,Color(0.52,0.90,0.48))
+	status_box.add_theme_constant_override("separation",4)
+	status_card.add_child(status_box)
+	connection_label = label("● Connected · realm restored",12,Color(0.54,0.94,0.50))
 	connection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_box.add_child(connection_label)
-	status_box.add_child(button("⌖  Focus Capital",func():
-		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20))))
-	top_row.add_child(status_box)
+	var focus = button("⌖  Focus Capital",func():
+		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20)))
+	focus.custom_minimum_size.y = 40
+	status_box.add_child(focus)
 	minimap = Minimap.new()
 	minimap.game = self
 	minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -304,8 +362,11 @@ func build_ui() -> void:
 	hud.add_child(minimap)
 	var nav_shell = PanelContainer.new()
 	nav_shell.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	nav_shell.position = Vector2(-500,-72)
-	nav_shell.add_theme_stylebox_override("panel",panel_style(Color(0.020,0.019,0.016,0.93),Color(0.50,0.37,0.16)))
+	nav_shell.position = Vector2(-506,-82)
+	var nav_shell_style = panel_style(Color(0.027,0.024,0.019,0.95),Color(0.66,0.48,0.19))
+	nav_shell_style.set_corner_radius_all(11)
+	nav_shell_style.shadow_size = 6
+	nav_shell.add_theme_stylebox_override("panel",nav_shell_style)
 	hud.add_child(nav_shell)
 	var nav = HBoxContainer.new()
 	nav.add_theme_constant_override("separation",6)
@@ -313,12 +374,8 @@ func build_ui() -> void:
 	for section in ["Buildings","Army","Research","Map","Clan","Goals","Inbox"]:
 		var name_value: String = section
 		var display_name_value = "World" if section=="Map" else section
-		var nav_action = button(nav_icon(display_name_value)+"  "+display_name_value,func(): kingdom_panel.open_section(name_value))
-		nav_action.custom_minimum_size.x = 112
-		nav.add_child(nav_action)
-	var settings_action = button(nav_icon("Settings")+"  Settings",toggle_settings)
-	settings_action.custom_minimum_size.x = 112
-	nav.add_child(settings_action)
+		nav.add_child(nav_button(display_name_value,func(): kingdom_panel.open_section(name_value)))
+	nav.add_child(nav_button("Settings",toggle_settings))
 	toast_label = label("",17,Color(0.94,0.83,0.59))
 	toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	toast_label.position = Vector2(-340,98)
