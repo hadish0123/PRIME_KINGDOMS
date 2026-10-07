@@ -31,6 +31,11 @@ var status_label: Label
 var connection_label: Label
 var village_label: Label
 var population_label: Label
+var profile_name_label: Label
+var profile_level_label: Label
+var profile_stat_label: Label
+var profile_xp_bar: ProgressBar
+var nav_buttons: Dictionary = {}
 var login_button: Button
 var register_button: Button
 var saved_session_button: Button
@@ -105,6 +110,132 @@ func panel_style(color: Color, border: Color = Color(0.49,0.38,0.23)) -> StyleBo
 	style.shadow_offset = Vector2(0,2)
 	return style
 
+func ui_icon_texture(index: int) -> Texture2D:
+	var texture = AtlasTexture.new()
+	texture.atlas = load("res://assets/ui/strategy-icons.svg")
+	texture.region = Rect2(index*64,0,64,64)
+	return texture
+
+func ui_icon(index: int,size_value: Vector2 = Vector2(34,34)) -> TextureRect:
+	var icon = TextureRect.new()
+	icon.texture = ui_icon_texture(index)
+	icon.custom_minimum_size = size_value
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+func resource_icon_index(key: String) -> int:
+	match key.to_lower():
+		"food": return 0
+		"wood": return 1
+		"stone": return 2
+		"iron": return 3
+		"gold": return 4
+	return 14
+
+func nav_icon_index(section: String) -> int:
+	match section:
+		"Buildings": return 5
+		"Army": return 6
+		"Research": return 7
+		"World": return 8
+		"Clan": return 9
+		"Goals": return 10
+		"Inbox": return 11
+		"Settings": return 12
+	return 14
+
+func apply_nav_style(item: Button,active: bool) -> void:
+	var normal = panel_style(Color(0.58,0.38,0.10,0.98) if active else Color(0.025,0.023,0.019,0.985),Color(0.96,0.69,0.23) if active else Color(0.55,0.40,0.17))
+	normal.shadow_size = 7 if active else 3
+	var hover = panel_style(Color(0.68,0.44,0.10,1.0),Color(1.0,0.78,0.34))
+	var pressed = panel_style(Color(0.39,0.25,0.06,1.0),Color(0.94,0.66,0.20))
+	item.add_theme_stylebox_override("normal",normal)
+	item.add_theme_stylebox_override("hover",hover)
+	item.add_theme_stylebox_override("pressed",pressed)
+	item.add_theme_color_override("font_color",Color(0.10,0.07,0.02) if active else Color(0.97,0.88,0.69))
+
+func set_nav_active(section: String) -> void:
+	for key in nav_buttons:
+		apply_nav_style(nav_buttons[key],str(key)==section)
+
+func premium_nav_button(section: String,callback: Callable) -> Button:
+	var item = button("",callback)
+	item.custom_minimum_size = Vector2(116,66)
+	item.set_meta("section",section)
+	var center = CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	item.add_child(center)
+	var row = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation",8)
+	center.add_child(row)
+	row.add_child(ui_icon(nav_icon_index(section),Vector2(34,34)))
+	var title = label(section,14,Color(0.97,0.88,0.69))
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(title)
+	nav_buttons[section]=item
+	apply_nav_style(item,false)
+	return item
+
+func profile_panel() -> PanelContainer:
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(250,82)
+	var style = panel_style(Color(0.034,0.030,0.023,0.98),Color(0.75,0.55,0.21))
+	style.set_corner_radius_all(8)
+	style.shadow_size = 5
+	card.add_theme_stylebox_override("panel",style)
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation",8)
+	card.add_child(row)
+	var portrait_frame = PanelContainer.new()
+	portrait_frame.custom_minimum_size = Vector2(66,66)
+	portrait_frame.add_theme_stylebox_override("panel",panel_style(Color(0.03,0.04,0.035,1.0),Color(0.92,0.67,0.23)))
+	row.add_child(portrait_frame)
+	var portrait = TextureRect.new()
+	portrait.texture = load("res://assets/ui/ruler-portrait.svg")
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_frame.add_child(portrait)
+	var info = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation",1)
+	row.add_child(info)
+	profile_name_label = label("RULER",18,Color(0.98,0.83,0.49))
+	profile_level_label = label("Lv. 1",13,Color(0.95,0.90,0.78))
+	info.add_child(profile_name_label)
+	info.add_child(profile_level_label)
+	profile_xp_bar = ProgressBar.new()
+	profile_xp_bar.custom_minimum_size = Vector2(126,8)
+	profile_xp_bar.show_percentage = false
+	profile_xp_bar.min_value = 0
+	profile_xp_bar.max_value = 100
+	profile_xp_bar.value = 0
+	var bar_bg = panel_style(Color(0.055,0.048,0.036,1.0),Color(0.30,0.24,0.14))
+	bar_bg.set_corner_radius_all(3)
+	var bar_fill = panel_style(Color(0.94,0.64,0.13,1.0),Color(1.0,0.81,0.35))
+	bar_fill.set_corner_radius_all(3)
+	profile_xp_bar.add_theme_stylebox_override("background",bar_bg)
+	profile_xp_bar.add_theme_stylebox_override("fill",bar_fill)
+	info.add_child(profile_xp_bar)
+	profile_stat_label = label("Prestige 0",12,Color(0.83,0.77,0.65))
+	info.add_child(profile_stat_label)
+	return card
+
+func crest_panel() -> PanelContainer:
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(72,82)
+	card.add_theme_stylebox_override("panel",panel_style(Color(0.025,0.12,0.075,0.98),Color(0.81,0.59,0.21)))
+	var crest = TextureRect.new()
+	crest.texture = load("res://assets/heraldry/lion.svg")
+	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	crest.modulate = Color(0.96,0.72,0.25)
+	card.add_child(crest)
+	return card
+
 func resource_icon(key: String) -> String:
 	match key.to_lower():
 		"food": return "🌾"
@@ -173,28 +304,21 @@ func nav_button(section: String, callback: Callable) -> Button:
 func resource_card(key: String) -> PanelContainer:
 	var card = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size = Vector2(116,68)
-	var style = panel_style(Color(0.052,0.044,0.030,0.97),Color(0.57,0.42,0.18))
-	style.set_corner_radius_all(9)
+	card.custom_minimum_size = Vector2(94,72)
+	var style = panel_style(Color(0.034,0.030,0.023,0.98),Color(0.58,0.42,0.17))
+	style.set_corner_radius_all(8)
 	style.shadow_size = 3
 	card.add_theme_stylebox_override("panel",style)
 	var row = HBoxContainer.new()
-	row.add_theme_constant_override("separation",8)
+	row.add_theme_constant_override("separation",5)
 	card.add_child(row)
-	row.add_child(icon_badge(resource_icon(key),27,Vector2(40,40)))
+	row.add_child(ui_icon(resource_icon_index(key),Vector2(34,34)))
 	var values = VBoxContainer.new()
 	values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	values.add_theme_constant_override("separation",0)
 	row.add_child(values)
-	var title = label(key.capitalize(),11,Color(0.77,0.68,0.49))
-	title.add_theme_color_override("font_shadow_color",Color(0,0,0,0.65))
-	title.add_theme_constant_override("shadow_offset_x",1)
-	title.add_theme_constant_override("shadow_offset_y",1)
-	values.add_child(title)
-	var amount = label("—",20,Color(1.0,0.93,0.78))
-	amount.add_theme_color_override("font_shadow_color",Color(0,0,0,0.75))
-	amount.add_theme_constant_override("shadow_offset_x",1)
-	amount.add_theme_constant_override("shadow_offset_y",1)
+	values.add_child(label(key.capitalize(),10,Color(0.77,0.70,0.56)))
+	var amount = label("—",18,Color(1.0,0.92,0.74))
 	values.add_child(amount)
 	resource_labels[key] = amount
 	return card
@@ -310,72 +434,83 @@ func build_ui() -> void:
 	ui.add_child(hud)
 	var top = PanelContainer.new()
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	top.offset_left = 14
-	top.offset_right = -14
-	top.offset_top = 10
-	var top_style = panel_style(Color(0.028,0.025,0.020,0.965),Color(0.68,0.51,0.22))
-	top_style.set_corner_radius_all(10)
-	top_style.shadow_size = 6
+	top.offset_left = 10
+	top.offset_right = -10
+	top.offset_top = 8
+	var top_style = panel_style(Color(0.020,0.018,0.014,0.97),Color(0.76,0.55,0.21))
+	top_style.set_corner_radius_all(9)
+	top_style.shadow_size = 7
 	top.add_theme_stylebox_override("panel",top_style)
 	hud.add_child(top)
 	var top_row = HBoxContainer.new()
-	top_row.add_theme_constant_override("separation",9)
+	top_row.add_theme_constant_override("separation",6)
 	top.add_child(top_row)
+	top_row.add_child(profile_panel())
+	top_row.add_child(crest_panel())
 	var identity_card = PanelContainer.new()
-	identity_card.custom_minimum_size.x = 235
-	identity_card.add_theme_stylebox_override("panel",panel_style(Color(0.052,0.042,0.027,0.92),Color(0.42,0.31,0.15)))
+	identity_card.custom_minimum_size = Vector2(235,82)
+	identity_card.add_theme_stylebox_override("panel",panel_style(Color(0.035,0.031,0.024,0.97),Color(0.49,0.35,0.15)))
 	top_row.add_child(identity_card)
 	var identity = VBoxContainer.new()
-	identity.add_theme_constant_override("separation",2)
+	identity.add_theme_constant_override("separation",3)
 	identity_card.add_child(identity)
-	village_label = label("Strategy Ruler · Village",19,Color(0.98,0.84,0.52))
-	population_label = label("",13,Color(0.86,0.82,0.72))
+	village_label = label("Strategy Ruler · Village",18,Color(0.98,0.84,0.52))
+	population_label = label("",12,Color(0.88,0.83,0.72))
 	identity.add_child(village_label)
 	identity.add_child(population_label)
 	var wallets = HBoxContainer.new()
 	wallets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wallets.add_theme_constant_override("separation",7)
+	wallets.add_theme_constant_override("separation",5)
 	top_row.add_child(wallets)
 	for key in ["food","wood","stone","iron","gold"]:
 		wallets.add_child(resource_card(key))
 	var status_card = PanelContainer.new()
-	status_card.custom_minimum_size.x = 190
-	status_card.add_theme_stylebox_override("panel",panel_style(Color(0.043,0.040,0.030,0.94),Color(0.42,0.31,0.15)))
+	status_card.custom_minimum_size = Vector2(185,82)
+	status_card.add_theme_stylebox_override("panel",panel_style(Color(0.033,0.030,0.023,0.97),Color(0.49,0.35,0.15)))
 	top_row.add_child(status_card)
 	var status_box = VBoxContainer.new()
-	status_box.add_theme_constant_override("separation",4)
+	status_box.add_theme_constant_override("separation",3)
 	status_card.add_child(status_box)
-	connection_label = label("● Connected · realm restored",12,Color(0.54,0.94,0.50))
+	connection_label = label("● Connected · realm restored",11,Color(0.47,0.94,0.47))
 	connection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_box.add_child(connection_label)
-	var focus = button("⌖  Focus Capital",func():
+	var focus_row = HBoxContainer.new()
+	focus_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	focus_row.add_child(ui_icon(5,Vector2(23,23)))
+	var focus = button("Focus Capital",func():
 		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20)))
-	focus.custom_minimum_size.y = 40
-	status_box.add_child(focus)
+	focus.custom_minimum_size = Vector2(135,38)
+	focus_row.add_child(focus)
+	status_box.add_child(focus_row)
 	minimap = Minimap.new()
 	minimap.game = self
 	minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	minimap.offset_left = -186
 	minimap.offset_right = -18
-	minimap.offset_top = 105
-	minimap.offset_bottom = 273
+	minimap.offset_top = 102
+	minimap.offset_bottom = 270
 	hud.add_child(minimap)
 	var nav_shell = PanelContainer.new()
 	nav_shell.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	nav_shell.position = Vector2(-506,-82)
-	var nav_shell_style = panel_style(Color(0.027,0.024,0.019,0.95),Color(0.66,0.48,0.19))
-	nav_shell_style.set_corner_radius_all(11)
-	nav_shell_style.shadow_size = 6
+	nav_shell.position = Vector2(-505,-80)
+	var nav_shell_style = panel_style(Color(0.018,0.016,0.013,0.97),Color(0.70,0.50,0.18))
+	nav_shell_style.set_corner_radius_all(9)
+	nav_shell_style.shadow_size = 7
 	nav_shell.add_theme_stylebox_override("panel",nav_shell_style)
 	hud.add_child(nav_shell)
 	var nav = HBoxContainer.new()
-	nav.add_theme_constant_override("separation",6)
+	nav.add_theme_constant_override("separation",5)
 	nav_shell.add_child(nav)
 	for section in ["Buildings","Army","Research","Map","Clan","Goals","Inbox"]:
 		var name_value: String = section
 		var display_name_value = "World" if section=="Map" else section
-		nav.add_child(nav_button(display_name_value,func(): kingdom_panel.open_section(name_value)))
-	nav.add_child(nav_button("Settings",toggle_settings))
+		nav.add_child(premium_nav_button(display_name_value,func():
+			set_nav_active(display_name_value)
+			kingdom_panel.open_section(name_value)))
+	nav.add_child(premium_nav_button("Settings",func():
+		set_nav_active("Settings")
+		toggle_settings()))
+	set_nav_active("Buildings")
 	toast_label = label("",17,Color(0.94,0.83,0.59))
 	toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	toast_label.position = Vector2(-340,98)
@@ -452,7 +587,7 @@ func apply_empire(empire: Dictionary) -> void:
 func apply_realm(realm: Dictionary) -> void:
 	if not in_world or realm.is_empty(): return
 	var rank_value = int(realm.get("rank",1))
-	village_label.text = str(state.player.displayName)+" · "+str(realm.name)
+	village_label.text = "Strategy Ruler · "+str(realm.name)
 	if last_rank>0 and rank_value>last_rank:
 		toast("Your realm has risen to "+str(realm.name)+".")
 		play_cue("complete")
@@ -463,6 +598,14 @@ func update_garrison(kingdom: Dictionary) -> void:
 	resource_targets = kingdom.resources.duplicate()
 	if displayed_resources.is_empty(): displayed_resources = resource_targets.duplicate()
 	population_label.text = Text.copy("%s · Level %d · %d holdings") % [kingdom.empire.name,kingdom.progression.level,kingdom.realm.ownedTiles]
+	profile_name_label.text = str(state.player.displayName).to_upper()
+	profile_level_label.text = Text.copy("Lv. %d") % int(kingdom.progression.level)
+	var xp_now = int(kingdom.progression.get("xp",0))
+	var xp_target = xp_now+1
+	if kingdom.progression.get("next") != null: xp_target = maxi(xp_now+1,int(kingdom.progression.next.xp))
+	profile_xp_bar.max_value = xp_target
+	profile_xp_bar.value = xp_now
+	profile_stat_label.text = Text.copy("Prestige %s") % format_amount(int(kingdom.progression.get("prestige",0)))
 	var settlement = villages[state.village.id]
 	settlement.apply_development(kingdom)
 	var base_soldiers = 0
@@ -675,6 +818,7 @@ func toggle_settings() -> void:
 	if not in_world: return
 	kingdom_panel.close()
 	settings_panel.visible = not settings_panel.visible
+	set_nav_active("Settings" if settings_panel.visible else "")
 	apply_control_state()
 
 func _unhandled_input(event: InputEvent) -> void:
