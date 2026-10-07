@@ -146,6 +146,29 @@ jobs:
           export PRIME_TEST_CLAN_ID
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 60 --script res://tests/kingdom.gd -- --smoke 2>&1 | tee client/builds/kingdom-contract.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/kingdom-contract.log; then exit 1; fi
+      - name: Record 0.8.0 strategic command preview
+        shell: bash
+        env:
+          DATABASE_URL: postgresql://prime:ci-only-password@127.0.0.1:5432/prime_native
+          PORT: '3100'
+          PRIME_TEST_API_URL: http://127.0.0.1:3100
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          node backend/src/main.js > client/builds/strategy-film-server.log 2>&1 &
+          prime_api_pid=$!
+          trap 'kill "$prime_api_pid" 2>/dev/null || true' EXIT
+          python3 - <<'PY'
+          import urllib.request, time
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:3100/ready', timeout=1)
+                  break
+              except Exception:
+                  time.sleep(0.25)
+          else:
+              raise SystemExit('Disposable strategy-film API did not become ready')
+          PY
           rm -rf client/builds/strategy-frames
           xvfb-run -a -s '-screen 0 1280x720x24' Godot_v4.7.2-stable_linux.x86_64 --path client --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/strategy_film.gd -- --record 2>&1 | tee client/builds/strategy-film.log
           if grep -E 'SCRIPT ERROR|ERROR:' client/builds/strategy-film.log; then exit 1; fi
