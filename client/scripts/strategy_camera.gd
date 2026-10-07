@@ -88,7 +88,7 @@ func zoom(amount: float) -> void:
 	distance = clampf(distance + amount, 22.0, 92.0)
 	_update_camera()
 
-func rotate(amount: float) -> void:
+func rotate_view(amount: float) -> void:
 	yaw = wrapf(yaw + amount, -PI, PI)
 	_update_camera()
 
