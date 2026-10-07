@@ -94,51 +94,51 @@ func run() -> void:
 	game.strategy_camera.set_focus(Vector3.ZERO)
 
 	var started := Time.get_ticks_msec()
-	for frame in range(450):
-		# 0-119: living 3D settlement under strategy camera.
-		if frame < 120:
+	for frame in range(300):
+		# 0-74: living 3D settlement under strategy camera.
+		if frame < 75:
 			game.strategy_camera.rotate(0.0035)
-			if frame < 70:
+			if frame < 45:
 				game.strategy_camera.pan_screen(Vector2(-0.55,0.18))
-			if frame >= 70 and frame < 105:
+			if frame >= 45 and frame < 65:
 				game.strategy_camera.zoom(-0.055)
-		# 120-209: realm overview and growth requirements.
-		if frame == 120:
+		# 75-129: realm overview and growth requirements.
+		if frame == 75:
 			await panel.open()
 			select_tab(panel,"Overview")
-		# 210-279: army command and formation.
-		if frame == 210:
+		# 130-179: army command and formation.
+		if frame == 130:
 			select_tab(panel,"Army")
-		# 280-359: strategic map, selectable connected territory and conquest.
-		if frame == 280:
+		# 180-249: strategic map, selectable connected territory and conquest.
+		if frame == 180:
 			await panel.load_map()
 			select_tab(panel,"Map")
-		if frame == 305 and not target.is_empty():
+		if frame == 205 and not target.is_empty():
 			panel.selected_target = target.duplicate(true)
 			panel.rebuild()
 			select_tab(panel,"Map")
-		if frame == 330 and not target.is_empty():
+		if frame == 225 and not target.is_empty():
 			await panel.submit("/v2/battles/attack",{
 				"x":int(target.x),
 				"z":int(target.z),
 				"presetSlot":1
 			})
 			select_tab(panel,"Reports")
-		# 360-419: persistent battle report.
-		if frame == 360:
+		# 250-274: persistent battle report.
+		if frame == 250:
 			select_tab(panel,"Reports")
-		# 420-449: return to the living realm.
-		if frame == 420:
+		# 275-299: return to the living realm.
+		if frame == 275:
 			panel.close()
 			game.strategy_camera.distance = 60.0
 			game.strategy_camera.set_focus(Vector3(10,0,4))
-		if frame >= 420:
+		if frame >= 275:
 			game.strategy_camera.rotate(-0.004)
 			game.strategy_camera.pan_screen(Vector2(0.22,-0.08))
 
 		await capture_frame(frame)
-		if frame % 90 == 0:
-			print("STRATEGY_FILM_PROGRESS frame=",frame,"/450 wall_seconds=",(Time.get_ticks_msec()-started)/1000.0)
+		if frame % 60 == 0:
+			print("STRATEGY_FILM_PROGRESS frame=",frame,"/300 wall_seconds=",(Time.get_ticks_msec()-started)/1000.0)
 
 	check(game.strategy_mode,"Film was not rendered from v2 strategy mode")
 	check(game.player.frozen,"Film accidentally restored direct character steering")
@@ -151,7 +151,7 @@ func run() -> void:
 	print("STRATEGY_FILM ",JSON.stringify({
 		"failures":failures,
 		"version":"0.8.0",
-		"frames":450,
+		"frames":300,
 		"captureFps":30,
 		"onlineBackend":true,
 		"directCharacterSteering":false,
