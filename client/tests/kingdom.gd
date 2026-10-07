@@ -81,7 +81,10 @@ func run() -> void:
 		await create_timer(1.0).timeout
 		await panel.refresh()
 	check(panel.command_data.get("marches",[]).is_empty(),"Army never released its reservation after returning")
-	await panel.load_clans()
+	# A player can select a new screen while a real snapshot is still in flight.
+	panel.refresh()
+	await panel.open_section("Clan")
+	check(panel.desired_section=="Clan","Background refresh overrode the selected council screen")
 	check(not panel.clan_data.is_empty() and panel.clan_data.creationLevel==15,"Clan contract did not reach the native client")
 	await issue(panel,"/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
 	check(panel.clan_data.own==null and panel.status.text.contains("15"),"Native clan creation bypassed the server level gate")
@@ -129,6 +132,24 @@ func run() -> void:
 	check(not game.strategy_camera.enabled,"Lost connection left camera input active")
 	await game.recover_connection()
 	check(game.network_online and game.strategy_camera.enabled,"Strategy reconnect failed")
+	# Observe the completed server queue and its architectural milestone.
+	var completed = Time.get_ticks_msec()
+	while panel.kingdom.tasks.any(func(task): return task.kind=="building") and Time.get_ticks_msec()-completed<60000:
+		await create_timer(1.0).timeout
+		await panel.refresh()
+	check(panel.kingdom.buildings.keep>=2,"The real construction queue did not complete")
+	check(game.villages[game.state.village.id].population.size()>=13,"Visual progression removed original residents")
+	# Check the actual server-populated council at different viewport sizes.
+	for viewport_size in [Vector2i(1280,720),Vector2i(1536,864),Vector2i(960,540)]:
+		root.size = viewport_size
+		for section in ["Buildings","Research","Reports","Queues","Goals"]:
+			panel.visible = true
+			panel.select_section(section)
+			for frame in range(3): await process_frame
+			check_layout(game,panel,section)
+	root.size = Vector2i(1280,720)
+	game.preferences.quality = 1
+	game.preferences.apply(game)
 	if DisplayServer.get_name() != "headless":
 		await panel.open_section("Buildings")
 		for frame in range(3): await process_frame
@@ -157,3 +178,11 @@ func issue(panel: Control,path: String,body: Dictionary) -> void:
 		print("NATIVE_ORDER_RECOVERY ",path," ",panel.last_error)
 		await panel.game.recover_connection()
 		check(panel.game.network_online and panel.pending_path.is_empty(),"Interrupted order did not recover: "+panel.last_error)
+
+func check_layout(game: Node,panel: Control,section: String) -> void:
+	var viewport = root.get_visible_rect()
+	for node in [game.hud.get_node("RealmHeader"),game.hud.get_node("RealmNavigation"),panel]:
+		check(viewport.encloses(node.get_global_rect()),section+": interface extends beyond the viewport")
+	var page: ScrollContainer = panel.tabs.get_current_tab_control()
+	if page==null: return
+	check(page.get_child(0).size.x<=page.size.x+1.0,section+": council content requires horizontal scrolling")

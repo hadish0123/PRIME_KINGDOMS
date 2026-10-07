@@ -7,9 +7,10 @@ var focus = Vector3(0,0.8,0)
 var displayed_focus = focus
 var yaw: float = -0.55
 var displayed_yaw: float = yaw
-var elevation: float = 0.78
-var distance: float = 105.0
+var elevation: float = 0.69
+var distance: float = 88.0
 var displayed_distance: float = distance
+var council_offset: float = 0.0
 var enabled: bool = true:
 	set(value):
 		enabled = value
@@ -53,6 +54,8 @@ func _process(delta: float) -> void:
 	displayed_focus = displayed_focus.lerp(focus,blend)
 	displayed_distance = lerpf(displayed_distance,distance,blend)
 	displayed_yaw = lerp_angle(displayed_yaw,yaw,blend)
+	var sidebar = is_instance_valid(game) and is_instance_valid(game.kingdom_panel) and game.kingdom_panel.visible and game.kingdom_panel.anchor_right<0.5
+	council_offset = lerpf(council_offset,-displayed_distance*0.18 if sidebar else 0.0,blend)
 	_update_camera()
 
 func _input(event: InputEvent) -> void:
@@ -129,3 +132,5 @@ func _update_camera() -> void:
 	if not is_instance_valid(camera): return
 	camera.position = displayed_focus+Vector3(sin(displayed_yaw)*cos(elevation),sin(elevation),cos(displayed_yaw)*cos(elevation))*displayed_distance
 	camera.look_at(displayed_focus,Vector3.UP)
+	# Project building picking through the same smooth council camera composition.
+	camera.h_offset = council_offset

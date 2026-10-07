@@ -1,10 +1,33 @@
-# Production strategy handoff — 0.9.1 campaign candidate
+# Production strategy handoff — 0.9.2 royal design candidate
 
 Base implementation: feature/strategic-command-online-08 at
 90c34eb3f3c6a00705375ab106381d7b5518d986.
 Work branch: feature/production-strategy-polish.
 
-## Current campaign milestone
+## Current design milestone
+
+Version 0.9.2 (Android code 16) introduces original realistic UI artwork,
+ornate royal frames, a compact resource/profile header, a responsive council,
+architectural previews and centered gold construction actions. Real server values,
+requirements, costs, timers and callbacks remain connected. Flat portrait/icon
+sources and unused emoji helpers are removed. Opening a screen during a snapshot
+refresh preserves the player's latest navigation intent.
+
+The actual 3D settlement adds residential scenery, instanced trees, grounded rocks,
+constructed-farm wheat and completed-level keep/academy architecture. Four detail
+presets bound the added scenery; the strategy camera smoothly composes the scene
+beside the council. This revision adds no database migration or production reset.
+
+Local checks passed: 13 Node.js unit tests, GDScript parsing, original artwork
+checksum verification, native kingdom commands/construction/battle reports/reconnect,
+three viewport sizes with five council sections, login/settings presentation and
+3D foliage/defense/character checks. The local authority render used real API calls
+with a disposable serialized PGlite engine; this does not establish native
+PostgreSQL concurrency behavior. Exact-commit PostgreSQL 18 CI, Android export and
+signature verification remain required. APK installation, physical-device graphics
+and performance, final production signing and Railway rollout are not certified.
+
+## Existing campaign systems
 
 Version 0.9.1 adds persistent timed marches, recalls, reserved troops and commanders,
 allied defense and participation reports. Migration 010 is additive. Incoming allied
@@ -14,10 +37,8 @@ The native Army/World screens show campaign routes and timers, and garrison visu
 use available troops. Defensive building visuals follow actual level milestones.
 Construction previews include exact prerequisite levels and queue explanations.
 
-Local Node.js checks and all 13 unit tests pass. Eight supplementary integration
-suites pass with serialized PGlite. Native PostgreSQL, exact-commit Godot rendering,
-Android export and signature validation for 0.9.1 remain pending. Do not carry 0.9.0
-CI results forward as proof of these new changes.
+Exact-commit CI must validate the campaign systems together with the design changes.
+Do not carry earlier candidate CI results forward as proof of a new release.
 
 ## Established 0.9.0 systems
 

@@ -48,3 +48,9 @@ Run npm ci --prefix tools/assets and npm run --prefix tools/assets prepare:model
 ## Original interface audio
 
 select.wav and complete.wav are deterministic original synthesized cues produced by tools/assets/audio.py. No external samples or recordings are used.
+
+## Royal interface artwork · 0.9.2
+
+The realistic ruler portrait, sixteen resource/navigation icons and sixteen architectural previews were generated originally for PRIME KINGDOMS using OpenAI image generation. Source PNGs are preserved without pixel editing. Frames, action symbols and minimap ornaments are original SVG/code artwork. The user-supplied design reference informed layout; its raster artwork was not extracted or used as a game background.
+
+Exact paths, SHA-256 hashes, atlas order and generation provenance are recorded in `docs/ROYAL_ART_0_9_2.json`. UI uses shared atlas textures; production balances, building levels and action requirements come from the server.

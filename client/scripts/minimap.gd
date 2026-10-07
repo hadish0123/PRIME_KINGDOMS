@@ -50,6 +50,12 @@ func draw_markers() -> void:
 	var center = size*0.5
 	overlay.draw_arc(center,size.x*0.5-4,0,TAU,80,Color(0.78,0.62,0.34),2,true)
 	overlay.draw_arc(center,size.x*0.5-9,0,TAU,80,Color(0.78,0.62,0.34,0.5),1,true)
+	for index in range(4):
+		var angle = index*PI*0.5
+		var at = center+Vector2(cos(angle),sin(angle))*(size.x*0.5-4)
+		var jewel = PackedVector2Array([at+Vector2(0,-5),at+Vector2(4,0),at+Vector2(0,5),at+Vector2(-4,0),at+Vector2(0,-5)])
+		overlay.draw_colored_polygon(jewel,Color(0.31,0.23,0.13))
+		overlay.draw_polyline(jewel,Color(0.80,0.66,0.37),1.0,true)
 	if not game.in_world or not is_instance_valid(game.strategy_camera): return
 	var focus: Vector3 = game.strategy_camera.focus
 	var marker = center+Vector2(focus.x,focus.z)*size.x/175.0

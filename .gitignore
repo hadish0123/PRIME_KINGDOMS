@@ -21,6 +21,9 @@ client/assets/**/*.import
 client/assets/**/*.ttf
 !client/assets/textures/meadow_alpha.png
 !client/assets/heraldry/royal-textile.png
+!client/assets/ui/royal-icons.png
+!client/assets/ui/royal-ruler.png
+!client/assets/ui/royal-buildings.png
 
 __pycache__/
 *.pyc
