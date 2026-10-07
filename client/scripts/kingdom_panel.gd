@@ -444,5 +444,6 @@ func load_map() -> void:
 	if response.ok:
 		map_data = response.data
 		rebuild()
-		tabs.current_tab = tabs.get_tab_count()-1
+		for i in range(tabs.get_tab_count()):
+			if tabs.get_tab_title(i) == "Map": tabs.current_tab = i
 	else: status.text = "Region could not be loaded."
