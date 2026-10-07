@@ -21,12 +21,14 @@ func run() -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixture.json"))
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
-	await game.enter_world(fixture.state)
 	# This suite validates 3D architecture, characters and bounded scenery.
-	# Strategy HUD evidence is already captured by smoke.gd as settlement.png.
-	# Hiding the CanvasLayer here avoids paying the full emoji/card UI render
-	# cost during hundreds of software-rendered llvmpipe frames.
-	game.hud.visible = false
+	# Strategy HUD evidence is captured separately by smoke.gd as settlement.png.
+	# Disable the entire UI CanvasLayer BEFORE enter_world(), because enter_world()
+	# deliberately exposes the HUD and waits one rendered frame. With llvmpipe that
+	# single premium emoji/card frame can dominate this unrelated 3D test.
+	game.ui.visible = false
+	game.preferences.quality = 0
+	await game.enter_world(fixture.state)
 	var settlement = game.villages[fixture.state.village.id]
 	var development={"tasks":[],"buildings":{"keep":1,"walls":0,"watch_towers":0,"gatehouse":0},"realm":{"rank":1}}
 	settlement.apply_development(development)
