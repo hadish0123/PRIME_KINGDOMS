@@ -27,7 +27,10 @@ func capture_frame(frame: int) -> void:
 	var image := root.get_texture().get_image()
 	check(not image.is_empty(),"Strategy film produced an empty frame")
 	if not image.is_empty():
-		check(image.save_png("res://builds/strategy-frames/frame-%04d.png" % frame) == OK,"Strategy film frame could not be saved")
+		# JPEG keyframes are dramatically faster than 300 full PNG encodes under
+		# llvmpipe. CI still records every story beat, then ffmpeg holds/interpolates
+		# them into a normal 10-second preview.
+		check(image.save_jpg("res://builds/strategy-frames/frame-%04d.jpg" % frame,0.88) == OK,"Strategy film frame could not be saved")
 
 func run() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -94,6 +97,7 @@ func run() -> void:
 	game.strategy_camera.set_focus(Vector3.ZERO)
 
 	var started := Time.get_ticks_msec()
+	var captured := 0
 	for frame in range(300):
 		# 0-74: living 3D settlement under strategy camera.
 		if frame < 75:
@@ -136,9 +140,13 @@ func run() -> void:
 			game.strategy_camera.rotate(-0.004)
 			game.strategy_camera.pan_screen(Vector2(0.22,-0.08))
 
-		await capture_frame(frame)
+		if frame % 10 == 0:
+			await capture_frame(captured)
+			captured += 1
+		else:
+			await process_frame
 		if frame % 60 == 0:
-			print("STRATEGY_FILM_PROGRESS frame=",frame,"/300 wall_seconds=",(Time.get_ticks_msec()-started)/1000.0)
+			print("STRATEGY_FILM_PROGRESS simulation_frame=",frame,"/300 captured=",captured," wall_seconds=",(Time.get_ticks_msec()-started)/1000.0)
 
 	check(game.strategy_mode,"Film was not rendered from v2 strategy mode")
 	check(game.player.frozen,"Film accidentally restored direct character steering")
@@ -151,8 +159,9 @@ func run() -> void:
 	print("STRATEGY_FILM ",JSON.stringify({
 		"failures":failures,
 		"version":"0.8.0",
-		"frames":300,
-		"captureFps":30,
+		"simulationFrames":300,
+		"captureFrames":captured,
+		"captureFps":3,
 		"onlineBackend":true,
 		"directCharacterSteering":false,
 		"strategyCamera":true,
