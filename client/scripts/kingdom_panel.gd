@@ -41,7 +41,10 @@ func apply_section_layout(section: String) -> void:
 
 func _ready() -> void:
 	apply_section_layout("Buildings")
-	add_theme_stylebox_override("panel",game.panel_style(Color(0.020,0.019,0.016,0.975),Color(0.65,0.48,0.20)))
+	var council_style = game.panel_style(Color(0.033,0.028,0.021,0.975),Color(0.69,0.51,0.21))
+	council_style.set_corner_radius_all(10)
+	council_style.shadow_size = 7
+	add_theme_stylebox_override("panel",council_style)
 	visible = false
 
 func _process(delta: float) -> void:
@@ -263,6 +266,57 @@ func page(title: String) -> VBoxContainer:
 	scroll.add_child(column)
 	return column
 
+func council_resource_chip(key: String, value: int) -> PanelContainer:
+	var chip = PanelContainer.new()
+	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip.custom_minimum_size.y = 48
+	var chip_style = game.panel_style(Color(0.060,0.048,0.030,0.97),Color(0.48,0.35,0.16))
+	chip_style.set_corner_radius_all(8)
+	chip_style.shadow_size = 2
+	chip.add_theme_stylebox_override("panel",chip_style)
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation",6)
+	chip.add_child(row)
+	row.add_child(game.icon_badge(game.resource_icon(key),19,Vector2(30,30)))
+	var amount = game.label(str(value),14,Color(0.98,0.90,0.72))
+	amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(amount)
+	return chip
+
+func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HBoxContainer:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation",5)
+	for key in ["food","wood","stone","iron","gold"]:
+		if not cost.has(key): continue
+		var chip = PanelContainer.new()
+		var chip_style = game.panel_style(Color(0.052,0.043,0.029,0.96),Color(0.39,0.30,0.15))
+		chip_style.set_corner_radius_all(7)
+		chip_style.content_margin_left = 7
+		chip_style.content_margin_right = 7
+		chip_style.content_margin_top = 5
+		chip_style.content_margin_bottom = 5
+		chip.add_theme_stylebox_override("panel",chip_style)
+		var value_row = HBoxContainer.new()
+		value_row.add_theme_constant_override("separation",4)
+		chip.add_child(value_row)
+		var icon = game.emoji_label(game.resource_icon(key),18)
+		icon.custom_minimum_size = Vector2(22,22)
+		value_row.add_child(icon)
+		value_row.add_child(game.label(str(int(cost[key])),13,Color(0.95,0.88,0.72)))
+		row.add_child(chip)
+	if duration_seconds >= 0:
+		var time_chip = PanelContainer.new()
+		var time_style = game.panel_style(Color(0.045,0.040,0.031,0.96),Color(0.34,0.29,0.20))
+		time_style.set_corner_radius_all(7)
+		time_style.content_margin_left = 8
+		time_style.content_margin_right = 8
+		time_style.content_margin_top = 5
+		time_style.content_margin_bottom = 5
+		time_chip.add_theme_stylebox_override("panel",time_style)
+		time_chip.add_child(game.label("⏱  "+Text.duration(duration_seconds),13,Color(0.86,0.83,0.74)))
+		row.add_child(time_chip)
+	return row
+
 func rebuild() -> void:
 	countdowns.clear()
 	var selected = tabs.current_tab if is_instance_valid(tabs) else 0
@@ -272,15 +326,25 @@ func rebuild() -> void:
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation",8)
 	add_child(column)
+	var heading_card = PanelContainer.new()
+	var heading_style = game.panel_style(Color(0.066,0.050,0.029,0.96),Color(0.63,0.46,0.18))
+	heading_style.set_corner_radius_all(9)
+	heading_card.add_theme_stylebox_override("panel",heading_style)
+	column.add_child(heading_card)
 	var heading = VBoxContainer.new()
 	heading.add_theme_constant_override("separation",7)
-	column.add_child(heading)
-	var council_title = game.label("ROYAL COUNCIL",26,Color(0.96,0.82,0.51))
+	heading_card.add_child(heading)
+	var title_row = HBoxContainer.new()
+	title_row.add_theme_constant_override("separation",9)
+	heading.add_child(title_row)
+	title_row.add_child(game.icon_badge("👑",25,Vector2(42,42)))
+	var council_title = game.label("ROYAL COUNCIL",25,Color(0.98,0.84,0.52))
+	council_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	council_title.tooltip_text = "Command construction, armies, research and realm affairs."
-	heading.add_child(council_title)
+	title_row.add_child(council_title)
 	var navigation = OptionButton.new()
 	navigation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	navigation.custom_minimum_size.y = 46
+	navigation.custom_minimum_size.y = 44
 	for title in ["Overview","Queues","Buildings","Army","Research","Empire","Clan","Map","Reports","Commanders","Goals","Inbox","Rankings","Wars","Chat"]:
 		navigation.add_item(Text.copy("World" if title=="Map" else title))
 		navigation.set_item_metadata(navigation.item_count-1,title)
@@ -297,12 +361,7 @@ func rebuild() -> void:
 		resource_strip.add_theme_constant_override("v_separation",4)
 		column.add_child(resource_strip)
 		for key in ["food","wood","stone","iron","gold"]:
-			var chip = PanelContainer.new()
-			chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			chip.add_theme_stylebox_override("panel",game.panel_style(Color(0.038,0.035,0.029,0.96),Color(0.37,0.29,0.16)))
-			var value = int(kingdom.resources.get(key,0))
-			chip.add_child(game.label(game.resource_icon(key)+"  "+str(value),13,Color(0.94,0.87,0.72)))
-			resource_strip.add_child(chip)
+			resource_strip.add_child(council_resource_chip(key,int(kingdom.resources.get(key,0))))
 	tabs = TabContainer.new()
 	tabs.custom_minimum_size.y = 210
 	tabs.tabs_visible = false
@@ -324,11 +383,17 @@ func rebuild() -> void:
 	tabs.current_tab = mini(selected,maxi(0,tabs.get_tab_count()-1))
 	if not desired_section.is_empty(): select_section(desired_section)
 	navigation.selected = tabs.current_tab
+	var action_shell = PanelContainer.new()
+	var action_style = game.panel_style(Color(0.047,0.039,0.027,0.97),Color(0.47,0.34,0.15))
+	action_style.set_corner_radius_all(8)
+	action_shell.add_theme_stylebox_override("panel",action_style)
+	column.add_child(action_shell)
 	var actions = HBoxContainer.new()
-	column.add_child(actions)
-	actions.add_child(game.button("Refresh",refresh))
-	if not pending_path.is_empty(): actions.add_child(game.button("Retry Order",func(): submit(pending_path,pending_body)))
-	actions.add_child(game.button("Return to Realm",close))
+	actions.add_theme_constant_override("separation",6)
+	action_shell.add_child(actions)
+	actions.add_child(game.button("↻  Refresh",refresh))
+	if not pending_path.is_empty(): actions.add_child(game.button("⟳  Retry Order",func(): submit(pending_path,pending_body)))
+	actions.add_child(game.button("↩  Return to Realm",close))
 
 func cost_text(cost: Dictionary) -> String:
 	var values: Array[String] = []
@@ -389,19 +454,29 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 	for quote in quotes:
 		var key_value: String = quote.key
 		var card = PanelContainer.new()
-		card.add_theme_stylebox_override("panel",game.panel_style(Color(0.034,0.032,0.027,0.985),Color(0.55,0.40,0.17)))
+		var card_style = game.panel_style(Color(0.050,0.041,0.028,0.985),Color(0.61,0.44,0.17))
+		card_style.set_corner_radius_all(9)
+		card_style.shadow_size = 4
+		card.add_theme_stylebox_override("panel",card_style)
 		column.add_child(card)
 		var details = VBoxContainer.new()
-		details.add_theme_constant_override("separation",6)
+		details.add_theme_constant_override("separation",7)
 		card.add_child(details)
+		var card_header = HBoxContainer.new()
+		card_header.add_theme_constant_override("separation",9)
+		details.add_child(card_header)
 		var card_icon = "🏛" if kind=="building" else "📜"
-		details.add_child(game.label(card_icon+"  "+Text.copy("%s · LEVEL %d") % [catalog_name(kind,key_value),quote.current],20,Color(0.95,0.81,0.50)))
-		details.add_child(game.label(str(quote.get("purpose","")),14,Color(0.84,0.82,0.75)))
+		card_header.add_child(game.icon_badge(card_icon,25,Vector2(44,44)))
+		var title_stack = VBoxContainer.new()
+		title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card_header.add_child(title_stack)
+		title_stack.add_child(game.label(Text.copy("%s · LEVEL %d") % [catalog_name(kind,key_value),quote.current],19,Color(0.97,0.82,0.50)))
+		title_stack.add_child(game.label(str(quote.get("purpose","")),13,Color(0.85,0.81,0.72)))
 		var effect: Dictionary = quote.get("currentEffect",{})
 		var next_effect: Dictionary = quote.get("nextEffect",{})
 		if not effect.is_empty():
 			details.add_child(game.label(Text.copy("%d → %d %s") % [effect.value,next_effect.value,str(effect.unit)],15))
-		details.add_child(game.label(cost_text(quote.cost)+" · "+Text.duration(int(quote.durationSeconds)),14))
+		details.add_child(build_cost_row(quote.cost,int(quote.durationSeconds)))
 		var unmet = false
 		for requirement in quote.get("requirements",[]):
 			var missing: bool = int(requirement.current)<int(requirement.level)
