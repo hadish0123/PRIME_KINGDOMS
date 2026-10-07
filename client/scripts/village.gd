@@ -175,12 +175,21 @@ func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 			var to: Vector3=segment[1]
 			var length_value=from.distance_to(to)
 			if level_value<4:
-				for index in range(ceili(length_value/0.5)):
-					var at=from.lerp(to,float(index)*0.5/length_value)
-					var height_value=2.7+float(index%3)*0.08
-					architecture.beam(at,at+Vector3(0,height_value,0),0.22)
-					architecture.cone(0.22,0.35,at+Vector3(0,height_value+0.15,0),"wood")
-				for y in [0.8,1.9]: architecture.beam(from+Vector3(0,y,0),to+Vector3(0,y,0),0.12)
+				# A level-1 palisade must stay cheap enough for mobile and software CI.
+				# The previous 0.5 m log+cone loop generated ~1,600 procedural pieces
+				# for one enclosure and could stall llvmpipe/low-end Android at startup.
+				var direction=to-from
+				var center=(from+to)*0.5
+				var rotation_value=Vector3(0,atan2(-direction.z,direction.x),0)
+				architecture.block(Vector3(length_value,2.75,0.62),center+Vector3(0,1.375,0),"wood",rotation_value)
+				architecture.block(Vector3(length_value+0.12,0.16,0.82),center+Vector3(0,0.72,0),"wood",rotation_value)
+				architecture.block(Vector3(length_value+0.12,0.16,0.82),center+Vector3(0,1.86,0),"wood",rotation_value)
+				var post_count=ceili(length_value/3.0)
+				for index in range(post_count+1):
+					var distance_value=minf(float(index)*3.0,length_value)
+					var at=from.lerp(to,distance_value/length_value)
+					var post_height=3.0+float(index%3)*0.08
+					architecture.block(Vector3(0.30,post_height,0.92),at+Vector3(0,post_height*0.5,0),"wood",rotation_value)
 			else:
 				var direction=to-from
 				var center=(from+to)*0.5
