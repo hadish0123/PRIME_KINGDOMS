@@ -77,7 +77,15 @@ func run() -> void:
 		var building_tasks: Array = panel.kingdom.tasks.duplicate(true)
 		await panel.submit("/v2/clans/join",{"clanId":test_clan})
 		check(panel.clan_data.own != null and panel.clan_data.own.id==test_clan,"Native join did not enter the real clan region")
-		check(panel.kingdom.settlementId==settlement_id and panel.kingdom.tasks==building_tasks,"Native join lost the village identity or queue")
+		check(panel.kingdom.settlementId==settlement_id,"Native join changed the permanent village identity")
+		# Relocation is lossless, but a real server timer may legitimately finish
+		# while this rendered integration test is running. Only tasks whose finish
+		# time is still in the future must remain in the active queue.
+		var joined_server_time := str(panel.kingdom.serverTime)
+		for task_before in building_tasks:
+			if str(task_before.finishes_at) <= joined_server_time: continue
+			var task_id := str(task_before.id)
+			check(panel.kingdom.tasks.any(func(task_after): return str(task_after.id)==task_id),"Native join lost an unfinished server queue task")
 		await panel.load_map()
 		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
 		await panel.submit("/v2/clans/donate",{"resource":"wood","amount":10})
