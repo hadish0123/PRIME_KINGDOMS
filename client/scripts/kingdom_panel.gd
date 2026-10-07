@@ -334,7 +334,6 @@ func build_map(column: VBoxContainer) -> void:
 			for i in range(tabs.get_tab_count()):
 				if tabs.get_tab_title(i) == "Map": tabs.current_tab = i
 		)
-		)
 		grid.add_child(card)
 	if not selected_target.is_empty():
 		column.add_child(game.label("TARGET · %d,%d · %s" % [selected_target.x,selected_target.z,str(selected_target.kind).capitalize()],16,Color(0.96,0.68,0.45)))
