@@ -14,6 +14,9 @@ const Preferences = preload("res://scripts/preferences.gd")
 const Contract = preload("res://scripts/contract.gd")
 const Minimap = preload("res://scripts/minimap.gd")
 const Text = preload("res://scripts/game_text.gd")
+const RoyalUI = preload("res://scripts/royal_ui.gd")
+var hud_crest: TextureRect
+var hud_crest_card: PanelContainer
 var api: Node
 var terrain: Node3D
 var ruler: Node3D
@@ -111,10 +114,10 @@ func panel_style(color: Color, border: Color = Color(0.49,0.38,0.23)) -> StyleBo
 	return style
 
 func ui_icon_texture(index: int) -> Texture2D:
-	var texture = AtlasTexture.new()
-	texture.atlas = load("res://assets/ui/strategy-icons.svg")
-	texture.region = Rect2(index*64,0,64,64)
-	return texture
+	return RoyalUI.icon(index)
+
+func royal_style(gold: bool = false,padding: float = 10.0,tint: Color = Color.WHITE) -> StyleBoxTexture:
+	return RoyalUI.frame(gold,padding,tint)
 
 func ui_icon(index: int,size_value: Vector2 = Vector2(34,34)) -> TextureRect:
 	var icon = TextureRect.new()
@@ -147,14 +150,11 @@ func nav_icon_index(section: String) -> int:
 	return 14
 
 func apply_nav_style(item: Button,active: bool) -> void:
-	var normal = panel_style(Color(0.58,0.38,0.10,0.98) if active else Color(0.025,0.023,0.019,0.985),Color(0.96,0.69,0.23) if active else Color(0.55,0.40,0.17))
-	normal.shadow_size = 7 if active else 3
-	var hover = panel_style(Color(0.68,0.44,0.10,1.0),Color(1.0,0.78,0.34))
-	var pressed = panel_style(Color(0.39,0.25,0.06,1.0),Color(0.94,0.66,0.20))
-	item.add_theme_stylebox_override("normal",normal)
-	item.add_theme_stylebox_override("hover",hover)
-	item.add_theme_stylebox_override("pressed",pressed)
-	item.add_theme_color_override("font_color",Color(0.10,0.07,0.02) if active else Color(0.97,0.88,0.69))
+	item.add_theme_stylebox_override("normal",royal_style(active,10))
+	item.add_theme_stylebox_override("hover",royal_style(true,10,Color(1.05,1.03,0.97)))
+	item.add_theme_stylebox_override("pressed",royal_style(true,10,Color(0.75,0.70,0.60)))
+	var title: Label = item.get_meta("title_label",null)
+	if is_instance_valid(title): title.modulate = Color(0.20,0.13,0.045) if active else Color.WHITE
 
 func set_nav_active(section: String) -> void:
 	for key in nav_buttons:
@@ -163,6 +163,7 @@ func set_nav_active(section: String) -> void:
 func premium_nav_button(section: String,callback: Callable) -> Button:
 	var item = button("",callback)
 	item.custom_minimum_size = Vector2(116,66)
+	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item.set_meta("section",section)
 	var center = CenterContainer.new()
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -172,9 +173,11 @@ func premium_nav_button(section: String,callback: Callable) -> Button:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation",8)
 	center.add_child(row)
-	row.add_child(ui_icon(nav_icon_index(section),Vector2(34,34)))
+	row.add_child(ui_icon(nav_icon_index(section),Vector2(40,40)))
 	var title = label(section,14,Color(0.97,0.88,0.69))
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	item.set_meta("title_label",title)
 	row.add_child(title)
 	nav_buttons[section]=item
 	apply_nav_style(item,false)
@@ -182,143 +185,78 @@ func premium_nav_button(section: String,callback: Callable) -> Button:
 
 func profile_panel() -> PanelContainer:
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(250,82)
-	var style = panel_style(Color(0.034,0.030,0.023,0.98),Color(0.75,0.55,0.21))
-	style.set_corner_radius_all(8)
-	style.shadow_size = 5
-	card.add_theme_stylebox_override("panel",style)
+	card.custom_minimum_size = Vector2(207,78)
+	card.add_theme_stylebox_override("panel",royal_style(false,7))
 	var row = HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	card.add_child(row)
 	var portrait_frame = PanelContainer.new()
-	portrait_frame.custom_minimum_size = Vector2(66,66)
-	portrait_frame.add_theme_stylebox_override("panel",panel_style(Color(0.03,0.04,0.035,1.0),Color(0.92,0.67,0.23)))
+	portrait_frame.custom_minimum_size = Vector2(70,70)
+	portrait_frame.add_theme_stylebox_override("panel",royal_style(false,3))
 	row.add_child(portrait_frame)
 	var portrait = TextureRect.new()
-	portrait.texture = load("res://assets/ui/ruler-portrait.svg")
+	portrait.texture = RoyalUI.PORTRAIT
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	portrait_frame.clip_contents = true
 	portrait_frame.add_child(portrait)
 	var info = VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation",1)
 	row.add_child(info)
-	profile_name_label = label("RULER",18,Color(0.98,0.83,0.49))
-	profile_level_label = label("Lv. 1",13,Color(0.95,0.90,0.78))
+	profile_name_label = label("Ruler",17,Color(0.98,0.83,0.49))
+	profile_name_label.clip_text = true
+	profile_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	profile_name_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	profile_level_label = label("Lv. 1",12,Color(0.95,0.90,0.78))
 	info.add_child(profile_name_label)
 	info.add_child(profile_level_label)
 	profile_xp_bar = ProgressBar.new()
-	profile_xp_bar.custom_minimum_size = Vector2(126,8)
+	profile_xp_bar.custom_minimum_size = Vector2(108,7)
 	profile_xp_bar.show_percentage = false
-	profile_xp_bar.min_value = 0
 	profile_xp_bar.max_value = 100
-	profile_xp_bar.value = 0
-	var bar_bg = panel_style(Color(0.055,0.048,0.036,1.0),Color(0.30,0.24,0.14))
-	bar_bg.set_corner_radius_all(3)
-	var bar_fill = panel_style(Color(0.94,0.64,0.13,1.0),Color(1.0,0.81,0.35))
-	bar_fill.set_corner_radius_all(3)
-	profile_xp_bar.add_theme_stylebox_override("background",bar_bg)
-	profile_xp_bar.add_theme_stylebox_override("fill",bar_fill)
+	for entry in [["background",Color(0.09,0.085,0.06)],["fill",Color(0.91,0.69,0.29)]]:
+		var bar = StyleBoxFlat.new()
+		bar.bg_color = entry[1]
+		bar.border_color = Color(0.44,0.34,0.15)
+		bar.set_border_width_all(1)
+		profile_xp_bar.add_theme_stylebox_override(entry[0],bar)
 	info.add_child(profile_xp_bar)
-	profile_stat_label = label("Prestige 0",12,Color(0.83,0.77,0.65))
+	profile_stat_label = label("Prestige 0",11,Color(0.83,0.77,0.65))
 	info.add_child(profile_stat_label)
 	return card
 
 func crest_panel() -> PanelContainer:
-	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(72,82)
-	card.add_theme_stylebox_override("panel",panel_style(Color(0.025,0.12,0.075,0.98),Color(0.81,0.59,0.21)))
-	var crest = TextureRect.new()
-	crest.texture = load("res://assets/heraldry/lion.svg")
-	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	crest.modulate = Color(0.96,0.72,0.25)
-	card.add_child(crest)
-	return card
-
-func resource_icon(key: String) -> String:
-	match key.to_lower():
-		"food": return "🌾"
-		"wood": return "🪵"
-		"stone": return "🪨"
-		"iron": return "⚒"
-		"gold": return "🪙"
-	return "◆"
-
-func nav_icon(section: String) -> String:
-	match section:
-		"Buildings": return "🏰"
-		"Army": return "⚔"
-		"Research": return "📜"
-		"World": return "🌍"
-		"Clan": return "👥"
-		"Goals": return "🏆"
-		"Inbox": return "✉"
-		"Settings": return "⚙"
-	return "◆"
-
-func emoji_label(text_value: String, font_size: int = 24) -> Label:
-	var item = Label.new()
-	item.text = text_value
-	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_theme_font_size_override("font_size",font_size)
-	item.add_theme_color_override("font_color",Color(0.96,0.83,0.49))
-	item.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return item
-
-func icon_badge(icon_text: String, icon_size: int = 26, badge_size: Vector2 = Vector2(42,42)) -> PanelContainer:
-	var badge = PanelContainer.new()
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.custom_minimum_size = badge_size
-	var badge_style = panel_style(Color(0.105,0.078,0.032,0.98),Color(0.72,0.53,0.20))
-	badge_style.set_corner_radius_all(10)
-	badge_style.shadow_size = 2
-	badge.add_theme_stylebox_override("panel",badge_style)
-	var icon = emoji_label(icon_text,icon_size)
-	icon.custom_minimum_size = badge_size
-	badge.add_child(icon)
-	return badge
-
-func nav_button(section: String, callback: Callable) -> Button:
-	var item = button("",callback)
-	item.custom_minimum_size = Vector2(116,64)
-	for child in item.get_children():
-		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var center = CenterContainer.new()
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	item.add_child(center)
-	var row = HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation",8)
-	center.add_child(row)
-	var icon = emoji_label(nav_icon(section),24)
-	icon.custom_minimum_size = Vector2(30,36)
-	row.add_child(icon)
-	var title = label(section,14,Color(0.96,0.88,0.70))
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(title)
-	return item
+	hud_crest_card = PanelContainer.new()
+	hud_crest_card.custom_minimum_size = Vector2(55,78)
+	hud_crest_card.add_theme_stylebox_override("panel",royal_style(false,6))
+	hud_crest = TextureRect.new()
+	hud_crest.texture = load("res://assets/heraldry/lion.svg")
+	hud_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	hud_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hud_crest.modulate = Color(0.96,0.72,0.25)
+	hud_crest_card.add_child(hud_crest)
+	return hud_crest_card
 
 func resource_card(key: String) -> PanelContainer:
 	var card = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size = Vector2(94,72)
-	var style = panel_style(Color(0.034,0.030,0.023,0.98),Color(0.58,0.42,0.17))
-	style.set_corner_radius_all(8)
-	style.shadow_size = 3
-	card.add_theme_stylebox_override("panel",style)
+	card.custom_minimum_size = Vector2(91,78)
+	card.add_theme_stylebox_override("panel",royal_style(false,6))
 	var row = HBoxContainer.new()
-	row.add_theme_constant_override("separation",5)
+	row.add_theme_constant_override("separation",2)
 	card.add_child(row)
-	row.add_child(ui_icon(resource_icon_index(key),Vector2(34,34)))
+	row.add_child(ui_icon(resource_icon_index(key),Vector2(36,42)))
 	var values = VBoxContainer.new()
 	values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	values.add_theme_constant_override("separation",0)
+	values.alignment = BoxContainer.ALIGNMENT_CENTER
+	values.add_theme_constant_override("separation",2)
 	row.add_child(values)
-	values.add_child(label(key.capitalize(),10,Color(0.77,0.70,0.56)))
-	var amount = label("—",18,Color(1.0,0.92,0.74))
+	values.add_child(label(key.capitalize(),10,Color(0.85,0.80,0.68)))
+	var amount = label("—",17,Color(1.0,0.92,0.74))
+	amount.clip_text = true
+	amount.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	amount.custom_minimum_size.x = 34
 	values.add_child(amount)
 	resource_labels[key] = amount
 	return card
@@ -341,12 +279,10 @@ func button(text_value: String, callback: Callable) -> Button:
 	item.add_theme_font_size_override("font_size",16)
 	item.add_theme_color_override("font_color",Color(0.96,0.86,0.66))
 	item.add_theme_color_override("font_hover_color",Color(1.0,0.93,0.72))
-	for entry in [["normal",Color(0.030,0.029,0.025,0.98)],["hover",Color(0.12,0.09,0.045,0.99)],["pressed",Color(0.22,0.15,0.055,1.0)],["disabled",Color(0.045,0.044,0.040,0.94)]]:
-		var border = Color(0.62,0.46,0.20) if entry[0]!="disabled" else Color(0.24,0.22,0.18)
-		var style = panel_style(entry[1],border)
-		style.content_margin_top = 8
-		style.content_margin_bottom = 8
-		item.add_theme_stylebox_override(entry[0],style)
+	item.add_theme_constant_override("icon_max_width",24)
+	item.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	for entry in [["normal",Color.WHITE],["hover",Color(1.12,1.08,0.95)],["pressed",Color(0.7,0.65,0.55)],["disabled",Color(0.45,0.45,0.43)]]:
+		item.add_theme_stylebox_override(entry[0],royal_style(false,10,entry[1]))
 	item.add_theme_color_override("font_disabled_color",Color(0.42,0.40,0.35))
 	item.pressed.connect(func():
 		play_cue("select")
@@ -368,7 +304,7 @@ func royal_theme() -> Theme:
 	theme.default_font_size = 16
 	for type_name in ["Button","OptionButton","CheckButton","LineEdit","SpinBox"]:
 		for entry in [["normal",Color(0.055,0.050,0.043)],["hover",Color(0.14,0.11,0.075)],["pressed",Color(0.24,0.17,0.08)],["focus",Color(0.10,0.083,0.060)],["disabled",Color(0.06,0.058,0.052)]]:
-			theme.set_stylebox(entry[0],type_name,panel_style(entry[1]))
+			theme.set_stylebox(entry[0],type_name,royal_style(false,10,Color(1.15,1.10,0.94) if entry[0]=="focus" else Color.WHITE))
 		theme.set_color("font_color",type_name,Color(0.92,0.83,0.65))
 		theme.set_color("font_hover_color",type_name,Color(1,0.9,0.7))
 		theme.set_color("font_focus_color",type_name,Color(1,0.9,0.7))
@@ -433,14 +369,12 @@ func build_ui() -> void:
 	hud.visible = false
 	ui.add_child(hud)
 	var top = PanelContainer.new()
+	top.name = "RealmHeader"
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 10
 	top.offset_right = -10
 	top.offset_top = 8
-	var top_style = panel_style(Color(0.020,0.018,0.014,0.97),Color(0.76,0.55,0.21))
-	top_style.set_corner_radius_all(9)
-	top_style.shadow_size = 7
-	top.add_theme_stylebox_override("panel",top_style)
+	top.add_theme_stylebox_override("panel",royal_style(false,7))
 	hud.add_child(top)
 	var top_row = HBoxContainer.new()
 	top_row.add_theme_constant_override("separation",6)
@@ -448,14 +382,20 @@ func build_ui() -> void:
 	top_row.add_child(profile_panel())
 	top_row.add_child(crest_panel())
 	var identity_card = PanelContainer.new()
-	identity_card.custom_minimum_size = Vector2(235,82)
-	identity_card.add_theme_stylebox_override("panel",panel_style(Color(0.035,0.031,0.024,0.97),Color(0.49,0.35,0.15)))
+	identity_card.custom_minimum_size = Vector2(211,78)
+	identity_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity_card.add_theme_stylebox_override("panel",royal_style(false,8))
 	top_row.add_child(identity_card)
 	var identity = VBoxContainer.new()
 	identity.add_theme_constant_override("separation",3)
 	identity_card.add_child(identity)
-	village_label = label("Strategy Ruler · Village",18,Color(0.98,0.84,0.52))
-	population_label = label("",12,Color(0.88,0.83,0.72))
+	village_label = label("Village",17,Color(0.98,0.84,0.52))
+	village_label.clip_text = true
+	village_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	population_label = label("",11,Color(0.88,0.83,0.72))
+	population_label.clip_text = true
+	population_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	identity.alignment = BoxContainer.ALIGNMENT_CENTER
 	identity.add_child(village_label)
 	identity.add_child(population_label)
 	var wallets = HBoxContainer.new()
@@ -465,38 +405,44 @@ func build_ui() -> void:
 	for key in ["food","wood","stone","iron","gold"]:
 		wallets.add_child(resource_card(key))
 	var status_card = PanelContainer.new()
-	status_card.custom_minimum_size = Vector2(185,82)
-	status_card.add_theme_stylebox_override("panel",panel_style(Color(0.033,0.030,0.023,0.97),Color(0.49,0.35,0.15)))
+	status_card.custom_minimum_size = Vector2(167,78)
+	status_card.add_theme_stylebox_override("panel",royal_style(false,7))
 	top_row.add_child(status_card)
 	var status_box = VBoxContainer.new()
 	status_box.add_theme_constant_override("separation",3)
+	status_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	status_card.add_child(status_box)
-	connection_label = label("● Connected · realm restored",11,Color(0.47,0.94,0.47))
+	connection_label = label("● Connected",10,Color(0.47,0.94,0.47))
+	connection_label.clip_text = true
 	connection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_box.add_child(connection_label)
 	var focus_row = HBoxContainer.new()
 	focus_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	focus_row.add_child(ui_icon(5,Vector2(23,23)))
+	focus_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var focus = button("Focus Capital",func():
 		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20)))
-	focus.custom_minimum_size = Vector2(135,38)
+	focus.custom_minimum_size = Vector2(143,38)
+	focus.add_theme_font_size_override("font_size",12)
+	focus.icon = ui_icon_texture(5)
+	focus.expand_icon = true
 	focus_row.add_child(focus)
 	status_box.add_child(focus_row)
 	minimap = Minimap.new()
 	minimap.game = self
 	minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	minimap.offset_left = -186
+	minimap.offset_left = -199
 	minimap.offset_right = -18
-	minimap.offset_top = 102
-	minimap.offset_bottom = 270
+	minimap.offset_top = 108
+	minimap.offset_bottom = 289
 	hud.add_child(minimap)
 	var nav_shell = PanelContainer.new()
+	nav_shell.name = "RealmNavigation"
 	nav_shell.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	nav_shell.position = Vector2(-505,-80)
-	var nav_shell_style = panel_style(Color(0.018,0.016,0.013,0.97),Color(0.70,0.50,0.18))
-	nav_shell_style.set_corner_radius_all(9)
-	nav_shell_style.shadow_size = 7
-	nav_shell.add_theme_stylebox_override("panel",nav_shell_style)
+	nav_shell.offset_left = -500
+	nav_shell.offset_right = 500
+	nav_shell.offset_top = -85
+	nav_shell.offset_bottom = -7
+	nav_shell.add_theme_stylebox_override("panel",royal_style(false,7))
 	hud.add_child(nav_shell)
 	var nav = HBoxContainer.new()
 	nav.add_theme_constant_override("separation",5)
@@ -526,7 +472,7 @@ func build_settings() -> void:
 	settings_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	settings_panel.position = Vector2(-260,-260)
 	settings_panel.size = Vector2(520,520)
-	settings_panel.add_theme_stylebox_override("panel",panel_style(Color(0.035,0.032,0.028,0.98)))
+	settings_panel.add_theme_stylebox_override("panel",royal_style(false,16))
 	hud.add_child(settings_panel)
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation",12)
@@ -583,11 +529,14 @@ func error_message(code: String) -> String: return Text.error(code)
 
 func apply_empire(empire: Dictionary) -> void:
 	if in_world: EmpireVisuals.apply(world_root,empire)
+	if is_instance_valid(hud_crest):
+		hud_crest.texture = load("res://assets/heraldry/%s.svg" % str(empire.get("emblem","lion")))
+		hud_crest.modulate = Color(str(empire.get("secondaryColor","#ddbb66")))
 
 func apply_realm(realm: Dictionary) -> void:
 	if not in_world or realm.is_empty(): return
 	var rank_value = int(realm.get("rank",1))
-	village_label.text = "Strategy Ruler · "+str(realm.name)
+	village_label.text = str(state.player.displayName)+" · "+str(realm.name)
 	if last_rank>0 and rank_value>last_rank:
 		toast("Your realm has risen to "+str(realm.name)+".")
 		play_cue("complete")

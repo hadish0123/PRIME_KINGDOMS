@@ -9,7 +9,7 @@ func begin() -> void:
 	mats.plaster = Surfaces.pbr("rough_plaster_03", Color(0.91, 0.85, 0.72), 0.22)
 	mats.plaster.normal_scale = 0.22
 	mats.stone = Surfaces.pbr("stone_wall_02", Color(0.78, 0.79, 0.74), 0.32)
-	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.61, 0.67, 0.71), 0.28)
+	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.52, 0.55, 0.54), 0.28)
 	mats.iron = Surfaces.plain(Color(0.20, 0.23, 0.25), 0.56, 0.8)
 	mats.dark = Surfaces.plain(Color(0.025, 0.033, 0.035))
 	mats.fabric = Surfaces.pbr("rough_linen", Color(0.54, 0.31, 0.15), 0.6)
@@ -287,3 +287,14 @@ func build(asset_name: String, width: float) -> void:
 		var levels = 2 if asset_name in ["inn", "house_2"] else 1
 		house(width * 0.78, width * 0.68, levels, asset_name.hash())
 	finish()
+
+func academy(level_value: int) -> void:
+	house(8.0,6.2,2 if level_value>=6 else 1,3)
+	var height_value = 3.0 if level_value<6 else 4.0
+	for index in range(5):
+		var x = -4.4+index*2.2
+		cylinder(0.17,height_value,Vector3(x,height_value*0.5,4.7),"stone")
+		block(Vector3(0.55,0.22,0.55),Vector3(x,height_value,4.7),"stone")
+	block(Vector3(9.8,0.22,2.4),Vector3(0,height_value+0.2,4.1),"roof",Vector3(0.12,0,0))
+	for step in range(3): block(Vector3(9.6,0.18,2.7-step*0.7),Vector3(0,0.09+step*0.18,4.6-step*0.3),"stone")
+	collision(Vector3(10,0.55,3.0),Vector3(0,0.275,4.5))

@@ -29,25 +29,23 @@ var chat_channel = "global"
 
 
 func apply_section_layout(section: String) -> void:
-	anchor_left = 0.03
+	anchor_left = 0.015
 	anchor_top = 0.16
-	anchor_bottom = 0.91
+	anchor_bottom = 0.88
 	# Building/economy screens stay as a council sidebar so the settlement
 	# remains visible. Tactical and social screens receive the full workspace.
 	if section in ["Army","Empire","Clan","Map","Rankings","Wars","Chat"]:
 		anchor_right = 0.97
 	else:
-		anchor_right = 0.43
+		anchor_right = 0.435
 
 func _ready() -> void:
 	apply_section_layout("Buildings")
-	var council_style = game.panel_style(Color(0.033,0.028,0.021,0.975),Color(0.69,0.51,0.21))
-	council_style.set_corner_radius_all(10)
-	council_style.shadow_size = 7
-	add_theme_stylebox_override("panel",council_style)
+	add_theme_stylebox_override("panel",game.royal_style(false,15))
 	visible = false
 
 func _process(delta: float) -> void:
+	if is_instance_valid(status): status.visible = not status.text.is_empty()
 	timer_clock += delta
 	if timer_clock < 0.25: return
 	timer_clock = 0
@@ -261,6 +259,8 @@ func load_pending() -> void:
 func page(title: String) -> VBoxContainer:
 	var scroll = ScrollContainer.new()
 	scroll.name = title
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
 	tabs.add_child(scroll)
 	var column = VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -271,23 +271,21 @@ func page(title: String) -> VBoxContainer:
 func council_resource_chip(key: String, value: int) -> PanelContainer:
 	var chip = PanelContainer.new()
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chip.custom_minimum_size.y = 44
-	var chip_style = game.panel_style(Color(0.036,0.031,0.023,0.98),Color(0.48,0.35,0.16))
-	chip_style.set_corner_radius_all(7)
-	chip_style.shadow_size = 2
-	chip.add_theme_stylebox_override("panel",chip_style)
+	chip.custom_minimum_size.y = 37
+	chip.add_theme_stylebox_override("panel",game.royal_style(false,5))
 	var row = HBoxContainer.new()
 	row.add_theme_constant_override("separation",5)
 	chip.add_child(row)
 	row.add_child(game.ui_icon(game.resource_icon_index(key),Vector2(25,25)))
-	var amount = game.label(str(value),14,Color(0.99,0.91,0.73))
+	var amount = game.label(game.format_amount(value),13,Color(0.99,0.91,0.73))
 	amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(amount)
 	return chip
 
-func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HBoxContainer:
-	var row = HBoxContainer.new()
-	row.add_theme_constant_override("separation",5)
+func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HFlowContainer:
+	var row = HFlowContainer.new()
+	row.add_theme_constant_override("h_separation",4)
+	row.add_theme_constant_override("v_separation",4)
 	for key in ["food","wood","stone","iron","gold"]:
 		if not cost.has(key): continue
 		var chip = PanelContainer.new()
@@ -321,32 +319,30 @@ func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HBoxContain
 		row.add_child(time_chip)
 	return row
 
-func building_thumbnail(kind: String) -> PanelContainer:
+func building_thumbnail(kind: String,key: String) -> PanelContainer:
 	var frame = PanelContainer.new()
-	frame.custom_minimum_size = Vector2(106,96)
-	var style = game.panel_style(Color(0.055,0.072,0.055,1.0),Color(0.73,0.53,0.20))
-	style.set_corner_radius_all(7)
-	style.shadow_size = 3
-	frame.add_theme_stylebox_override("panel",style)
-	var center = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	frame.add_child(center)
-	center.add_child(game.ui_icon(5 if kind=="building" else 7,Vector2(68,68)))
+	frame.custom_minimum_size = Vector2(112,124)
+	frame.clip_contents = true
+	frame.add_theme_stylebox_override("panel",game.royal_style(false,5))
+	var picture = TextureRect.new()
+	picture.texture = game.RoyalUI.building(key if kind=="building" else "academy")
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(picture)
 	return frame
 
 func gold_action_button(text_value: String, callback: Callable) -> Button:
 	var item = game.button(text_value,callback)
-	item.custom_minimum_size.y = 54
-	item.icon = game.ui_icon_texture(3)
+	item.custom_minimum_size.y = 50
+	item.icon = game.ui_icon_texture(18)
 	item.expand_icon = true
+	item.add_theme_constant_override("icon_max_width",27)
 	item.add_theme_font_size_override("font_size",18)
 	item.add_theme_color_override("font_color",Color(0.14,0.09,0.025))
 	item.add_theme_color_override("font_hover_color",Color(0.08,0.05,0.015))
-	for entry in [["normal",Color(0.84,0.58,0.18,1.0)],["hover",Color(0.98,0.72,0.27,1.0)],["pressed",Color(0.66,0.42,0.10,1.0)]]:
-		var style = game.panel_style(entry[1],Color(1.0,0.82,0.37))
-		style.set_corner_radius_all(7)
-		style.shadow_size = 5
-		item.add_theme_stylebox_override(entry[0],style)
+	for entry in [["normal",Color.WHITE],["hover",Color(1.10,1.07,1.0)],["pressed",Color(0.78,0.70,0.55)]]:
+		item.add_theme_stylebox_override(entry[0],game.royal_style(true,10,entry[1]))
 	return item
 
 func rebuild() -> void:
@@ -359,10 +355,7 @@ func rebuild() -> void:
 	column.add_theme_constant_override("separation",8)
 	add_child(column)
 	var heading_card = PanelContainer.new()
-	var heading_style = game.panel_style(Color(0.050,0.039,0.025,0.97),Color(0.70,0.51,0.19))
-	heading_style.set_corner_radius_all(9)
-	heading_style.shadow_size = 4
-	heading_card.add_theme_stylebox_override("panel",heading_style)
+	heading_card.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	column.add_child(heading_card)
 	var heading = VBoxContainer.new()
 	heading.add_theme_constant_override("separation",7)
@@ -372,7 +365,7 @@ func rebuild() -> void:
 	heading.add_child(title_row)
 	var crown_frame = PanelContainer.new()
 	crown_frame.custom_minimum_size = Vector2(54,54)
-	crown_frame.add_theme_stylebox_override("panel",game.panel_style(Color(0.08,0.055,0.022,1.0),Color(0.82,0.61,0.24)))
+	crown_frame.add_theme_stylebox_override("panel",game.royal_style(false,4))
 	var crown_center = CenterContainer.new()
 	crown_frame.add_child(crown_center)
 	crown_center.add_child(game.ui_icon(17,Vector2(38,38)))
@@ -382,7 +375,10 @@ func rebuild() -> void:
 	council_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	council_title.tooltip_text = "Command construction, armies, research and realm affairs."
 	title_row.add_child(council_title)
-	var close_button = game.button("×",close)
+	var close_button = game.button("",close)
+	close_button.icon = game.ui_icon_texture(19)
+	close_button.expand_icon = true
+	close_button.tooltip_text = Text.copy("Return to Realm")
 	close_button.custom_minimum_size = Vector2(42,42)
 	close_button.add_theme_font_size_override("font_size",24)
 	title_row.add_child(close_button)
@@ -396,6 +392,7 @@ func rebuild() -> void:
 	heading.add_child(navigation)
 	status = game.label("",14)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.visible = false
 	column.add_child(status)
 	if not kingdom.is_empty():
 		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
@@ -407,7 +404,8 @@ func rebuild() -> void:
 		for key in ["food","wood","stone","iron","gold"]:
 			resource_strip.add_child(council_resource_chip(key,int(kingdom.resources.get(key,0))))
 	tabs = TabContainer.new()
-	tabs.custom_minimum_size.y = 210
+	tabs.custom_minimum_size.y = 100
+	tabs.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	tabs.tabs_visible = false
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(tabs)
@@ -428,9 +426,7 @@ func rebuild() -> void:
 	if not desired_section.is_empty(): select_section(desired_section)
 	navigation.selected = tabs.current_tab
 	var action_shell = PanelContainer.new()
-	var action_style = game.panel_style(Color(0.047,0.039,0.027,0.97),Color(0.47,0.34,0.15))
-	action_style.set_corner_radius_all(8)
-	action_shell.add_theme_stylebox_override("panel",action_style)
+	action_shell.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	column.add_child(action_shell)
 	var actions = HBoxContainer.new()
 	actions.add_theme_constant_override("separation",6)
@@ -438,6 +434,7 @@ func rebuild() -> void:
 	var refresh_button = game.button("Refresh",refresh)
 	refresh_button.icon = game.ui_icon_texture(15)
 	refresh_button.expand_icon = true
+	refresh_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(refresh_button)
 	if not pending_path.is_empty():
 		var retry_button = game.button("Retry Order",func(): submit(pending_path,pending_body))
@@ -447,6 +444,8 @@ func rebuild() -> void:
 	var return_button = game.button("Return to Realm",close)
 	return_button.icon = game.ui_icon_texture(16)
 	return_button.expand_icon = true
+	return_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return_button.add_theme_font_size_override("font_size",13)
 	actions.add_child(return_button)
 
 func cost_text(cost: Dictionary) -> String:
@@ -454,7 +453,7 @@ func cost_text(cost: Dictionary) -> String:
 	var ordered = ["food","wood","stone","iron","gold"]
 	for key in ordered:
 		if cost.has(key):
-			values.append(game.resource_icon(key)+" "+str(int(cost[key])))
+			values.append(Text.copy(key.capitalize())+" "+game.format_amount(int(cost[key])))
 	for key in cost:
 		if str(key) not in ordered:
 			values.append(Text.copy("%s %d") % [str(key).capitalize(),int(cost[key])])
@@ -508,10 +507,7 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 	for quote in quotes:
 		var key_value: String = quote.key
 		var card = PanelContainer.new()
-		var card_style = game.panel_style(Color(0.050,0.041,0.028,0.985),Color(0.61,0.44,0.17))
-		card_style.set_corner_radius_all(9)
-		card_style.shadow_size = 4
-		card.add_theme_stylebox_override("panel",card_style)
+		card.add_theme_stylebox_override("panel",game.royal_style(false,11))
 		column.add_child(card)
 		var details = VBoxContainer.new()
 		details.add_theme_constant_override("separation",7)
@@ -519,18 +515,25 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		var card_header = HBoxContainer.new()
 		card_header.add_theme_constant_override("separation",11)
 		details.add_child(card_header)
-		card_header.add_child(building_thumbnail(kind))
+		card_header.add_child(building_thumbnail(kind,key_value))
 		var title_stack = VBoxContainer.new()
 		title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		title_stack.add_theme_constant_override("separation",5)
 		card_header.add_child(title_stack)
-		title_stack.add_child(game.label(Text.copy("%s · LEVEL %d") % [catalog_name(kind,key_value),quote.current],19,Color(0.98,0.83,0.51)))
-		title_stack.add_child(game.label(str(quote.get("purpose","")),13,Color(0.87,0.82,0.72)))
+		var title = game.label(Text.copy("%s · Level %d") % [catalog_name(kind,key_value),quote.current],18,Color(0.98,0.83,0.51))
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+		title_stack.add_child(title)
+		var purpose = game.label(str(quote.get("purpose","")),13,Color(0.87,0.82,0.72))
+		purpose.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title_stack.add_child(purpose)
 		var effect: Dictionary = quote.get("currentEffect",{})
 		var next_effect: Dictionary = quote.get("nextEffect",{})
 		if not effect.is_empty():
-			details.add_child(game.label(Text.copy("%d → %d %s") % [effect.value,next_effect.value,str(effect.unit)],15))
-		details.add_child(build_cost_row(quote.cost,int(quote.durationSeconds)))
+			var preview = game.label(Text.copy("%d → %d %s") % [effect.value,next_effect.value,str(effect.unit)],13)
+			preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			title_stack.add_child(preview)
+		title_stack.add_child(build_cost_row(quote.cost,int(quote.durationSeconds)))
 		var unmet = false
 		for requirement in quote.get("requirements",[]):
 			var missing: bool = int(requirement.current)<int(requirement.level)
