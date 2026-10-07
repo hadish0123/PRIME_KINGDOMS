@@ -94,13 +94,47 @@ func panel_style(color: Color, border: Color = Color(0.49,0.38,0.23)) -> StyleBo
 	var style = StyleBoxFlat.new()
 	style.bg_color = color
 	style.border_color = border
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(7)
 	style.content_margin_left = 16
 	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
+	style.content_margin_top = 11
+	style.content_margin_bottom = 11
+	style.shadow_color = Color(0,0,0,0.46)
+	style.shadow_size = 4
+	style.shadow_offset = Vector2(0,2)
 	return style
+
+func resource_icon(key: String) -> String:
+	match key.to_lower():
+		"food": return "🌾"
+		"wood": return "🪵"
+		"stone": return "🪨"
+		"iron": return "⚒"
+		"gold": return "🪙"
+	return "◆"
+
+func nav_icon(section: String) -> String:
+	match section:
+		"Buildings": return "🏰"
+		"Army": return "⚔"
+		"Research": return "📜"
+		"World": return "🌍"
+		"Clan": return "👥"
+		"Goals": return "🏆"
+		"Inbox": return "✉"
+		"Settings": return "⚙"
+	return "◆"
+
+func emoji_label(text_value: String, font_size: int = 24) -> Label:
+	var item = Label.new()
+	item.text = text_value
+	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item.add_theme_font_size_override("font_size",font_size)
+	item.add_theme_color_override("font_color",Color(0.96,0.83,0.49))
+	item.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return item
 
 func label(text_value: String, font_size: int = 18, color: Color = Color(0.86,0.84,0.76)) -> Label:
 	var item = Label.new()
@@ -116,15 +150,17 @@ func label(text_value: String, font_size: int = 18, color: Color = Color(0.86,0.
 func button(text_value: String, callback: Callable) -> Button:
 	var item = Button.new()
 	item.text = Text.copy(text_value)
-	item.custom_minimum_size.y = 44
+	item.custom_minimum_size.y = 46
 	item.add_theme_font_size_override("font_size",16)
-	item.add_theme_color_override("font_color",Color(0.92,0.82,0.61))
-	for entry in [["normal",Color(0.065,0.061,0.055,0.98)],["hover",Color(0.16,0.13,0.085)],["pressed",Color(0.26,0.19,0.1)],["disabled",Color(0.07,0.07,0.065)]]:
-		var style = panel_style(entry[1])
+	item.add_theme_color_override("font_color",Color(0.96,0.86,0.66))
+	item.add_theme_color_override("font_hover_color",Color(1.0,0.93,0.72))
+	for entry in [["normal",Color(0.030,0.029,0.025,0.98)],["hover",Color(0.12,0.09,0.045,0.99)],["pressed",Color(0.22,0.15,0.055,1.0)],["disabled",Color(0.045,0.044,0.040,0.94)]]:
+		var border = Color(0.62,0.46,0.20) if entry[0]!="disabled" else Color(0.24,0.22,0.18)
+		var style = panel_style(entry[1],border)
 		style.content_margin_top = 8
 		style.content_margin_bottom = 8
 		item.add_theme_stylebox_override(entry[0],style)
-	item.add_theme_color_override("font_disabled_color",Color(0.45,0.44,0.40))
+	item.add_theme_color_override("font_disabled_color",Color(0.42,0.40,0.35))
 	item.pressed.connect(func():
 		play_cue("select")
 		callback.call())
@@ -213,35 +249,49 @@ func build_ui() -> void:
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 14
 	top.offset_right = -14
-	top.offset_top = 12
-	top.add_theme_stylebox_override("panel",panel_style(Color(0.035,0.032,0.028,0.94)))
+	top.offset_top = 10
+	top.add_theme_stylebox_override("panel",panel_style(Color(0.022,0.021,0.018,0.96),Color(0.62,0.47,0.22)))
 	hud.add_child(top)
 	var top_row = HBoxContainer.new()
-	top_row.add_theme_constant_override("separation",22)
+	top_row.add_theme_constant_override("separation",12)
 	top.add_child(top_row)
 	var identity = VBoxContainer.new()
-	identity.custom_minimum_size.x = 190
-	village_label = label("Your Realm",19,Color(0.92,0.77,0.47))
-	population_label = label("",13)
+	identity.custom_minimum_size.x = 225
+	village_label = label("Strategy Ruler · Village",19,Color(0.96,0.82,0.51))
+	population_label = label("",13,Color(0.84,0.81,0.72))
 	identity.add_child(village_label)
 	identity.add_child(population_label)
 	top_row.add_child(identity)
 	var wallets = HBoxContainer.new()
 	wallets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wallets.add_theme_constant_override("separation",12)
+	wallets.add_theme_constant_override("separation",7)
 	top_row.add_child(wallets)
 	for key in ["food","wood","stone","iron","gold"]:
-		var wallet = VBoxContainer.new()
-		wallet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		wallet.add_child(label(key.capitalize(),12,Color(0.70,0.64,0.51)))
-		var amount = label("—",18)
-		wallet.add_child(amount)
+		var wallet_card = PanelContainer.new()
+		wallet_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		wallet_card.custom_minimum_size.x = 112
+		wallet_card.add_theme_stylebox_override("panel",panel_style(Color(0.040,0.037,0.031,0.94),Color(0.40,0.31,0.17)))
+		wallets.add_child(wallet_card)
+		var wallet_row = HBoxContainer.new()
+		wallet_row.add_theme_constant_override("separation",7)
+		wallet_card.add_child(wallet_row)
+		var glyph = emoji_label(resource_icon(key),24)
+		glyph.custom_minimum_size.x = 30
+		wallet_row.add_child(glyph)
+		var values = VBoxContainer.new()
+		values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		values.add_theme_constant_override("separation",0)
+		wallet_row.add_child(values)
+		values.add_child(label(key.capitalize(),11,Color(0.72,0.66,0.54)))
+		var amount = label("—",18,Color(0.96,0.90,0.78))
+		values.add_child(amount)
 		resource_labels[key] = amount
-		wallets.add_child(wallet)
 	var status_box = VBoxContainer.new()
-	connection_label = label("Connected",13,Color(0.57,0.76,0.56))
+	status_box.custom_minimum_size.x = 185
+	connection_label = label("● Connected · realm restored",13,Color(0.52,0.90,0.48))
+	connection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_box.add_child(connection_label)
-	status_box.add_child(button("Focus Capital",func():
+	status_box.add_child(button("⌖  Focus Capital",func():
 		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20))))
 	top_row.add_child(status_box)
 	minimap = Minimap.new()
@@ -252,15 +302,23 @@ func build_ui() -> void:
 	minimap.offset_top = 105
 	minimap.offset_bottom = 273
 	hud.add_child(minimap)
+	var nav_shell = PanelContainer.new()
+	nav_shell.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	nav_shell.position = Vector2(-500,-72)
+	nav_shell.add_theme_stylebox_override("panel",panel_style(Color(0.020,0.019,0.016,0.93),Color(0.50,0.37,0.16)))
+	hud.add_child(nav_shell)
 	var nav = HBoxContainer.new()
-	nav.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	nav.position = Vector2(-470,-66)
-	nav.add_theme_constant_override("separation",8)
-	hud.add_child(nav)
+	nav.add_theme_constant_override("separation",6)
+	nav_shell.add_child(nav)
 	for section in ["Buildings","Army","Research","Map","Clan","Goals","Inbox"]:
 		var name_value: String = section
-		nav.add_child(button("World" if section=="Map" else section,func(): kingdom_panel.open_section(name_value)))
-	nav.add_child(button("Settings",toggle_settings))
+		var display_name_value = "World" if section=="Map" else section
+		var nav_action = button(nav_icon(display_name_value)+"  "+display_name_value,func(): kingdom_panel.open_section(name_value))
+		nav_action.custom_minimum_size.x = 112
+		nav.add_child(nav_action)
+	var settings_action = button(nav_icon("Settings")+"  Settings",toggle_settings)
+	settings_action.custom_minimum_size.x = 112
+	nav.add_child(settings_action)
 	toast_label = label("",17,Color(0.94,0.83,0.59))
 	toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	toast_label.position = Vector2(-340,98)
@@ -438,7 +496,7 @@ func enter_world(game_state: Dictionary) -> void:
 	hud.visible = true
 	settings_panel.visible = false
 	preferences.apply(self)
-	connection_label.text = "Connected"
+	connection_label.text = "● Connected · realm restored"
 	apply_control_state()
 	await get_tree().process_frame
 
