@@ -2,6 +2,7 @@ import { ApiError } from '../errors.js';
 import { transaction, integer, text } from './transaction.js';
 import { settle, levels, spend, scaledCost } from './economy.js';
 import { progression } from './progression.js';
+import { realmStage } from './realm.js';
 
 export async function snapshot(db, profile, now) {
   const economy = await settle(db, profile, now);
@@ -15,9 +16,9 @@ export async function snapshot(db, profile, now) {
     const current = (c.kind === 'building' ? buildings : research)[c.key] ?? 0;
     return { kind: c.kind, key: c.key, current, next: current + 1, maxLevel: c.data.maxLevel, cost: scaledCost(c.data.baseCost, current + 1), durationSeconds: Math.ceil(c.data.seconds * Math.pow(1.6, current) / (1 + (research.construction ?? 0) * .03)) };
   });
-  const keep = buildings.keep;
-  const stages = ['small_village', 'developed_village', 'town', 'fortified_town', 'city', 'large_city', 'capital', 'kingdom', 'empire'];
-  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: stages[Math.min(8, Math.floor((keep - 1) / 3))], empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: await progression(db, profile), resources, productionPerHour: economy.rates, storageCapacity: economy.capacity, buildings, research, units, armyCapacity: (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), tasks, catalog, quotes };
+  const progress = await progression(db, profile);
+  const realm = await realmStage(db, profile, buildings, progress);
+  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: realm.stage, realm, empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: progress, resources, productionPerHour: economy.rates, storageCapacity: economy.capacity, buildings, research, units, armyCapacity: (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), tasks, catalog, quotes };
 }
 
 export const getKingdom = (pool, identity) => transaction(pool, identity, 'snapshot', {}, snapshot, { replay: false });
