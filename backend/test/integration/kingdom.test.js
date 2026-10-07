@@ -66,7 +66,7 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
     assert.equal((await api('/v2/empire/customize',customize,token)).status,200);
     assert.equal((await api('/v2/empire/customize',{...customize,requestId:randomUUID(),emblem:'https://evil/upload.png'},token)).status,400);
     const map=(await api('/v2/world/map',undefined,token)).body; assert.equal(map.tiles.length,49); assert.equal(map.region.kind,'starter');
-    assert.ok(map.tiles.some(t=>t.ownerPlayerId===player&&t.primaryColor==='#117744'));
+    assert.ok(map.tiles.some(t=>t.ownerPlayerId===player&&t.primaryColor==='#117744'), JSON.stringify({center:map.center,owned:map.tiles.filter(t=>t.ownerPlayerId),plots:(await pool.query('SELECT * FROM strategic_plots WHERE player_id=$1',[player])).rows}));
     const scene=(await api('/v2/scene',undefined,token)).body; assert.equal(scene.scene.halfSize,128); assert.equal(scene.scene.type,'settlement');
     assert.equal((await api('/v2/scene/move',{position:{...scene.player.position,x:scene.village.position.x+150},yaw:0},token)).body.error,'outside_scene');
     const position={...scene.player.position,x:scene.player.position.x+1.25};

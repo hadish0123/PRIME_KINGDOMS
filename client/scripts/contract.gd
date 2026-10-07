@@ -58,6 +58,8 @@ static func accepts(path: String, value: Dictionary) -> bool:
 	if path == "/v2/kingdom": return kingdom(value)
 	if path in ["/v2/buildings/upgrade","/v2/research/start","/v2/units/train","/v2/empire/customize"]: return kingdom(value.get("kingdom"))
 	if path == "/v2/world/map": return strategic_map(value)
+	if path == "/v2/clans": return clans(value)
+	if path.begins_with("/v2/clans/"): return clans(value.get("clans"))
 	if path in ["/v1/auth/register", "/v1/auth/login"]:
 		var session = value.get("session")
 		return session is Dictionary and session.get("token") is String and session.token.length() == 43 and state(value.get("state"))
@@ -107,4 +109,27 @@ static func strategic_map(value) -> bool:
 	if not value.region.get("id") is String or not value.region.get("name") is String or not number(value.region.get("ownPlot")): return false
 	for tile in value.tiles:
 		if not tile is Dictionary or not number(tile.get("x")) or not number(tile.get("z")) or not tile.get("kind") in ["settlement","neutral","resource","npc","fort"]: return false
+	return true
+
+static func clans(value) -> bool:
+	if not value is Dictionary or not value.get("serverTime") is String or value.get("creationLevel") != 15 or value.get("memberCapacity") != 63: return false
+	for key in ["directory","applications","invitations"]:
+		if not value.get(key) is Array or value[key].size() > 50: return false
+	for group in value.directory:
+		if not group is Dictionary or not group.get("id") is String or not group.get("name") is String or not group.get("tag") is String or not number(group.get("members")): return false
+	for invite in value.invitations:
+		if not invite is Dictionary or not invite.get("clanId") is String or not invite.get("name") is String or not invite.get("expiresAt") is String: return false
+	for application in value.applications:
+		if not application is Dictionary or not application.get("clanId") is String or not application.get("name") is String or not application.get("status") is String: return false
+	if value.get("own") == null: return true
+	var group = value.own
+	if not group is Dictionary or not group.get("id") is String or not group.get("regionId") is String or not group.get("name") is String or not group.get("tag") is String or not group.get("role") in ["leader","officer","member"]: return false
+	if not group.get("capital") is Dictionary or not number(group.capital.get("x")) or not number(group.capital.get("z")): return false
+	if not group.get("treasury") is Dictionary or not group.get("members") is Array or group.members.size() > 63 or not group.get("applications") is Array or group.applications.size() > 100: return false
+	for key in ["food","wood","stone","iron","gold"]:
+		if not number(group.treasury.get(key)) or group.treasury[key] < 0 or group.treasury[key] > 1000000000000: return false
+	for member in group.members:
+		if not member is Dictionary or not member.get("playerId") is String or not member.get("empireName") is String or not member.get("role") in ["leader","officer","member"] or not number(member.get("plot")): return false
+	for application in group.applications:
+		if not application is Dictionary or not application.get("playerId") is String or not application.get("empireName") is String: return false
 	return true

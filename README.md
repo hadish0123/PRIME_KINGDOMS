@@ -1,29 +1,44 @@
 # PRIME KINGDOMS
 
-A persistent third-person kingdom game, beginning with a small village and eventually growing into cities, countries and empires.
+A mobile medieval empire strategy game with a directly controlled third-person ruler,
+a strategic world map, bounded 3D settlements and planned battle instances.
 
-## Play milestone 0.6
+The existing repository and v0.5 accounts are preserved. Strategy conversion is in
+active development on [feature/kingdom-strategy-full](https://github.com/hadish0123/PRIME_KINGDOMS/pull/7).
+This branch is not the finished full product; [HANDOFF](docs/HANDOFF.md) records exact status.
+[Android checks/artifacts](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml)
+· [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+· [Existing releases](https://github.com/hadish0123/PRIME_KINGDOMS/releases).
 
-[Download the Android APK](https://github.com/hadish0123/PRIME_KINGDOMS/releases/tag/v0.6.0) · [Android build checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/android-build.yml) · [Backend checks](https://github.com/hadish0123/PRIME_KINGDOMS/actions/workflows/backend-ci.yml)
+## Implemented strategy systems
 
-Install the APK, choose a ruler name, email and password (at least 10 characters), then select **CREATE ACCOUNT**. Select **ENTER WORLD** for an existing account. The app remembers an unexpired session on the same device.
+- Godot 4.7.2 native Android, GL Compatibility, third-person ruler and mobile controls;
+  walking/sprinting/jumping, sword actions, lying/crawling and horse mounting remain.
+- New scene entry uses a fixed bounded settlement; ruler travel allocates no open-world
+  terrain. Separate scene saves preserve legacy global position/horse records.
+- One persistent primary settlement per account; five integer resources with server
+  production/storage/spending and timestamped construction/research/training queues.
+- Eighteen building definitions/levels/prerequisites, thirteen expandable unit types,
+  eleven research categories and configurable nonlinear level 1–100 requirements.
+- Real clan creation at level 15, region/capital/member plots, applications/invitations,
+  roles, leadership transfer, join/leave/kick, lossless relocation and clan treasury.
+- Empire colors/approved emblems on ruler/soldier cloth and settlement flags; persistent
+  strategic ownership map and LOW/BALANCED/HIGH/ULTRA graphics profiles.
+- Existing secure accounts/sessions and PostgreSQL data; additive checksum-verified
+  migrations, transaction locks and payload-bound idempotency. Unresolved mobile
+  purchases survive restarts with the same request UUID.
 
-## Completed village foundation
+The original eight NPC soldiers retain their identities and map once into an expandable
+army inventory. Production, warehouse capacity, keep/facility gates, training and research
+work now. Effects depending on combat/equipment/healing remain partial. Hostile battles,
+occupied territory conquest, commanders/inventory, complete clan wars, quests/social and
+physical-device performance validation are still required. Shared medium character art
+is not a claim of final AAA production art.
 
-- Native Godot 4.7.2 3D client with a rigged, animated human character and a third-person orbit camera.
-- Walking, sprinting, buffered jumping, terrain/building/fence collisions, mouse camera control and mobile touch controls. Camera collision ignores resident capsules.
-- A deterministic 65.536 × 65.536 km world, streamed in bounded chunks as the player moves. Terrain near villages is flattened; hills have deterministic, streamed grass and trees.
-- Each account receives exactly one permanent village, **8 soldiers and 5 villagers**, created atomically on the server. Subsequent logins keep the same village, NPC identities and saved position.
-- Village houses, hall, blacksmith, well, market, fences and paths, with photographic PBR surfaces, HDR sky lighting, shadows and atmospheric fog.
-- Nearby registered villages and online players appear in the shared world. Player movement is saved periodically, on application pause and before sign-out.
-- Connection recovery restores server-confirmed position with retry backoff. Menus, Android pause/resume and stale responses from older logins cannot bypass freezes or mutate a new world.
-- Saved LOW/BALANCED/HIGH graphics profiles, camera sensitivity and vertical inversion. Distant villages unload and distant residents stop physics/animation until approached.
-- A real 3D animated login backdrop, retry for remembered sessions, scrollable account form, safe-area controls, settings and a world atlas.
-- Railway hosts the Node.js/PostgreSQL API. Graphics run on the Android device, not on Railway.
-
-Version 0.6 adds a separate 49-bone player with finger joints, red lion tabard and cape, layered steel/gold armor, textured face/beard/hair, and 2K cobblestone with a bounded close-range parallax shader. The single sword moves continuously out of an open scabbard; a post-animation arm modifier keeps the palm at the handle, and blade sweeps damage local practice equipment once per strike. A body-to-contact obstruction check prevents damage through walls. The earlier horse, lying/crawling, saved army orders, empty-land claims and fractional movement save fixes remain available.
-
-**The requested reference-matching final graphics are not complete.** Face likeness, hair/groom detail, sculpted armor, natural animation and physical-device performance still need further work. The generated visual improvements are not an AAA or photorealistic completion claim. Full hostile combat, occupied-village conquest, economy, autonomous NPC brains, PRIME powers and seven Legends remain separate unfinished features. [0.6 release notes, controls, evidence and limits](docs/RELEASE_0_6.md).
+The v2 API must deploy before distributing the new APK. Railway hosts state and timers;
+all 3D graphics render on the device. Production deployment remains unchanged while
+this branch is developed. [Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE.md)
+· [Economy](docs/ECONOMY.md) · [Clans](docs/CLANS.md) · [Graphics](docs/GRAPHICS.md).
 
 ## Controls
 
@@ -37,9 +52,9 @@ Version 0.6 adds a separate 49-bone player with finger joints, red lion tabard a
 | Practice strike | Left mouse | ATTACK |
 | Lie / stand | X | LIE / UP |
 | Mount / dismount | E | RIDE |
-| Army and land orders | UNITS | UNITS |
+| Settlement/army/clan management | UNITS | UNITS |
 | Camera distance | Mouse wheel | Default third-person distance |
-| World atlas | M / Tab / WORLD | WORLD |
+| Strategic map | M / Tab / WORLD | WORLD |
 | Graphics / camera settings | Escape / SETTINGS | SETTINGS / device Back |
 
 ## Client development

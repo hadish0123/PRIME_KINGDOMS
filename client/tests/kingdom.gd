@@ -55,6 +55,35 @@ func run() -> void:
 	check(has_emblem(game.villages[game.state.village.id],"eagle"),"Settlement flags or soldiers did not receive the emblem")
 	await panel.load_map()
 	check(panel.map_data.tiles.size()==49,"Strategic ownership map did not load")
+	await panel.load_clans()
+	check(not panel.clan_data.is_empty() and panel.clan_data.creationLevel==15,"Clan contract did not reach the native client")
+	await panel.submit("/v2/clans/create",{"name":"Too Early","tag":"EAR","emblem":"lion","primaryColor":"#770000","secondaryColor":"#ffcc00","admission":"open"})
+	check(panel.clan_data.own==null and panel.status.text.contains("15"),"Native clan creation bypassed the server level gate")
+	var test_clan = OS.get_environment("PRIME_TEST_CLAN_ID")
+	if not test_clan.is_empty():
+		var settlement_id: String = panel.kingdom.settlementId
+		var building_tasks: Array = panel.kingdom.tasks.duplicate(true)
+		await panel.submit("/v2/clans/join",{"clanId":test_clan})
+		check(panel.clan_data.own != null and panel.clan_data.own.id==test_clan,"Native join did not enter the real clan region")
+		check(panel.kingdom.settlementId==settlement_id and panel.kingdom.tasks==building_tasks,"Native join lost the village identity or queue")
+		await panel.load_map()
+		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
+		await panel.submit("/v2/clans/donate",{"resource":"wood","amount":10})
+		check(panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
+		await panel.submit("/v2/clans/leave",{})
+		check(panel.status.text.contains("cooldown"),"Native relocation bypassed server cooldown")
+	# Recover an exact unresolved request after an application restart.
+	panel.pending_path = "/v2/units/train"
+	panel.pending_body = {"requestId":panel.request_id(),"key":"swordsman","quantity":1}
+	var saved_request: String = panel.pending_body.requestId
+	panel.save_pending()
+	panel.pending_path = ""
+	panel.pending_body = {}
+	panel.load_pending()
+	check(panel.pending_body.get("requestId")==saved_request,"Restart changed an unresolved purchase request ID")
+	panel.remove_pending()
+	panel.pending_path = ""
+	panel.pending_body = {}
 	panel.close()
 	check(not game.player.frozen,"Closing management failed to release touch controls")
 	for quality in range(4):

@@ -35,3 +35,25 @@ export function createAuthLimiter() {
     if (++window.count > 12) throw new ApiError(429, 'rate_limited');
   };
 }
+
+export function createGameLimiter({ clock = Date.now, maxKeys = 20000 } = {}) {
+  const windows = new Map();
+  let pruneAt = 0;
+  return (playerId, method, path) => {
+    const now = clock();
+    if (now >= pruneAt) {
+      for (const [key, window] of windows) if (window.until <= now) windows.delete(key);
+      pruneAt = now + 10000;
+    }
+    const lane = path === '/v2/scene/move' ? 'move' : method === 'GET' ? 'read' : 'write';
+    const key = `${playerId}:${lane}`;
+    let window = windows.get(key);
+    if (!window || window.until <= now) {
+      if (!window && windows.size >= maxKeys) throw new ApiError(429, 'rate_limited');
+      window = { count: 0, until: now + 60000 };
+      windows.set(key, window);
+    }
+    const limit = lane === 'move' ? 300 : lane === 'read' ? 240 : 120;
+    if (++window.count > limit) throw new ApiError(429, 'rate_limited');
+  };
+}
