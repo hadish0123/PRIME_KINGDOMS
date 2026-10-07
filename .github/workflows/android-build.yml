@@ -1,4 +1,5 @@
 name: Native 3D Android
+# v0.8.0 strategic-command validation trigger: parse-fix-1
 
 on:
   push:
