@@ -12,6 +12,7 @@ import json
 import math
 from pathlib import Path
 import struct
+import hero_sculpt
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / 'tools/assets/cache/human'
@@ -72,7 +73,7 @@ class GLB:
     def __init__(self):
         self.binary = bytearray()
         self.image_ids = {}
-        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.5'},
+        self.doc = {'asset': {'version': '2.0', 'generator': 'PRIME KINGDOMS human pipeline 0.6'},
                     'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'name': 'Human', 'children': []}],
                     'bufferViews': [], 'accessors': [], 'meshes': [], 'skins': [], 'materials': [],
                     'images': [], 'textures': [], 'samplers': [{'magFilter': 9729, 'minFilter': 9987}],
@@ -116,7 +117,7 @@ class GLB:
         self.doc['materials'].append(item)
         return len(self.doc['materials'])-1
 
-    def mesh(self, name, vertices, uvs, faces, weights, materials):
+    def mesh(self, name, vertices, uvs, faces, weights, materials, colors=None):
         normals = [[0., 0., 0.] for _ in vertices]
         for _, face in faces:
             a, b, c = (vertices[v] for v, uv in face)
@@ -128,21 +129,25 @@ class GLB:
         primitives = []
         for material, triangles in grouped.items():
             unique, positions, normal, texcoords, joints, influence, indices = {}, [], [], [], [], [], []
+            vertex_colors = []
             for face in triangles:
                 for v, uv in face:
                     key = (v, uv)
                     if key not in unique:
                         unique[key] = len(positions)
                         positions.append(vertices[v]); normal.append(normals[v]); texcoords.append(uvs[uv] if uvs else [0., 0.])
+                        if colors is not None: vertex_colors.append(colors[v])
                         w = sorted(weights[v].items(), key=lambda x: x[1], reverse=True)[:4]
                         w += [(0, 0.)]*(4-len(w))
                         total = max(sum(x[1] for x in w), 1e-9)
                         joints.append([x[0] for x in w]); influence.append([max(0., x[1])/total for x in w])
                     indices.append(unique[key])
-            primitives.append({'attributes': {'POSITION': self.accessor(positions, 'VEC3', bounds=True),
+            primitive = {'attributes': {'POSITION': self.accessor(positions, 'VEC3', bounds=True),
                 'NORMAL': self.accessor(normal, 'VEC3'), 'TEXCOORD_0': self.accessor(texcoords, 'VEC2'),
                 'JOINTS_0': self.accessor(joints, 'VEC4', 5123), 'WEIGHTS_0': self.accessor(influence, 'VEC4')},
-                'indices': self.accessor(indices, 'SCALAR', 5125), 'material': materials[material]})
+                'indices': self.accessor(indices, 'SCALAR', 5125), 'material': materials[material]}
+            if vertex_colors: primitive['attributes']['COLOR_0'] = self.accessor(vertex_colors, 'VEC4')
+            primitives.append(primitive)
         self.doc['meshes'].append({'name': name, 'primitives': primitives})
         self.doc['nodes'].append({'name': name, 'mesh': len(self.doc['meshes'])-1, 'skin': 0})
         self.doc['nodes'][0]['children'].append(len(self.doc['nodes'])-1)
@@ -158,18 +163,22 @@ class GLB:
 
 
 def proxy(path, base, weights, transform):
-    original, uvs, faces = load_obj(path.with_suffix('.obj'))
-    mapping, deleted, reading = [], set(), False
+    obj_path = path.with_suffix('.obj')
+    for line in path.read_text().splitlines():
+        fields = line.split()
+        if fields and fields[0]=='obj_file': obj_path = path.parent/fields[1]
+    original, uvs, faces = load_obj(obj_path)
+    mapping, deleted, reading, deleting = [], set(), False, False
     for line in path.read_text().splitlines():
         s = line.split()
         if not s or s[0].startswith('#'): continue
-        if s[0] == 'verts': reading = True; continue
-        if s[0] == 'delete_verts': reading = False; continue
+        if s[0] == 'verts': reading = True; deleting = False; continue
+        if s[0] == 'delete_verts': reading = False; deleting = True; continue
         if s[0][0].isdigit():
             if reading:
                 if len(s) == 1: mapping.append(([int(s[0])], [1.], [0., 0., 0.]))
                 else: mapping.append((list(map(int, s[:3])), list(map(float, s[3:6])), list(map(float, s[6:9]))))
-            else:
+            elif deleting:
                 index = 0
                 while index < len(s):
                     token = s[index]
@@ -181,7 +190,7 @@ def proxy(path, base, weights, transform):
                         a, b = map(int, token.split(':')); deleted.update(range(a, b+1))
                     else: deleted.add(int(token))
                     index += 1
-        elif reading: reading = False
+        # Asset metadata such as material may legally follow the verts header.
     assert len(mapping) == len(original), f'Proxy mapping differs: {path}'
     vertices, influences = [], []
     for ids, blend, offset in mapping:
@@ -212,7 +221,7 @@ def animate(glb, heads, bone_ids):
     identity = [0., 0., 0., 1.]
     clips = [('idle', 3.2), ('walk', 1.0), ('run', 0.68), ('jump', 0.28),
              ('fall', 0.8), ('land', 0.26), ('guard', 4.0), ('work', 2.6),
-             ('draw', 0.85), ('sheathe', 0.85), ('attack', 0.72),
+             ('draw', 1.50), ('sheathe', 1.50), ('attack', 0.90),
              ('lie_down', 0.65), ('prone', 2.8), ('crawl', 1.4),
              ('stand_up', 0.65), ('ride', 1.0)]
     for clip, duration in clips:
@@ -300,6 +309,44 @@ def animate(glb, heads, bone_ids):
         glb.doc['animations'].append(animation)
 
 
+def stubble(glb, vertices, body_faces, head_joint):
+    """Original close-cut groom sampled on the actual jaw, not floating cards."""
+    points, faces, influences = [], [], []
+    seed = 73462711
+    def random_value():
+        nonlocal seed
+        seed = (1664525*seed+1013904223)&0xffffffff
+        return seed/4294967296.
+    for _, face in body_faces:
+        a, b, c = (vertices[v] for v, uv in face)
+        center = mul(add(add(a,b),c),1/3)
+        if not (1.625<center[1]<1.712 and center[2]>0.070): continue
+        normal = cross(sub(b,a),sub(c,a))
+        area = length(normal)/2
+        normal = unit(normal)
+        tangent = unit(cross(normal,[0.,1.,0.]))
+        if length(tangent)<0.1: tangent = unit(cross(normal,[1.,0.,0.]))
+        bitangent = unit(cross(normal,tangent))
+        for sample in range(max(1,min(24,round(area*220000)))):
+            u, v = random_value(), random_value()
+            if u+v>1: u,v=1-u,1-v
+            root = add(a,add(mul(sub(b,a),u),mul(sub(c,a),v)))
+            # Keep lips and central mouth clear; moustache sits above them.
+            if abs(root[0])<0.033 and 1.675<root[1]<1.708: continue
+            if root[1]>1.695+0.18*abs(root[0]) and abs(root[0])>0.033: continue
+            radius = 0.00018+random_value()*0.00015
+            height = 0.0012+random_value()*0.0020
+            start = len(points)
+            for side in range(3):
+                angle = side*math.tau/3
+                points.append(add(root,add(mul(tangent,math.cos(angle)*radius),mul(bitangent,math.sin(angle)*radius))))
+            points.append(add(root,add(mul(normal,height),mul([0,-1,0],height*0.25))))
+            influences.extend([{head_joint:1.} for _ in range(4)])
+            for side in range(3): faces.append((0,[(start+side,0),(start+(side+1)%3,0),(start+3,0)]))
+    material = glb.material('Stubble',[0.052,0.027,0.015,1.],0.90)
+    glb.mesh('JawStubble',points,[],faces,influences,{0:material})
+
+
 def build(role):
     base, uvs, all_faces = load_obj(CACHE/'core/3dobjs/base.obj')
     for name, weight in [('caucasian-male-young', 0.68), ('caucasian-male-old', 0.32)]:
@@ -307,6 +354,7 @@ def build(role):
         for line in target.read_text().splitlines():
             v = line.split()
             if len(v)==4 and v[0].isdigit(): base[int(v[0])] = add(base[int(v[0])], mul(list(map(float, v[1:])), weight))
+    if role == 'hero': hero_sculpt.sculpt(base, CACHE)
     body_faces = [(0, face) for group, face in all_faces if group == 'body']
     used = {v for _, face in body_faces for v, uv in face}
     bottom, top = min(base[v][1] for v in used), max(base[v][1] for v in used)
@@ -316,6 +364,9 @@ def build(role):
     selected = ['root', 'spine03', 'spine01', 'neck03', 'head']
     for side in ['L', 'R']:
         selected += [s+'.'+side for s in ['clavicle', 'upperarm01', 'lowerarm01', 'wrist', 'upperleg01', 'lowerleg01', 'foot']]
+    if role == 'hero':
+        for side in ['L', 'R']:
+            selected += [f'finger{finger}-{joint}.{side}' for finger in range(1,6) for joint in range(1,4)]
     def parent_of(bone):
         parent = skeleton['bones'][bone]['parent']
         while parent and parent not in selected: parent = skeleton['bones'][parent]['parent']
@@ -348,39 +399,79 @@ def build(role):
         h = heads[bone]; inverse.append([1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,-h[0],-h[1],-h[2],1.])
     glb.doc['skins'].append({'name': 'HumanRig', 'joints': [bone_ids[b] for b in selected],
                             'skeleton': bone_ids['root'], 'inverseBindMatrices': glb.accessor(inverse, 'MAT4')})
-    skin_path = CACHE/'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png'
-    skin = glb.material('Skin', [1., 0.96, 0.92, 1.], 0.62, skin_path)
+    skin_path = CACHE/('detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_diffuse.png' if role == 'hero' else 'system/skins/young_caucasian_male/young_lightskinned_male_diffuse.png')
+    skin_normal = None
+    if role == 'hero':
+        skin_normal = CACHE/'detail/skins02/skins/mindfront_aksel_skin/Aksel_Skin_NRM.png'
+    skin = glb.material('Skin', [0.88,0.79,0.72,1.] if role=='hero' else [1.,0.96,0.92,1.], 0.52 if role=='hero' else 0.70, skin_path, normal=skin_normal)
+    if role == 'hero': glb.doc['materials'][skin]['normalTexture']['scale'] = 0.30
     cloth_colors = {'player': [0.08,0.14,0.18,1.], 'soldier': [0.28,0.25,0.20,1.], 'villager': [0.46,0.39,0.28,1.]}
     diffuse = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_diffuse.png'
     normal = CACHE/'system/clothes/male_casualsuit01/male_casualsuit01_normal.png'
     cloth = glb.material('Fabric', [1.,1.,1.,1.], 0.92, diffuse, normal=normal)
     trousers = glb.material('Trousers', [1.,1.,1.,1.], 0.9, diffuse, normal=normal)
     boots = glb.material('Boots', [0.10,0.065,0.038,1.], 0.8)
+    glove = glb.material('Glove', [0.080,0.035,0.017,1.], 0.74)
+    scalp = glb.material('Scalp', [0.035,0.018,0.010,1.], 0.94) if role == 'hero' else skin
     eye = glb.material('Eyes', [1.,1.,1.,1.], 0.24, CACHE/'system/eyes/materials/brown_eye.png')
-    hair = glb.material('Hair', [0.27,0.18,0.10,1.], 0.88, CACHE/'system/hair/short01/short01_diffuse.png', True)
+    hair_name = 'long01' if role == 'hero' else 'short01'
+    hair_folder = CACHE/f'system/hair/{hair_name}'
+    hair_proxy = hair_folder/f'{hair_name}.mhclo'
+    hair_texture = hair_folder/f'{hair_name}_diffuse.png'
+    hair = glb.material('Hair', [0.37,0.25,0.18,1.], 0.72, hair_texture, True)
     brow = glb.material('Brows', [0.32,0.22,0.16,1.], 0.9, CACHE/'system/eyebrows/eyebrow001/eyebrow001.png', True)
     cv, cu, cf, cw, deleted = proxy(CACHE/'system/clothes/male_casualsuit01/male_casualsuit01.mhclo', base, weights, transform)
     clothed_faces = []
     for _, face in cf:
         y = sum(cv[v][1] for v, uv in face)/3
+        # The mail neck opening stays under the folded mantle; remove only
+        # the protruding casual-shirt collar, retaining shoulder coverage.
+        if role == 'hero' and y > 1.566: continue
         clothed_faces.append((1 if y < 0.95 else 0, face))
     glb.mesh('Garments', cv, cu, clothed_faces, cw, {0: cloth, 1: trousers})
     skin_faces = []
     for _, face in body_faces:
         if any(v in deleted for v, uv in face): continue
         y = sum(transform(base[v])[1] for v, uv in face)/3
-        skin_faces.append((1 if y<0.16 else 0, face))
-    glb.mesh('Anatomy', list(map(transform, base)), uvs, skin_faces, weights, {0: skin, 1: boots})
-    for name, path, mat in [('Eyes', 'eyes/low-poly/low-poly', eye), ('Hair', 'hair/short01/short01', hair), ('Brows', 'eyebrows/eyebrow001/eyebrow001', brow)]:
-        v, uv, faces, w, _ = proxy(CACHE/('system/'+path+'.mhclo'), base, weights, transform)
+        x = abs(sum(transform(base[v])[0] for v, uv in face)/3)
+        material = 2 if role=='hero' and x>0.45 and y<1.4 else (1 if y<0.16 else 0)
+        skin_faces.append((material, face))
+    transformed = list(map(transform, base))
+    if role == 'hero':
+        # Smooth the face, ears and neck at build time, keeping the resident
+        # topology and the 49 existing joint names/animation tracks intact.
+        head_faces = [(m, f) for m, f in skin_faces if all(transformed[v][1] > 1.525 for v, uv in f)]
+        lower_faces = [(m, f) for m, f in skin_faces if not all(transformed[v][1] > 1.525 for v, uv in f)]
+        hv, hu, hf, hw = hero_sculpt.subdivide(transformed, uvs, head_faces, weights)
+        glb.mesh('Anatomy', transformed, uvs, lower_faces, weights, {0:skin, 1:boots, 2:glove, 3:scalp}, [[0.,0.,0.,1.] for _ in transformed])
+        # Vertex masks deform with the rig, so prone/riding never changes where
+        # the beard grows. No shading classification uses animated positions.
+        glb.mesh('SculptedHead', hv, hu, hf, hw, {0:skin, 3:scalp}, [[hero_sculpt.beard_mask(p),0.,0.,1.] for p in hv])
+    else:
+        glb.mesh('Anatomy', transformed, uvs, skin_faces, weights, {0: skin, 1: boots, 2: glove, 3: scalp})
+    for name, path, mat in [('Eyes', CACHE/'system/eyes/low-poly/low-poly.mhclo', eye), ('Hair', hair_proxy, hair), ('Brows', CACHE/'system/eyebrows/eyebrow001/eyebrow001.mhclo', brow)]:
+        v, uv, faces, w, _ = proxy(path, base, weights, transform)
+        if role == 'hero' and name == 'Hair':
+            # The fitted licensed alpha cards provide a continuous root layer
+            # below the authored waves. Crop the long source at the nape.
+            faces = [(m, f) for m, f in faces if all(v[i][1] > 1.620 for i, uv_index in f)]
+        if role == 'hero' and name == 'Eyes':
+            v, uv, eye_faces, w = hero_sculpt.subdivide(v, uv, [(0, f) for _, f in faces], w)
+            # Source eye UVs and fitted sockets are preserved through smoothing.
+            glb.mesh(name, v, uv, eye_faces, w, {0:mat})
+            continue
         glb.mesh(name, v, uv, [(0, f) for _, f in faces], w, {0: mat})
+    if role == 'hero':
+        hero_sculpt.groom(glb, selected.index('head'))
+        hero_sculpt.beard(glb, hv, hf, selected.index('head'))
     animate(glb, heads, bone_ids)
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    dest = OUTPUT/'human.glb'; glb.save(dest)
+    dest = OUTPUT/('hero.glb' if role == 'hero' else 'human.glb'); glb.save(dest)
     print(f'Clothed human {role}: {sum(len(m["primitives"]) for m in glb.doc["meshes"])} surfaces, {len(selected)} bones, {len(glb.doc["animations"])} animations, {dest.stat().st_size} bytes')
 
 
 if __name__ == '__main__':
     build('player')
+    build('hero')
     for obsolete in ['player', 'soldier', 'villager']:
         (OUTPUT/(obsolete+'.glb')).unlink(missing_ok=True)

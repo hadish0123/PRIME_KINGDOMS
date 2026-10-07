@@ -26,8 +26,11 @@ var action_motion = ""
 var action_clock = 0.0
 var action_elapsed = 0.0
 var action_event_done = false
+var action_duration = 0.0
+var prone_after_sheathe = false
 var game: Node3D
 var horse: Node3D
+var scene_half_size = 0.0
 
 func _ready() -> void:
 	collision_layer = 1
@@ -113,6 +116,8 @@ func _physics_process(delta: float) -> void:
 	if jump_requested and lying:
 		toggle_lying()
 		jump_buffer = 0.0
+	if not action_motion.is_empty():
+		jump_buffer = 0.0
 	if grounded_seconds > 0.0 and jump_buffer > 0.0:
 		velocity.y = 6.0
 		jump_buffer = 0.0
@@ -121,18 +126,21 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 	else: velocity.y -= 20.0 * delta
 	jump_requested = false
-	if direction.length_squared() > 0.001:
+	if action_motion.is_empty() and direction.length_squared() > 0.001:
 		actor.rotation.y = lerp_angle(actor.rotation.y, atan2(direction.x, direction.z), minf(1.0, delta * 12.0))
 	move_and_slide()
 	var horizontal_speed = Vector2(velocity.x, velocity.z).length()
 	if not action_motion.is_empty():
 		action_clock -= delta
 		action_elapsed += delta
-		if not action_event_done and action_elapsed >= (0.33 if action_motion == "attack" else 0.42):
-			action_event_done = true
+		actor.update_weapon(action_motion,action_elapsed/action_duration)
+		if action_clock <= 0.0:
 			if action_motion in ["draw","sheathe"]: actor.set_weapon_drawn(action_motion == "draw")
-			elif action_motion == "attack": strike_targets()
-		if action_clock <= 0.0: action_motion = ""
+			action_motion = ""
+			actor.update_weapon("",0)
+			if prone_after_sheathe:
+				prone_after_sheathe = false
+				toggle_lying()
 	elif horse:
 		actor.play_motion("ride")
 		horse.rotation.y = actor.rotation.y
@@ -149,16 +157,27 @@ func _physics_process(delta: float) -> void:
 			velocity.y = 0.0
 		position.x = clampf(position.x, -half_world - terrain.origin.x, half_world - terrain.origin.x)
 		position.z = clampf(position.z, -half_world - terrain.origin.z, half_world - terrain.origin.z)
+		if scene_half_size > 0.0:
+			position.x = clampf(position.x,-scene_half_size+2,scene_half_size-2)
+			position.z = clampf(position.z,-scene_half_size+2,scene_half_size-2)
 
 func start_action(motion: String) -> void:
+	velocity.x = 0.0
+	velocity.z = 0.0
+	jump_buffer = 0.0
+	jump_requested = false
 	action_motion = motion
 	action_clock = actor.animation.get_animation(motion).length
+	action_duration = action_clock
 	action_elapsed = 0.0
 	action_event_done = false
 	actor.play_motion(motion)
+	actor.update_weapon(motion,0)
 
 func cancel_actions() -> void:
+	prone_after_sheathe = false
 	action_motion = ""
+	actor.update_weapon("",0)
 	jump_requested = false
 	jump_buffer = 0.0
 
@@ -170,17 +189,25 @@ func attack() -> void:
 	if frozen or lying or horse or not actor.weapon_drawn or not action_motion.is_empty() or not is_on_floor(): return
 	start_action("attack")
 
-func strike_targets() -> void:
-	# Practice equipment has local durability. This does not grant damage or
-	# authority over another account's people, territory or inventory.
-	var facing = Basis(Vector3.UP,actor.rotation.y)*Vector3.BACK
-	for target in get_tree().get_nodes_in_group("practice_targets"):
-		var offset: Vector3 = target.global_position-global_position
-		offset.y = 0
-		if offset.length() <= 2.25 and facing.dot(offset.normalized()) > 0.35:
-			var ray = PhysicsRayQueryParameters3D.create(global_position+Vector3(0,1.2,0),target.global_position+Vector3(0,1.2,0),7,[get_rid()])
-			var hit = get_world_3d().direct_space_state.intersect_ray(ray)
-			if not hit.is_empty() and target.is_ancestor_of(hit.collider): target.hit(25)
+func sweep_sword(base: Vector3,tip: Vector3,old_base: Vector3,old_tip: Vector3) -> void:
+	if action_motion != "attack" or action_event_done or frozen: return
+	# Contact comes from the blade and its swept path, not a cone around the body.
+	# Only practice equipment accepts damage in this milestone.
+	for segment in [[base,tip],[old_tip,tip],[old_base.lerp(old_tip,0.5),base.lerp(tip,0.5)]]:
+		if segment[0].distance_squared_to(segment[1]) < 0.00001: continue
+		var ray = PhysicsRayQueryParameters3D.create(segment[0],segment[1],7,[get_rid()])
+		var hit = get_world_3d().direct_space_state.intersect_ray(ray)
+		if hit.is_empty(): continue
+		# A swept tip can already be beyond a wall when the arms animate through
+		# it. Require an unobstructed path from the player's body to that contact.
+		var clearance = PhysicsRayQueryParameters3D.create(global_position+Vector3(0,1.2,0),hit.position,7,[get_rid()])
+		var obstruction = get_world_3d().direct_space_state.intersect_ray(clearance)
+		if not obstruction.is_empty() and obstruction.collider != hit.collider: continue
+		for target in get_tree().get_nodes_in_group("practice_targets"):
+			if target.is_ancestor_of(hit.collider):
+				target.hit(25)
+				action_event_done = true
+				return
 
 func can_stand(at: Vector3) -> bool:
 	var query = PhysicsShapeQueryParameters3D.new()
@@ -204,6 +231,17 @@ func can_mount_at(mount: Node3D) -> bool:
 func toggle_lying() -> void:
 	if frozen or horse or not action_motion.is_empty() or not is_on_floor(): return
 	if lying and not can_stand(global_position): return
+	if not lying:
+		var query = PhysicsShapeQueryParameters3D.new()
+		query.shape = prone_shape
+		query.transform = Transform3D(Basis(Vector3.UP,actor.rotation.y),global_position+Vector3(0,0.30,0))
+		query.collision_mask = collision_mask
+		query.exclude = [get_rid()]
+		if not get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(): return
+		if actor.weapon_drawn:
+			prone_after_sheathe = true
+			start_action("sheathe")
+			return
 	lying = not lying
 	collider.shape = prone_shape if lying else standing_shape
 	collider.position.y = 0.30 if lying else 0.90

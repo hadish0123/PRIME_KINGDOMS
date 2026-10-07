@@ -47,7 +47,8 @@ test('real PostgreSQL: upgrade an existing world without changing accounts, home
     assert.deepEqual(state.player.mount.position,{x:12,y:43.1,z:20});
     assert.equal(state.territories.owned,1);assert.equal(state.territories.cells[0].ownerPlayerId,player);
     assert.equal(state.village.soldierCount,8);assert.equal(state.village.villagerCount,5);
-    assert.equal((await pool.query('SELECT count(*)::int AS n FROM schema_migrations')).rows[0].n,5);
+    assert.ok((await pool.query('SELECT count(*)::int AS n FROM schema_migrations')).rows[0].n>=6);
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM kingdom_legacy_units WHERE player_id=$1',[player])).rows[0].n,8);
   } finally {
     if(pool)await pool.end();
     await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await admin.end();

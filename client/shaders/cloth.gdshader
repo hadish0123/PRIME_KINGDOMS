@@ -15,6 +15,10 @@ void vertex() {
     if (vertical) { VERTEX.z += wave; } else { VERTEX.y += wave; }
     VERTEX.x += free_edge * 0.018 * sin(TIME * 2.2 + UV.y * 4.0);
 }
+uniform bool empire_enabled = false;
+uniform vec4 empire_primary : source_color = vec4(0.5,0.1,0.1,1.0);
+uniform vec4 empire_secondary : source_color = vec4(0.8,0.65,0.3,1.0);
+uniform sampler2D emblem_mask : filter_linear_mipmap;
 void fragment() {
     ALBEDO = texture(albedo_map, UV * 6.0).rgb * tint.rgb;
     if (royal) {
@@ -26,4 +30,13 @@ void fragment() {
         ALBEDO = mix(ALBEDO,vec3(0.39,0.23,0.055),border);
     }
     ROUGHNESS = 0.93;
+    if (empire_enabled) {
+        float grain = 0.84 + 0.08*sin(UV.x*1700.0)*sin(UV.y*1350.0);
+        ALBEDO = empire_primary.rgb * grain;
+        vec2 emblem_uv = (UV-vec2(0.5,0.42))*vec2(2.2,2.4)+vec2(0.5);
+        float inside = step(0.0,emblem_uv.x)*step(emblem_uv.x,1.0)*step(0.0,emblem_uv.y)*step(emblem_uv.y,1.0);
+        float mask = texture(emblem_mask,clamp(emblem_uv,vec2(0.0),vec2(1.0))).a*inside;
+        float trim = 1.0-smoothstep(0.01,0.025,min(UV.x,1.0-UV.x));
+        ALBEDO = mix(ALBEDO,empire_secondary.rgb,max(mask,trim));
+    }
 }

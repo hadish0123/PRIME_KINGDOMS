@@ -3,8 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { ApiError } from './errors.js';
 import { authenticate } from './auth.js';
 import { register, login, gameState, movePlayer, nearbyWorld } from './game.js';
-import { readJSON, createAuthLimiter } from './http.js';
+import { readJSON, createAuthLimiter, createGameLimiter } from './http.js';
 import { commandArmy, claimTerritory, mountHorse } from './strategy.js';
+import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
+import { getScene, moveScene, mountScene } from './kingdom/scene.js';
+import { getMap } from './kingdom/world_map.js';
+import { getClans, clanAction } from './kingdom/clans.js';
 
 function json(res, status, value, requestId, headers = {}) {
   res.writeHead(status, {
@@ -20,12 +24,17 @@ function json(res, status, value, requestId, headers = {}) {
 export function createApplication({ pool, config, logger = console }) {
   let draining = false;
   const authLimit = createAuthLimiter();
+  const gameLimit = createGameLimiter();
   const routes = new Map([
     ['/', ['GET','HEAD']], ['/health', ['GET','HEAD']], ['/ready', ['GET','HEAD']], ['/v1/world', ['GET','HEAD']],
     ['/v1/auth/register', ['POST']], ['/v1/auth/login', ['POST']], ['/v1/auth/logout', ['POST']],
     ['/v1/game', ['GET']], ['/v1/player/move', ['POST']], ['/v1/world/nearby', ['GET']],
     ['/v1/player/order',['POST']], ['/v1/territory/claim',['POST']],
     ['/v1/player/mount',['POST']],
+    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']],
+    ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
+    ['/v2/empire/customize',['POST']], ['/v2/scene/move',['POST']], ['/v2/scene/mount',['POST']],
+    ['/v2/clans',['GET']], ...['create','join','application','invite','role','leave','kick','donate'].map(action => [`/v2/clans/${action}`,['POST']]),
   ]);
   const server = createServer(async (req, res) => {
     const requestId = randomUUID();
@@ -52,7 +61,7 @@ export function createApplication({ pool, config, logger = console }) {
       if (path === '/') {
         json(res, 200, {
           project: 'PRIME KINGDOMS',
-          stage: 'third-person-village',
+          stage: 'kingdom-strategy',
           version: config.version,
           commit: config.commit,
           endpoints: { health: '/health', readiness: '/ready', world: '/v1/world', game: '/v1/game' },
@@ -77,6 +86,25 @@ export function createApplication({ pool, config, logger = console }) {
       }
       if (path !== '/v1/world') {
         const identity = await authenticate(pool, req.headers.authorization);
+        if (path.startsWith('/v2/')) {
+          gameLimit(identity.player_id, req.method, path);
+          const body = req.method === 'POST' ? await readJSON(req) : {};
+          const handlers = {
+            '/v2/kingdom': () => getKingdom(pool, identity),
+            '/v2/world/map': () => getMap(pool, identity),
+            '/v2/scene': () => getScene(pool, identity),
+            '/v2/scene/move': () => moveScene(pool, identity, body),
+            '/v2/scene/mount': () => mountScene(pool, identity, body),
+            '/v2/buildings/upgrade': () => enqueue(pool, identity, body, 'building'),
+            '/v2/research/start': () => enqueue(pool, identity, body, 'research'),
+            '/v2/units/train': () => enqueue(pool, identity, body, 'training'),
+            '/v2/empire/customize': () => customize(pool, identity, body),
+            '/v2/clans': () => getClans(pool, identity),
+          };
+          const result = path.startsWith('/v2/clans/') ? await clanAction(pool, identity, body, path.split('/').at(-1)) : await handlers[path]();
+          json(res, 200, result, requestId);
+          return;
+        }
         if (path === '/v1/auth/logout') {
           await pool.query('DELETE FROM sessions WHERE token_hash = $1', [identity.tokenHash]);
           json(res, 200, { status: 'signed_out' }, requestId);

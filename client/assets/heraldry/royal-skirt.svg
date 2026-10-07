@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="1024" viewBox="0 0 512 1024">
+ <defs>
+  <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#e8c87a"/><stop offset=".45" stop-color="#ad7d28"/><stop offset=".7" stop-color="#e2bb61"/><stop offset="1" stop-color="#956b24"/></linearGradient>
+  <g id="lily" fill="url(#gold)"><path d="M0-66C-31-38-16-18-8 0L-4 22H4L8 0C16-18 31-38 0-66ZM-8 0C-23-45-64-37-56-9C-49-24-28-17-17 9L-7 17ZM8 0C23-45 64-37 56-9C49-24 28-17 17 9L7 17ZM-10 20L-27 50L-6 42L0 66L6 42L27 50L10 20Z"/><rect x="-22" y="10" width="44" height="10" rx="3"/></g>
+  <pattern id="damask" width="64" height="96" patternUnits="userSpaceOnUse"><path d="M32 3C8 25 57 40 32 69C7 42 57 23 32 3ZM3 51Q32 28 61 51M3 57Q32 80 61 57" fill="none" stroke="#681017" stroke-width="2" opacity=".45"/></pattern>
+  <pattern id="vine" width="24" height="96" patternUnits="userSpaceOnUse"><path d="M12 0C-4 24 28 48 12 72L12 96M12 24C-6 17 1 5 12 14M12 57C32 46 24 33 14 45M12 85C-6 77 0 66 11 75" fill="none" stroke="#c39b48" stroke-width="2.3"/></pattern>
+ </defs>
+ <path fill="#710d16" d="M0 0H512V1024H0Z"/><path fill="url(#damask)" d="M0 0H512V1024H0Z"/>
+ <path fill="url(#vine)" d="M14 0H38V1000H14ZM474 0H498V1000H474Z"/><path d="M9 0V1009H503V0M42 0V980H470V0" fill="none" stroke="url(#gold)" stroke-width="5"/>
+ <use href="#lily" transform="translate(256 154) scale(.75)"/><use href="#lily" transform="translate(256 377) scale(1.04)"/><use href="#lily" transform="translate(256 619) scale(.76)"/><use href="#lily" transform="translate(256 846) scale(1.0)"/>
+</svg>

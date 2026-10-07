@@ -2,6 +2,7 @@ extends Node3D
 
 const Surfaces = preload("res://scripts/visual_materials.gd")
 const Regalia = preload("res://scripts/regalia.gd")
+const Hero = preload("res://scripts/hero.gd")
 var animation: AnimationPlayer
 var model: Node3D
 var current_motion = ""
@@ -17,6 +18,7 @@ func setup(kind: String, target_height: float = 1.85, variant: int = 0) -> void:
 	role = kind
 	appearance = variant
 	var path = "res://assets/humans/human.glb"
+	if role == "player": path = "res://assets/humans/hero.glb"
 	model = load(path).instantiate()
 	add_child(model)
 	var bounds = model_bounds(model, Transform3D.IDENTITY)
@@ -40,7 +42,38 @@ func dress(node: Node) -> void:
 		for index in range(node.mesh.get_surface_count()):
 			var surface: Material = node.mesh.surface_get_material(index)
 			if not surface: continue
+			if role == "player" and surface.resource_name == "Skin":
+				var skin = ShaderMaterial.new()
+				skin.shader = load("res://shaders/hero_skin.gdshader")
+				skin.set_shader_parameter("albedo_map",surface.albedo_texture)
+				skin.set_shader_parameter("normal_map",surface.normal_texture)
+				node.set_surface_override_material(index,skin)
+				continue
+			if role == "player" and surface.resource_name == "Groom":
+				var groom = ShaderMaterial.new()
+				groom.shader = load("res://shaders/hero_groom.gdshader")
+				node.set_surface_override_material(index,groom)
+				continue
+			if role == "player" and surface.resource_name in ["Hair","Beard"]:
+				var strands = ShaderMaterial.new()
+				strands.shader = load("res://shaders/hair.gdshader")
+				strands.set_shader_parameter("albedo_map",surface.albedo_texture)
+				# source_color converts this multiplier to linear space. Near-black
+				# sRGB values erased every strand in the already dark source texture.
+				strands.set_shader_parameter("tint",Color(0.66,0.54,0.40) if surface.resource_name == "Hair" else Color(0.59,0.48,0.36))
+				node.set_surface_override_material(index,strands)
+				continue
+			if role == "player" and surface.resource_name == "Glove":
+				var leather = ShaderMaterial.new()
+				leather.shader = load("res://shaders/leather.gdshader")
+				node.set_surface_override_material(index,leather)
+				continue
 			if surface.resource_name in ["Fabric", "Trousers"]:
+				if role == "player":
+					var material = ShaderMaterial.new()
+					material.shader = load("res://shaders/chainmail.gdshader" if surface.resource_name == "Fabric" else "res://shaders/leather.gdshader")
+					node.set_surface_override_material(index,material)
+					continue
 				var tint = Vector3(0.21, 0.15, 0.14) if role == "player" else (Vector3(0.31, 0.29, 0.24) if role == "soldier" else Vector3(0.44, 0.36, 0.24))
 				if surface.resource_name == "Trousers": tint = Vector3(0.21, 0.17, 0.12)
 				var key = "garment:%s:%s" % [role, surface.resource_name]
@@ -70,13 +103,17 @@ func detail(parent: Node3D, mesh: Mesh, at: Vector3, surface: Material) -> MeshI
 
 func add_regalia() -> void:
 	if not skeleton: return
-	wardrobe = Regalia.new()
+	wardrobe = Hero.new() if role == "player" else Regalia.new()
+	if role == "player": wardrobe.actor = self
 	wardrobe.prepare(skeleton,role,appearance)
 	weapon_drawn = role == "soldier"
 
 func set_weapon_drawn(value: bool) -> void:
 	weapon_drawn = value
 	if wardrobe: wardrobe.set_weapon_drawn(value)
+
+func update_weapon(motion: String,phase: float) -> void:
+	if role == "player" and wardrobe: wardrobe.update_action(motion,phase)
 
 func find_skeleton(node: Node) -> Skeleton3D:
 	if node is Skeleton3D: return node

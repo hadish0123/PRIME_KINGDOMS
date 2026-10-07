@@ -12,7 +12,7 @@ void vertex() {
 }
 void fragment() {
     vec4 sample_value = texture(meadow,(UV+tile)*0.5);
-    ALBEDO = sample_value.rgb * mix(vec3(0.30,0.43,0.22),vec3(0.49,0.60,0.32),variety);
+    ALBEDO = sample_value.rgb * mix(vec3(0.53,0.64,0.32),vec3(0.72,0.74,0.41),variety);
     ALPHA = sample_value.a;
     ALPHA_SCISSOR_THRESHOLD = 0.38;
     ROUGHNESS = 0.96;

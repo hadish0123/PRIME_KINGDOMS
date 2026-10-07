@@ -1,33 +1,32 @@
-# Game direction
+# PRIME KINGDOMS product direction
 
-These are design requirements, not claims that the features are implemented.
+Strategic empire map + bounded 3D settlements + bounded battle instances +
+direct third-person rulers. The new game no longer requires continuously streamed
+open-world travel. Strategy menus complement physical presence.
 
-## Player experience
+Every account keeps exactly one primary settlement. Growth follows Small Village,
+Developed Village, Town, Fortified Town, City, Large City, Capital, Kingdom, Empire.
+Buildings, resources, armies, research, identity and progression persist on the
+server. Rulers move locally with mobile controls, draw swords, lie/crawl and ride
+their own horse; persistent outcomes require server validation.
 
-- Every player controls their own character in third person and physically walks
-  and fights inside settlements and the surrounding world.
-- Every new player receives a small starter village belonging to them.
-- The starting village grows into a city. Multiple governed settlements form a
-  country; control over multiple countries forms an empire.
-- Other villages and cities can come under a player's rule. Conquest, negotiated
-  vassalage and the consequences of ownership need explicit game rules.
-- PRIME is the god character accompanied by seven unique Legends.
+The strategic world will contain connected territories, NPC kingdoms, resources,
+forts, protected starter provinces, clan regions and war objectives. Scene entry
+loads a bounded settlement, battlefield, expedition or siege area. Railway hosts
+HTTP/state/timers and verifiable simulations; Godot renders on the device.
 
-## Persistent world
+Clan creation requires server-verified level 15. Members relocate into legally
+allocated clan plots without losing buildings, queues, troops, items or progression.
+Leaving safely resettles them. Wars must support asynchronous participation.
 
-- A large world with regions, countries, cities, castles and natural environments.
-- Weather, water, animals, day/night and environmental variety.
-- NPC personalities, memory, needs, loyalty and autonomous decisions.
-- Recruitment through interactions in the world, plus economy and warfare.
-- Ownership and persistent simulation are server-authoritative. Clients load and
-  display nearby world regions with detail appropriate to their hardware.
+Level 100, Ascended Sovereign, requires exceptional cumulative XP, prestige,
+conquests, seasonal achievements and rare ascension requirements. It is a tuning
+target, never a hardcoded quota or a purchasable shortcut.
 
-## Delivery
+Shared class meshes, animation reuse and empire/clan heraldry define identity.
+LOW/BALANCED/HIGH/ULTRA must use measured mobile budgets and compatible rendering.
+Production art and physical-device performance remain explicit production work.
 
-- Source control and build automation on GitHub; backend and PostgreSQL on Railway.
-- The primary release platform remains to be selected. Android requires content
-  and performance budgets from the start; PC allows a higher graphics ceiling.
-- First gameplay milestone: a controllable third-person character in one small
-  village, with persistent ownership, before expanding world size or content.
-- Final art quality requires production models, textures, rigging, animation and
-  device testing. Backend deployment alone is not a completed game.
+This direction supersedes earlier open-world plans. Existing data and useful
+working systems remain compatible. See HANDOFF.md for actual implementation status;
+this document describes the intended complete product, not a completion claim.

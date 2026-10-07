@@ -1,5 +1,22 @@
 # Deployment settings
 
+## Strategy branch rollout
+
+The strategy conversion is developed on `feature/kingdom-strategy-full` (draft PR 7).
+It has not been deployed to production by this work. Existing Railway main deployment
+and player data remain intact. The new APK requires the v2 backend for scene entry.
+
+Before rollout, restore a production backup into a disposable database, run additive
+migrations 006/007 with checksum verification and compare world/account/village/NPC/
+horse/session/territory identifiers. Measure backfill duration and lock contention;
+the default five-second statement timeout may need a maintenance migration setting
+for large datasets. Deploy compatible API before distributing the new client.
+
+Health `/health` remains process liveness; `/ready` requires PostgreSQL. Docker still
+uses Node.js 24 with a non-root runtime. No graphics service or UDP server is added
+to Railway. Keep production credentials and Android signing secrets outside git.
+Rollback the application version while retaining additive tables; never reset data.
+
 These settings are applied in Railway through its API/dashboard. This document
 is a reference and is not an automatically applied configuration file.
 

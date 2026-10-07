@@ -1,8 +1,50 @@
-# API 0.5
+# API v1 compatibility and v2 kingdom strategy
 
 Base URL: `https://prime-kingdoms-api-production.up.railway.app`
 
 All responses are JSON. Write requests require `Content-Type: application/json` and an object body of at most 16 KiB. Authenticated endpoints require `Authorization: Bearer <session.token>`. API errors return `{ "error": "code" }` with a request ID header.
+
+## v2 contract
+
+These endpoints ship on the strategy branch; deploying this API precedes using the
+new APK. Except movement, every POST requires a UUID `requestId`. Its identity is
+scoped to the authenticated account, operation and exact normalized payload; retries
+return the original committed response. Reusing it for a different action returns
+409 `request_id_conflict`. Unknown extra actor IDs never change session identity.
+
+| Endpoint | Request | Persistent result |
+| --- | --- | --- |
+| `GET /v2/kingdom` | Session | Settles production/due queues; profile, resources/rates/capacity, buildings, research, units, tasks, quotes, catalogs, level requirements |
+| `GET /v2/scene` | Session | Compatible game DTO plus bounded settlement scene and separate saved ruler/horse positions |
+| `POST /v2/scene/move` | `position`, `yaw` | Own bounded scene movement; finite server-time credit, no request UUID required |
+| `POST /v2/scene/mount` | `requestId`, `mounted` | Range/boundary-validated own horse state |
+| `GET /v2/world/map` | Session | Persistent 7×7 frontier around the current strategic plot, empire/clan colors, protected deadlines and region roster |
+| `POST /v2/buildings/upgrade` | `requestId`, `key` | Pays server price, validates prerequisites and creates construction queue; `{taskId,kingdom}` |
+| `POST /v2/research/start` | `requestId`, `key` | Academy/prerequisite-validated research queue; `{taskId,kingdom}` |
+| `POST /v2/units/train` | `requestId`, `key`, `quantity` (1–100) | Facility/capacity-validated unit training; `{taskId,kingdom}` |
+| `POST /v2/empire/customize` | `requestId`, `name`, `primaryColor`, `secondaryColor`, `emblem`, `bannerStyle` | Approved identity; `{kingdom}` |
+| `GET /v2/clans` | Session | Directory, own clan/roles/treasury/region, applications, invitations and cooldowns |
+| `POST /v2/clans/create` | `requestId`, `name`, `tag`, colors, `emblem`, `admission` (`open`/`approval`) | Level-15/500-gold gate; atomic region, capital, membership and settlement relocation |
+| `POST /v2/clans/join` | `requestId`, `clanId` | Open/invited membership or approval application |
+| `POST /v2/clans/application` | `requestId`, `clanId`, `playerId`, `decision` (`accept`/`reject`) | Leader/officer-only applicant decision and safe relocation on acceptance |
+| `POST /v2/clans/invite` | `requestId`, `clanId`, `playerId` | Leader/officer invitation, expires after seven server days |
+| `POST /v2/clans/role` | `requestId`, `clanId`, `playerId`, `role` | Leader-only promotion/demotion/leadership transfer |
+| `POST /v2/clans/leave` | `requestId` | Cooldown/war-checked starter resettlement; leader must transfer first |
+| `POST /v2/clans/kick` | `requestId`, `playerId` | Permission/cooldown/war-checked removal and safe resettlement |
+| `POST /v2/clans/donate` | `requestId`, `resource`, `amount` (1–1,000,000) | Atomic own-wallet spending and clan treasury credit |
+
+Clan POSTs return `{clans: <same snapshot as GET>}`. Player IDs on clan administration
+are validated targets, never substitutes for the authenticated actor. Below-level
+creation returns 403 `clan_level_15_required`; unauthorized administration returns
+403 `clan_permission`. Queue/resource/prerequisite conflicts return 409. No endpoint
+accepts client XP, balance, completion deadline or battle victory.
+
+Names reject control/format characters and markup. Colors require `#rrggbb`.
+Emblems: lion/eagle/crown/stag/sun/wolf. Banners: square/swallowtail/pennant.
+Authenticated per-process limits per server minute: 300 movement requests, 240 reads
+and 120 other writes per player. Distributed limiting is future deployment work.
+
+## Preserved v1 contract
 
 | Endpoint | Request | Result |
 | --- | --- | --- |

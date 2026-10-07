@@ -39,10 +39,10 @@ test('readiness succeeds only after a successful database query', async (t) => {
   assert.equal(probes, 1);
 });
 
-test('metadata clearly identifies the playable village milestone', async (t) => {
+test('metadata clearly identifies the kingdom strategy stage', async (t) => {
   const app = await fixture(t);
   const body = await (await fetch(app.url)).json();
-  assert.equal(body.stage, 'third-person-village');
+  assert.equal(body.stage, 'kingdom-strategy');
   assert.equal(body.commit, 'test-commit');
 });
 
