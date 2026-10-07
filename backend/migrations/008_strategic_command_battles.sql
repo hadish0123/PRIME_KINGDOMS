@@ -74,9 +74,7 @@ CREATE TABLE kingdom_battle_reports (
   seen_at timestamptz,
   PRIMARY KEY(battle_id,player_id)
 );
-CREATE INDEX kingdom_reports_unseen ON kingdom_battle_reports(player_id,resolved_at) WHERE false;
--- The index above intentionally cannot reference kingdom_battles. A practical player/time
--- lookup is provided by the report primary key plus battle indexes; unseen filtering is small.
+CREATE INDEX kingdom_reports_player ON kingdom_battle_reports(player_id,seen_at);
 
 INSERT INTO kingdom_config(key,value) VALUES
 ('battle_capture_protection_seconds','900'),
