@@ -71,7 +71,7 @@ func run() -> void:
 		await panel.submit("/v2/clans/donate",{"resource":"wood","amount":10})
 		check(panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
 		await panel.submit("/v2/clans/leave",{})
-		check(panel.status.text.contains("cooldown"),"Native relocation bypassed server cooldown")
+		check(panel.last_error=="clan_cooldown","Native relocation bypassed server cooldown")
 	# Recover an exact unresolved request after an application restart.
 	panel.pending_path = "/v2/units/train"
 	panel.pending_body = {"requestId":panel.request_id(),"key":"swordsman","quantity":1}

@@ -11,6 +11,7 @@ var pending_path = ""
 var pending_body: Dictionary = {}
 var token_epoch = -1
 var timer_clock = 0.0
+var last_error = ""
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -81,6 +82,7 @@ func submit(path: String, body: Dictionary) -> void:
 		pending_body.requestId = request_id()
 		save_pending()
 	busy = true
+	last_error = ""
 	var epoch: int = game.world_epoch
 	status.text = "Saving…"
 	var response: Dictionary = await game.api.call_api(pending_path,pending_body)
@@ -101,11 +103,12 @@ func submit(path: String, body: Dictionary) -> void:
 		status.text = "Saved by the server."
 		await refresh()
 	else:
+		last_error = str(response.error)
 		if response.status > 0 and response.status < 500:
 			remove_pending()
 			pending_path = ""
 			pending_body.clear()
-		status.text = str(response.error).replace("_"," ").capitalize()
+		status.text = last_error.replace("_"," ").capitalize()
 		if response.status == 401: game.expire_session()
 
 func pending_file() -> String:
