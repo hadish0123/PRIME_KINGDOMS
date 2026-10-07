@@ -9,6 +9,7 @@ import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
 import { getScene, moveScene, mountScene } from './kingdom/scene.js';
 import { getMap } from './kingdom/world_map.js';
 import { getClans, clanAction } from './kingdom/clans.js';
+import { getCommandState, saveArmyPreset, deleteArmyPreset, attackTerritory, getPresence } from './kingdom/realm.js';
 
 function json(res, status, value, requestId, headers = {}) {
   res.writeHead(status, {
@@ -31,9 +32,10 @@ export function createApplication({ pool, config, logger = console }) {
     ['/v1/game', ['GET']], ['/v1/player/move', ['POST']], ['/v1/world/nearby', ['GET']],
     ['/v1/player/order',['POST']], ['/v1/territory/claim',['POST']],
     ['/v1/player/mount',['POST']],
-    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']],
+    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']], ['/v2/command',['GET']], ['/v2/presence',['GET']],
     ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
     ['/v2/empire/customize',['POST']], ['/v2/scene/move',['POST']], ['/v2/scene/mount',['POST']],
+    ['/v2/army/preset',['POST']], ['/v2/army/preset/delete',['POST']], ['/v2/battles/attack',['POST']],
     ['/v2/clans',['GET']], ...['create','join','application','invite','role','leave','kick','donate'].map(action => [`/v2/clans/${action}`,['POST']]),
   ]);
   const server = createServer(async (req, res) => {
@@ -99,6 +101,11 @@ export function createApplication({ pool, config, logger = console }) {
             '/v2/research/start': () => enqueue(pool, identity, body, 'research'),
             '/v2/units/train': () => enqueue(pool, identity, body, 'training'),
             '/v2/empire/customize': () => customize(pool, identity, body),
+            '/v2/command': () => getCommandState(pool, identity),
+            '/v2/presence': () => getPresence(pool, identity),
+            '/v2/army/preset': () => saveArmyPreset(pool, identity, body),
+            '/v2/army/preset/delete': () => deleteArmyPreset(pool, identity, body),
+            '/v2/battles/attack': () => attackTerritory(pool, identity, body),
             '/v2/clans': () => getClans(pool, identity),
           };
           const result = path.startsWith('/v2/clans/') ? await clanAction(pool, identity, body, path.split('/').at(-1)) : await handlers[path]();
