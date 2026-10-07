@@ -65,7 +65,7 @@ CREATE INDEX kingdom_battles_defender ON kingdom_battles(defender_id,resolved_at
 CREATE INDEX kingdom_battles_tile ON kingdom_battles(world_id,target_x,target_z,resolved_at DESC);
 
 ALTER TABLE strategic_tiles ADD COLUMN captured_at timestamptz;
-ALTER TABLE strategic_tiles ADD COLUMN last_battle_id uuid REFERENCES kingdom_battles(id);
+ALTER TABLE strategic_tiles ADD COLUMN last_battle_id uuid;
 
 CREATE TABLE kingdom_battle_reports (
   battle_id uuid NOT NULL REFERENCES kingdom_battles(id) ON DELETE CASCADE,
