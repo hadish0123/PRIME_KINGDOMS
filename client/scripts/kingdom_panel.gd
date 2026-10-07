@@ -28,12 +28,20 @@ var map_center: Dictionary = {}
 var chat_channel = "global"
 
 
-func _ready() -> void:
+func apply_section_layout(section: String) -> void:
 	anchor_left = 0.03
-	anchor_right = 0.97
-	anchor_top = 0.15
-	anchor_bottom = 0.88
-	add_theme_stylebox_override("panel",game.panel_style(Color(0.036,0.034,0.030,0.98)))
+	anchor_top = 0.16
+	anchor_bottom = 0.91
+	# Building/economy screens stay as a council sidebar so the settlement
+	# remains visible. Tactical and social screens receive the full workspace.
+	if section in ["Army","Empire","Clan","Map","Rankings","Wars","Chat"]:
+		anchor_right = 0.97
+	else:
+		anchor_right = 0.43
+
+func _ready() -> void:
+	apply_section_layout("Buildings")
+	add_theme_stylebox_override("panel",game.panel_style(Color(0.020,0.019,0.016,0.975),Color(0.65,0.48,0.20)))
 	visible = false
 
 func _process(delta: float) -> void:
@@ -53,6 +61,7 @@ func _process(delta: float) -> void:
 
 func open_section(section: String) -> void:
 	desired_section = section
+	apply_section_layout(section)
 	await open()
 	if section == "Map": await load_map()
 	elif section == "Clan": await load_clans()
@@ -61,6 +70,7 @@ func open_section(section: String) -> void:
 	select_section(section)
 
 func select_section(section: String) -> void:
+	apply_section_layout(section)
 	if not is_instance_valid(tabs): return
 	for i in range(tabs.get_tab_count()):
 		if tabs.get_tab_title(i)==section: tabs.current_tab=i
@@ -260,12 +270,17 @@ func rebuild() -> void:
 		remove_child(child)
 		child.queue_free()
 	var column = VBoxContainer.new()
+	column.add_theme_constant_override("separation",8)
 	add_child(column)
-	var heading = HBoxContainer.new()
+	var heading = VBoxContainer.new()
+	heading.add_theme_constant_override("separation",7)
 	column.add_child(heading)
-	heading.add_child(game.label("Royal Council",25,Color(0.94,0.80,0.50)))
+	var council_title = game.label("ROYAL COUNCIL",26,Color(0.96,0.82,0.51))
+	council_title.tooltip_text = "Command construction, armies, research and realm affairs."
+	heading.add_child(council_title)
 	var navigation = OptionButton.new()
 	navigation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	navigation.custom_minimum_size.y = 46
 	for title in ["Overview","Queues","Buildings","Army","Research","Empire","Clan","Map","Reports","Commanders","Goals","Inbox","Rankings","Wars","Chat"]:
 		navigation.add_item(Text.copy("World" if title=="Map" else title))
 		navigation.set_item_metadata(navigation.item_count-1,title)
@@ -275,8 +290,19 @@ func rebuild() -> void:
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(status)
 	if not kingdom.is_empty():
-		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17))
-		column.add_child(game.label(Text.copy("Food %d   Wood %d   Stone %d   Iron %d   Gold %d") % [kingdom.resources.food,kingdom.resources.wood,kingdom.resources.stone,kingdom.resources.iron,kingdom.resources.gold],16))
+		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
+		var resource_strip = GridContainer.new()
+		resource_strip.columns = 5
+		resource_strip.add_theme_constant_override("h_separation",6)
+		resource_strip.add_theme_constant_override("v_separation",4)
+		column.add_child(resource_strip)
+		for key in ["food","wood","stone","iron","gold"]:
+			var chip = PanelContainer.new()
+			chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			chip.add_theme_stylebox_override("panel",game.panel_style(Color(0.038,0.035,0.029,0.96),Color(0.37,0.29,0.16)))
+			var value = int(kingdom.resources.get(key,0))
+			chip.add_child(game.label(game.resource_icon(key)+"  "+str(value),13,Color(0.94,0.87,0.72)))
+			resource_strip.add_child(chip)
 	tabs = TabContainer.new()
 	tabs.custom_minimum_size.y = 210
 	tabs.tabs_visible = false
@@ -306,8 +332,14 @@ func rebuild() -> void:
 
 func cost_text(cost: Dictionary) -> String:
 	var values: Array[String] = []
-	for key in cost: values.append(Text.copy("%s %d") % [str(key).capitalize(),int(cost[key])])
-	return ", ".join(values)
+	var ordered = ["food","wood","stone","iron","gold"]
+	for key in ordered:
+		if cost.has(key):
+			values.append(game.resource_icon(key)+" "+str(int(cost[key])))
+	for key in cost:
+		if str(key) not in ordered:
+			values.append(Text.copy("%s %d") % [str(key).capitalize(),int(cost[key])])
+	return "   ".join(values)
 
 func build_overview(column: VBoxContainer) -> void:
 	var realm: Dictionary = kingdom.realm
@@ -357,12 +389,14 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 	for quote in quotes:
 		var key_value: String = quote.key
 		var card = PanelContainer.new()
-		card.add_theme_stylebox_override("panel",game.panel_style(Color(0.07,0.066,0.057)))
+		card.add_theme_stylebox_override("panel",game.panel_style(Color(0.034,0.032,0.027,0.985),Color(0.55,0.40,0.17)))
 		column.add_child(card)
 		var details = VBoxContainer.new()
+		details.add_theme_constant_override("separation",6)
 		card.add_child(details)
-		details.add_child(game.label(Text.copy("%s · Level %d") % [catalog_name(kind,key_value),quote.current],20,Color(0.93,0.80,0.53)))
-		details.add_child(game.label(str(quote.get("purpose","")),14))
+		var card_icon = "🏛" if kind=="building" else "📜"
+		details.add_child(game.label(card_icon+"  "+Text.copy("%s · LEVEL %d") % [catalog_name(kind,key_value),quote.current],20,Color(0.95,0.81,0.50)))
+		details.add_child(game.label(str(quote.get("purpose","")),14,Color(0.84,0.82,0.75)))
 		var effect: Dictionary = quote.get("currentEffect",{})
 		var next_effect: Dictionary = quote.get("nextEffect",{})
 		if not effect.is_empty():
