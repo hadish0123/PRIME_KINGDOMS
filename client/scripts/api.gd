@@ -20,6 +20,7 @@ func save_session(value: String) -> void:
 		push_warning("Session is available for this run; device storage could not remember it.")
 
 func call_api(path: String, body = null) -> Dictionary:
+	var started = Time.get_ticks_msec()
 	var http = HTTPRequest.new()
 	http.timeout = 20.0
 	http.body_size_limit = 1024 * 1024
@@ -35,6 +36,9 @@ func call_api(path: String, body = null) -> Dictionary:
 		http.queue_free()
 		return {"ok": false, "status": 0, "error": "connection_failed"}
 	var response = await http.request_completed
+	# Native CI diagnostics intentionally omit bodies, URLs and credentials.
+	if "--smoke" in OS.get_cmdline_user_args():
+		print("NATIVE_API ",JSON.stringify({"path":path,"result":response[0],"status":response[1],"elapsed_ms":Time.get_ticks_msec()-started}))
 	http.queue_free()
 	if response[0] != HTTPRequest.RESULT_SUCCESS:
 		return {"ok": false, "status": 0, "error": "connection_timeout" if response[0] == HTTPRequest.RESULT_TIMEOUT else "connection_failed"}

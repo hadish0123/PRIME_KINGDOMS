@@ -690,6 +690,7 @@ func enter_world(game_state: Dictionary) -> void:
 		set_auth_busy(false,"Your settlement could not be loaded. Reconnect to continue.")
 		return
 	world_epoch += 1
+	var entry_epoch = world_epoch
 	kingdom_panel.clear_session()
 	if is_instance_valid(world_root): world_root.queue_free()
 	if is_instance_valid(auth_stage): auth_stage.queue_free()
@@ -739,16 +740,23 @@ func enter_world(game_state: Dictionary) -> void:
 	app_paused = false
 	reconnect_delay = 1
 	poll_clock = 0
+	settlement_clock = 0
 	auth_panel.visible = false
 	hud.visible = true
 	settings_panel.visible = false
 	preferences.apply(self)
 	connection_label.text = "● Connected"
+	connection_label.tooltip_text = ""
 	apply_control_state()
-	await get_tree().process_frame
-	# Finish the first settlement draw before callers start an HTTP deadline.
-	# Shader compilation and texture uploads can block the main thread on entry.
-	if DisplayServer.get_name() != "headless": await RenderingServer.frame_post_draw
+	# Build the first bounded foliage batch now, rather than introducing its
+	# materials while the first snapshot/reconnect request is already running.
+	terrain.stream_at(Vector3.ZERO)
+	# Render complete entry frames before a caller starts an HTTP deadline.
+	# Texture uploads and newly submitted material variants can span frames.
+	for frame in range(2):
+		await get_tree().process_frame
+		if entry_epoch!=world_epoch or not in_world: return
+		if DisplayServer.get_name() != "headless": await RenderingServer.frame_post_draw
 
 func select_settlement(screen_position: Vector2) -> void:
 	if not in_world or not strategy_camera.enabled: return
@@ -848,6 +856,7 @@ func recover_connection() -> void:
 	network_online = true
 	reconnect_delay = 1
 	connection_label.text = "● Connected"
+	connection_label.tooltip_text = ""
 	await kingdom_panel.refresh()
 	if epoch!=world_epoch or not in_world: return
 	if not network_online: return

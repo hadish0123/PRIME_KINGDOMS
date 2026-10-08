@@ -12,6 +12,8 @@ The editable [Figma file](https://www.figma.com/design/ENUteLxvRgApkWKUmrYQ5w) c
 
 App/backend version 0.9.4; Android version code 18. This change adds no database migration or production-data reset. It builds on the 0.9.3 starter-realm candidate. The v2 backend must be rolled out separately before the APK can enter a production kingdom.
 
+Entry submits the first bounded foliage batch and completes two native render frames before snapshot requests begin. This keeps newly introduced material compilation outside the initial reconnect deadline. Native CI records only request paths, result codes, statuses and elapsed times, with no bodies or credentials.
+
 Validation gates include backend checks and 13 unit tests, real PostgreSQL integration, GDScript import/parse, native fresh-account/clan flows, reconnect/lifecycle, bounded actual-render checks, Android export and APK signature verification. Starter-village, clan-region, council and HUD-free world images are captured from native API flows. CI publishes a unique candidate download after the authority and Android gates pass.
 
 This is an installable review candidate. Physical Android installation/FPS, final production signing, production rollout, premium class-specific units, advanced battle choreography and final economy balance still need separate evidence. The candidate does not certify the whole game as production complete.
