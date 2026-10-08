@@ -102,7 +102,12 @@ async function importRoyalDawn(tokens, layouts, svgSources, worldImageHash = nul
         const copy=node.findOne(c=>c.type==='TEXT');copy.characters=record.text;copy.fontSize=record.fontSize;
         const ico=node.findOne(c=>c.type==='INSTANCE');if(icons[record.icon])ico.swapComponent(icons[record.icon]);else ico.visible=false;
       }else if(record.role==='art'){
-        if(!icons[record.source])continue;node=icons[record.source].createInstance();node.resize(w,h);
+        if(record.source.includes('/heraldry/') && svgSources[record.source]){
+          const art=svgSources[record.source].replaceAll('#ffffff',record.tint).replaceAll('white',record.tint);
+          node=figma.createNodeFromSvg(art);node.resize(w,h);
+        }else{
+          if(!icons[record.source])continue;node=icons[record.source].createInstance();node.resize(w,h);
+        }
       }else if(record.role==='text'){
         node=label(record.text,record.fontSize,record.color,record.font?.includes('Cinzel'));
         node.textAutoResize='HEIGHT';node.resize(w,Math.max(h,1));

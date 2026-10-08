@@ -17,11 +17,13 @@ def rect(box, fill, edge=P['border'], radius=8):
     return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{radius}" fill="{fill}" stroke="{edge}" stroke-width="1"/>'
 
 
-def artwork(source, box, identifier):
+def artwork(source, box, identifier, tint=None):
     path = ROOT/'client'/source.removeprefix('res://')
     if not path.is_file() or path.suffix != '.svg':
         return ''
     art = path.read_text()
+    if '/heraldry/' in source and tint:
+        art = art.replace('#ffffff',tint).replace('#fff"',tint+'"').replace('white',tint)
     for name in re.findall(r'\bid="([^"]+)"', art):
         art = art.replace(f'id="{name}"',f'id="{identifier}-{name}"').replace(f'url(#{name})',f'url(#{identifier}-{name})')
     x,y,w,h=box
@@ -58,7 +60,7 @@ def screen_svg(data):
             body+=text(n['text'],[x+36,y+(h-n['fontSize'])/2-3,w-48,n['fontSize']*1.3],n['fontSize'],n['colorText'],'Cinzel',True)
             if n.get('icon'):body+=artwork(n['icon'],[x+10,y+(h-22)/2,22,22],f'b{i}')
         elif role=='text':body+=text(n['text'],n['bounds'],n['fontSize'],n['color'],n.get('font','Noto Sans'),n.get('align')==1)
-        elif role=='art':body+=artwork(n['source'],n['bounds'],f'a{i}')
+        elif role=='art':body+=artwork(n['source'],n['bounds'],f'a{i}',n.get('tint'))
         elif role=='field':body+=text(n['text'],[x+10,y+8,w-20,h-16],n['fontSize'])
         elif role in ['progress','slider']:
             body+=rect([x,y+h/2-3,w,6],P['raised'],P['border'],3)
@@ -85,6 +87,8 @@ def main():
             if source.is_file():bundle.write(source,'royal-dawn/'+source.name)
         for source in sorted((ROOT/'client/assets/ui/dawn').glob('*.svg')):
             bundle.write(source,'royal-dawn/assets/'+source.name)
+        for source in sorted((ROOT/'client/assets/heraldry').glob('*.svg')):
+            bundle.write(source,'royal-dawn/heraldry/'+source.name)
         for source in (ROOT/'client/assets/fonts').glob('*.ttf'):
             bundle.write(source,'royal-dawn/fonts/'+source.name)
         for source in (ROOT/'client/assets/fonts').glob('*.txt'):
