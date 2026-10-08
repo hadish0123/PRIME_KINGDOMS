@@ -186,6 +186,10 @@ func run() -> void:
 			await RenderingServer.frame_post_draw
 			check(root.get_texture().get_image().save_png("res://builds/royal-"+str(section).to_lower()+".png")==OK,"Workspace could not be captured: "+section)
 	# Check the actual server-populated council at different viewport sizes.
+	# Full 3D/menu images were captured above. This sweep checks control bounds
+	# and readable actions; repainting the same scenery adds no layout coverage
+	# and exhausts software-renderer time on CI. Keep the native UI visible.
+	game.world_root.visible = false
 	for viewport_size in [Vector2i(1280,720),Vector2i(1536,864),Vector2i(960,540)]:
 		print("NATIVE_LAYOUT_VIEWPORT ",viewport_size," ",Time.get_ticks_msec())
 		root.size = viewport_size
@@ -196,6 +200,7 @@ func run() -> void:
 			check_layout(game,panel,section)
 			print("NATIVE_LAYOUT_PASS ",section," ",Time.get_ticks_msec())
 	root.size = Vector2i(1280,720)
+	game.world_root.visible = true
 	game.preferences.quality = 1
 	game.preferences.apply(game)
 	if DisplayServer.get_name() != "headless":
