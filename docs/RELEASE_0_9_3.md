@@ -8,6 +8,8 @@ Clan creation remains restricted to Level 15 and 500 Gold. Its real 64-plot regi
 
 Settlement refresh now includes army orders and reports in the same authoritative transaction. A newly arrived battle cannot leave the council displaying an earlier territory count or garrison alongside a newer report. Older server releases retain their compatible command endpoint during rollout.
 
+Initial scene rendering finishes before the settlement request begins, so first-use shader compilation cannot consume its network deadline. A missing first snapshot displays a retryable council, enters connection recovery and restores the same account without duplicating villagers or troops.
+
 Additive migration 011 grants level-1 walls/gatehouse to missing initial defenses and changes new-account defaults. It preserves completed upgrades and unfinished defense queues, balances, XP, identities and all historical migrations. There is no reset. App/backend version 0.9.3; Android version code 17. Godot 4.7.2 GL Compatibility remains unchanged.
 
 Validation gates: 13 backend unit tests, native PostgreSQL integration (including all six earned realm stages, boundary filtering and preservation on upgrade), GDScript import, actual native fresh-account and clan rendering, reconnect/lifecycle, bounded visual geometry, APK export and v2/v3 signature verification. Images starter-village.png and clan-region.png are captured through real API flows. CI publishes the candidate only after its authority and Android gates pass.

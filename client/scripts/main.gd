@@ -650,6 +650,9 @@ func enter_world(game_state: Dictionary) -> void:
 	connection_label.text = "● Connected · realm restored"
 	apply_control_state()
 	await get_tree().process_frame
+	# Finish the first settlement draw before callers start an HTTP deadline.
+	# Shader compilation and texture uploads can block the main thread on entry.
+	if DisplayServer.get_name() != "headless": await RenderingServer.frame_post_draw
 
 func select_settlement(screen_position: Vector2) -> void:
 	if not in_world or not strategy_camera.enabled: return
@@ -749,6 +752,7 @@ func recover_connection() -> void:
 	connection_label.text = "Connected · realm restored"
 	await kingdom_panel.refresh()
 	if epoch!=world_epoch or not in_world: return
+	if not network_online: return
 	if not kingdom_panel.pending_path.is_empty():
 		await kingdom_panel.submit(kingdom_panel.pending_path,kingdom_panel.pending_body)
 	apply_control_state()

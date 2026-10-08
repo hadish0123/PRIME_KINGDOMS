@@ -29,7 +29,17 @@ func run() -> void:
 		quit(1)
 		return
 	await game.enter_world(scene.data)
+	# A failed first snapshot must leave a recoverable UI and the same account.
+	game.api.base_url = "http://127.0.0.1:1"
 	await game.kingdom_panel.refresh()
+	check(not game.network_online and game.kingdom_panel.kingdom.is_empty(),"Initial snapshot loss left an online empty council")
+	game.api.base_url = base
+	await game.recover_connection()
+	check(game.network_online and game.state.player.id==scene.data.player.id,"Initial snapshot loss failed to recover the same player")
+	if game.kingdom_panel.kingdom.is_empty():
+		check(false,"Recovered initial snapshot is empty")
+		quit(1)
+		return
 	check(game.in_world and game.state.scene.halfSize == 128,"Strategy entry did not select a bounded settlement")
 	check(game.terrain.chunks.size()==4 and game.terrain.horizon.is_empty(),"Settlement allocated streamed world geometry")
 	game.terrain.stream_at(Vector3(9600,0,-9600))

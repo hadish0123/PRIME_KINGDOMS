@@ -176,6 +176,8 @@ func refresh() -> void:
 		busy = false
 		rebuild()
 		status.text = "Could not refresh realm. Retry when connected."
+		status.visible = true
+		if response.status==0 or response.status>=500 or response.error=="invalid_response": game.connection_failed()
 
 func submit(path: String, body: Dictionary) -> void:
 	if busy or not game.network_online: return
@@ -451,9 +453,12 @@ func rebuild() -> void:
 		build_map(page("Map"))
 		build_reports(page("Reports"))
 		for title in ["Commanders","Goals","Inbox","Rankings","Wars","Chat"]: build_extra(page(title),title)
-	tabs.current_tab = mini(selected,maxi(0,tabs.get_tab_count()-1))
-	if not desired_section.is_empty(): select_section(desired_section)
-	navigation.selected = tabs.current_tab
+	if tabs.get_tab_count()>0:
+		tabs.current_tab = clampi(selected,0,tabs.get_tab_count()-1)
+		if not desired_section.is_empty(): select_section(desired_section)
+		navigation.selected = tabs.current_tab
+	else:
+		navigation.disabled = true
 	var action_shell = PanelContainer.new()
 	action_shell.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	column.add_child(action_shell)
@@ -846,7 +851,9 @@ func build_clans(column: VBoxContainer) -> void:
 	column.add_child(region_card)
 	var region_body = VBoxContainer.new()
 	region_card.add_child(region_body)
-	region_body.add_child(game.label(Text.copy("[%s] %s · Clan Region") % [group.tag,group.name],20,Color(0.94,0.80,0.50)))
+	var region_title = game.label(Text.copy("[%s] %s · Clan Region") % [group.tag,group.name],20,Color(0.94,0.80,0.50))
+	region_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	region_body.add_child(region_title)
 	var region_row = HBoxContainer.new()
 	region_row.add_theme_constant_override("separation",14)
 	region_body.add_child(region_row)
