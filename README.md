@@ -4,10 +4,16 @@ An online medieval realm strategy game for Android, built with Godot 4.7.2,
 GL Compatibility, Node.js 24 and PostgreSQL. The ruler is a visual court
 representation. Players command settlement development, armies and territory.
 
-The current 0.9.4 candidate is developed on feature/royal-frontier-094.
-Its editable [Royal Frontier design](https://www.figma.com/design/ENUteLxvRgApkWKUmrYQ5w)
-and native interface share a dark emerald/brass palette, clearer resource counters,
-vertical navigation, a server-driven realm guide and a framed clan region.
+The current 0.9.5 candidate is developed on feature/royal-dawn-095.
+Royal Dawn uses ivory/champagne surfaces, sage accents, original vector icons,
+architectural building plates and a crown-and-keep PRIME KINGDOMS identity.
+All 15 council sections, login and settings inherit the native design system.
+Homes use cream plaster, terracotta roofs, sage glass, shutters, planters and
+sheltered entries. Earned mature stages retain their own architectural palette.
+The [design source](design/royal-dawn/README.md) includes pinned editable artwork,
+semantic tokens, all-screen layout export and a Figma importer.
+The existing [Figma file](https://www.figma.com/design/ENUteLxvRgApkWKUmrYQ5w)
+remains on Royal Frontier: the Starter MCP quota blocks Royal Dawn writes.
 Production readiness remains subject to the gates and open items in
 [HANDOFF](docs/HANDOFF.md). Existing player identities, worlds, villages, resident
 identities, resources and queues are preserved.

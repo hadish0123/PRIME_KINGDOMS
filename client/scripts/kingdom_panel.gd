@@ -284,6 +284,39 @@ func page(title: String) -> VBoxContainer:
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation",10)
 	scroll.add_child(column)
+	var introductions = {
+		"Overview":["Your Realm","Earn the milestones that carry your village toward an empire."],
+		"Queues":["Royal Works","Construction, training and research continue while you are away."],
+		"Army":["The Royal Host","Assign your soldiers, choose a formation and prepare your next campaign."],
+		"Empire":["Your Royal Standard","Give your realm its name, colors and heraldic identity."],
+		"Reports":["Campaign Chronicle","Review the outcomes and replays of your completed campaigns."],
+		"Commanders":["Commanders","Select the leaders who will command your forces."],
+		"Goals":["Royal Ambitions","Complete your objectives and claim their rewards."],
+		"Inbox":["Royal Dispatches","Messages and notices for your realm."],
+		"Rankings":["Hall of Honor","Compare realm prestige and clan accomplishments."],
+		"Wars":["Clan Wars","Review the campaigns of your alliance."],
+		"Chat":["Council Conversation","Speak with the world or your clan."],
+	}
+	if introductions.has(title):
+		var banner = PanelContainer.new()
+		banner.add_theme_stylebox_override("panel",game.RoyalUI.flat(game.RoyalUI.RAISED,12))
+		column.add_child(banner)
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation",12)
+		banner.add_child(row)
+		var emblem = TextureRect.new()
+		emblem.texture = game.RoyalUI.action_icon(title)
+		emblem.custom_minimum_size = Vector2(46,46)
+		emblem.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		emblem.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row.add_child(emblem)
+		var copy = VBoxContainer.new()
+		copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(copy)
+		copy.add_child(game.label(introductions[title][0],20,game.RoyalUI.TEXT))
+		var description = game.label(introductions[title][1],13,game.RoyalUI.MUTED)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		copy.add_child(description)
 	return column
 
 func council_resource_chip(key: String, value: int) -> PanelContainer:
@@ -295,7 +328,7 @@ func council_resource_chip(key: String, value: int) -> PanelContainer:
 	row.add_theme_constant_override("separation",5)
 	chip.add_child(row)
 	row.add_child(game.ui_icon(game.resource_icon_index(key),Vector2(25,25)))
-	var amount = game.label(game.format_amount(value),13,Color(0.99,0.91,0.73))
+	var amount = game.label(game.format_amount(value),13,game.RoyalUI.TEXT)
 	amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(amount)
 	return chip
@@ -307,7 +340,7 @@ func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HFlowContai
 	for key in ["food","wood","stone","iron","gold"]:
 		if not cost.has(key): continue
 		var chip = PanelContainer.new()
-		var chip_style = game.panel_style(Color(0.034,0.030,0.023,0.98),Color(0.42,0.31,0.15))
+		var chip_style = game.panel_style(game.RoyalUI.RAISED,game.RoyalUI.BORDER)
 		chip_style.set_corner_radius_all(6)
 		chip_style.content_margin_left = 7
 		chip_style.content_margin_right = 7
@@ -318,11 +351,11 @@ func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HFlowContai
 		value_row.add_theme_constant_override("separation",4)
 		chip.add_child(value_row)
 		value_row.add_child(game.ui_icon(game.resource_icon_index(key),Vector2(21,21)))
-		value_row.add_child(game.label(str(int(cost[key])),13,Color(0.96,0.88,0.71)))
+		value_row.add_child(game.label(str(int(cost[key])),13,game.RoyalUI.TEXT))
 		row.add_child(chip)
 	if duration_seconds >= 0:
 		var time_chip = PanelContainer.new()
-		var time_style = game.panel_style(Color(0.034,0.030,0.023,0.98),Color(0.42,0.31,0.15))
+		var time_style = game.panel_style(game.RoyalUI.RAISED,game.RoyalUI.BORDER)
 		time_style.set_corner_radius_all(6)
 		time_style.content_margin_left = 8
 		time_style.content_margin_right = 8
@@ -333,7 +366,7 @@ func build_cost_row(cost: Dictionary, duration_seconds: int = -1) -> HFlowContai
 		time_row.add_theme_constant_override("separation",4)
 		time_chip.add_child(time_row)
 		time_row.add_child(game.ui_icon(14,Vector2(20,20)))
-		time_row.add_child(game.label(Text.duration(duration_seconds),13,Color(0.88,0.84,0.74)))
+		time_row.add_child(game.label(Text.duration(duration_seconds),13,game.RoyalUI.MUTED))
 		row.add_child(time_chip)
 	return row
 
@@ -346,7 +379,7 @@ func building_thumbnail(kind: String,key: String) -> PanelContainer:
 	picture.texture = game.RoyalUI.building(key if kind=="building" else "academy")
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(picture)
 	return frame
@@ -364,15 +397,15 @@ func gold_action_button(text_value: String, callback: Callable) -> Button:
 	center.add_child(row)
 	var icon = game.ui_icon(18,Vector2(26,26))
 	row.add_child(icon)
-	var title = game.label(text_value,20,Color(0.14,0.09,0.025))
+	var title = game.label(text_value,20,game.RoyalUI.TEXT)
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(title)
 	item.draw.connect(func():
-		var icon_color = Color(0.32,0.26,0.15) if item.disabled else Color(0.18,0.12,0.04)
-		var title_color = Color(0.18,0.16,0.12) if item.disabled else Color(0.14,0.09,0.025)
+		var icon_color = Color(1,1,1,0.5) if item.disabled else Color.WHITE
+		var title_color = game.RoyalUI.DISABLED if item.disabled else game.RoyalUI.TEXT
 		if icon.modulate!=icon_color: icon.modulate = icon_color
 		if title.get_theme_color("font_color")!=title_color: title.add_theme_color_override("font_color",title_color))
-	for entry in [["normal",Color.WHITE],["hover",Color(1.10,1.07,1.0)],["pressed",Color(0.78,0.70,0.55)],["disabled",Color(0.62,0.59,0.50)]]:
+	for entry in [["normal",Color.WHITE],["hover",Color(1.0,1.0,0.96)],["pressed",Color(0.94,0.94,0.88)],["disabled",Color(0.98,0.98,0.95)]]:
 		item.add_theme_stylebox_override(entry[0],game.royal_style(true,10,entry[1]))
 	return item
 
@@ -417,7 +450,7 @@ func rebuild() -> void:
 	navigation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	navigation.custom_minimum_size.y = 44
 	for title in ["Overview","Queues","Buildings","Army","Research","Empire","Clan","Map","Reports","Commanders","Goals","Inbox","Rankings","Wars","Chat"]:
-		navigation.add_item(Text.copy("World" if title=="Map" else title))
+		navigation.add_icon_item(game.RoyalUI.action_icon(title),Text.copy("World" if title=="Map" else title))
 		navigation.set_item_metadata(navigation.item_count-1,title)
 	navigation.item_selected.connect(func(index): open_section(str(navigation.get_item_metadata(index))))
 	heading.add_child(navigation)
@@ -428,7 +461,7 @@ func rebuild() -> void:
 	# The persistent header already exposes identity and resources. Wide social
 	# and tactical workspaces use this space for the actual region/army content.
 	if not kingdom.is_empty() and anchor_right<0.5:
-		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
+		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,game.RoyalUI.TEXT))
 		var resource_strip = GridContainer.new()
 		resource_strip.columns = 5
 		resource_strip.add_theme_constant_override("h_separation",6)
@@ -497,7 +530,7 @@ func cost_text(cost: Dictionary) -> String:
 
 func build_overview(column: VBoxContainer) -> void:
 	var realm: Dictionary = kingdom.realm
-	column.add_child(game.label(Text.copy("%s · %d controlled territories") % [realm.name,int(realm.ownedTiles)],20,Color(0.94,0.80,0.50)))
+	column.add_child(game.label(Text.copy("%s · %d controlled territories") % [realm.name,int(realm.ownedTiles)],20,game.RoyalUI.GOLD_TEXT))
 	column.add_child(game.label(Text.copy("Ruler level %d · Keep %d · Conquests %d · Prestige %d") % [kingdom.progression.level,kingdom.buildings.keep,kingdom.progression.conquests,kingdom.progression.prestige],15))
 	if realm.next != null:
 		var next: Dictionary = realm.next
@@ -566,11 +599,11 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		title_stack.add_theme_constant_override("separation",5)
 		card_header.add_child(title_stack)
-		var title = game.label(Text.copy("%s · Level %d") % [catalog_name(kind,key_value),quote.current],18,Color(0.98,0.83,0.51))
+		var title = game.label(Text.copy("%s · Level %d") % [catalog_name(kind,key_value),quote.current],18,game.RoyalUI.TEXT)
 		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
 		title_stack.add_child(title)
-		var purpose = game.label(str(quote.get("purpose","")),13,Color(0.87,0.82,0.72))
+		var purpose = game.label(str(quote.get("purpose","")),13,game.RoyalUI.MUTED)
 		purpose.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		title_stack.add_child(purpose)
 		var effect: Dictionary = quote.get("currentEffect",{})
@@ -584,12 +617,12 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		for requirement in quote.get("requirements",[]):
 			var missing: bool = int(requirement.current)<int(requirement.level)
 			unmet = unmet or missing
-			details.add_child(game.label(Text.copy("Requires %s · Level %d (%d reached)") % [catalog_name(str(requirement.kind),str(requirement.key)),int(requirement.level),int(requirement.current)],13,Color(0.82,0.56,0.43) if missing else Color(0.66,0.76,0.62)))
+			details.add_child(game.label(Text.copy("Requires %s · Level %d (%d reached)") % [catalog_name(str(requirement.kind),str(requirement.key)),int(requirement.level),int(requirement.current)],13,game.RoyalUI.DANGER if missing else game.RoyalUI.SUCCESS))
 		if quote.current>=quote.maxLevel: details.add_child(game.label("This improvement has reached its highest level.",14))
 		var shortfall: Dictionary = {}
 		for resource in quote.cost:
 			if int(quote.cost[resource])>int(kingdom.resources[resource]): shortfall[resource]=int(quote.cost[resource])-int(kingdom.resources[resource])
-		if not shortfall.is_empty(): details.add_child(game.label("Needed: "+cost_text(shortfall),13,Color(0.82,0.56,0.43)))
+		if not shortfall.is_empty(): details.add_child(game.label("Needed: "+cost_text(shortfall),13,game.RoyalUI.DANGER))
 		var task = kingdom.tasks.filter(func(t): return t.kind==kind)
 		if not task.is_empty() and task[0].key==key_value:
 			var timer = game.label("",16)
@@ -601,12 +634,12 @@ func build_upgrades(column: VBoxContainer,kind: String,path: String) -> void:
 		details.add_child(action)
 
 func build_marches(column: VBoxContainer) -> void:
-	column.add_child(game.label("Army Campaigns",18,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("Army Campaigns",18,game.RoyalUI.GOLD_TEXT))
 	var marches: Array = command_data.get("marches",[])
 	if marches.is_empty(): column.add_child(game.label("Your armies are home. Select a holding on the world map to issue an order.",14))
 	for march in marches:
 		var card = PanelContainer.new()
-		card.add_theme_stylebox_override("panel",game.panel_style(Color(0.07,0.066,0.057)))
+		card.add_theme_stylebox_override("panel",game.panel_style(game.RoyalUI.SURFACE))
 		column.add_child(card)
 		var details = VBoxContainer.new()
 		card.add_child(details)
@@ -632,7 +665,7 @@ func build_marches(column: VBoxContainer) -> void:
 			details.add_child(game.button("View Report",func(): show_replay(report)))
 	for arriving in command_data.get("incoming",[]):
 		var friendly: bool = arriving.kind=="reinforce"
-		column.add_child(game.label(Text.copy("%s · %s · %s") % [str(arriving.realmName),Text.copy("Allied Guard" if friendly else "Enemy Army"),Text.name_for(str(arriving.phase))],14,Color(0.73,0.83,0.69) if friendly else Color(0.90,0.55,0.45)))
+		column.add_child(game.label(Text.copy("%s · %s · %s") % [str(arriving.realmName),Text.copy("Allied Guard" if friendly else "Enemy Army"),Text.name_for(str(arriving.phase))],14,game.RoyalUI.SUCCESS if friendly else game.RoyalUI.DANGER))
 		if arriving.route.arrivesAt!=null:
 			var timer = game.label("",14)
 			column.add_child(timer)
@@ -661,7 +694,7 @@ func build_units(column: VBoxContainer) -> void:
 			row.add_child(amount)
 			selectors[str(unit.type)] = amount
 	column.add_child(game.label(Text.copy("Army capacity: %d / %d") % [alive,kingdom.armyCapacity],16))
-	column.add_child(game.label("ARMY PRESET · choose the exact force you command into battle",16,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("ARMY PRESET · choose the exact force you command into battle",16,game.RoyalUI.GOLD_TEXT))
 	var slot = SpinBox.new()
 	slot.min_value = 1
 	slot.max_value = 5
@@ -704,7 +737,7 @@ func build_units(column: VBoxContainer) -> void:
 			column.add_child(game.label(Text.copy("Slot %d · %s · %s / %s%s\n%s") % [preset.slot,preset.name,Text.name_for(preset.formation),Text.name_for(preset.stance)," · DEFENSE" if preset.isDefense else "",", ".join(parts)],14))
 			var delete_slot = int(preset.slot)
 			column.add_child(game.button("Disband "+str(preset.name),func(): submit("/v2/army/preset/delete",{"slot":delete_slot})))
-	column.add_child(game.label("Training",16,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("Training",16,game.RoyalUI.GOLD_TEXT))
 	for entry in kingdom.catalog:
 		if entry.kind != "unit": continue
 		var key_value: String = entry.key
@@ -753,7 +786,7 @@ func build_map(column: VBoxContainer) -> void:
 	if map_data.is_empty():
 		column.add_child(game.label("Survey the frontier to find resources and neighboring holdings.",15))
 		return
-	column.add_child(game.label(str(map_data.region.name),20,Color(0.94,0.80,0.50)))
+	column.add_child(game.label(str(map_data.region.name),20,game.RoyalUI.GOLD_TEXT))
 	var routes = CampaignMap.new()
 	routes.tiles = map_data.tiles
 	routes.regions = map_data.get("regions",[])
@@ -793,12 +826,13 @@ func build_map(column: VBoxContainer) -> void:
 			desired_section="Map"
 			rebuild())
 		card.custom_minimum_size = Vector2(116,62)
+		card.clip_text = true
 		card.add_theme_font_size_override("font_size",12)
 		card.tooltip_text = ownership
-		card.add_theme_stylebox_override("normal",game.panel_style(color.darkened(0.5),Color(0.74,0.64,0.32) if own else Color(0.36,0.38,0.30)))
+		card.add_theme_stylebox_override("normal",game.panel_style(game.RoyalUI.SURFACE.lerp(color,0.15),game.RoyalUI.GOLD_TEXT if own else game.RoyalUI.BORDER))
 		grid.add_child(card)
 	if selected_target.is_empty(): return
-	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+Text.name_for(str(selected_target.kind)),20,Color(0.94,0.80,0.50)))
+	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+Text.name_for(str(selected_target.kind)),20,game.RoyalUI.GOLD_TEXT))
 	var owner: String = str(selected_target.empireName) if selected_target.empireName!=null else "Unclaimed Territory"
 	column.add_child(game.label(owner,15))
 	var friendly = selected_target.kind=="settlement" and selected_target.ownerPlayerId!=game.state.player.id and selected_target.get("ownerClanId")!=null and selected_target.get("ownerClanId")==map_data.region.get("clanId")
@@ -853,7 +887,7 @@ func build_clans(column: VBoxContainer) -> void:
 	column.add_child(region_card)
 	var region_body = VBoxContainer.new()
 	region_card.add_child(region_body)
-	var region_title = game.label(Text.copy("[%s] %s · Clan Region") % [group.tag,group.name],20,Color(0.94,0.80,0.50))
+	var region_title = game.label(Text.copy("[%s] %s · Clan Region") % [group.tag,group.name],20,game.RoyalUI.GOLD_TEXT)
 	region_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	region_body.add_child(region_title)
 	var region_row = HBoxContainer.new()
@@ -945,7 +979,7 @@ func build_reports(column: VBoxContainer) -> void:
 	for report in command_data.reports:
 		var outcome = "Victory" if report.won else ("Draw" if report.result=="draw" else "Defeat")
 		var enemy: String = str(report.defenderName) if report.perspective=="attacker" and report.defenderName!=null else str(report.attackerName) if report.perspective=="defender" else "Border Garrison"
-		column.add_child(game.label(outcome+" · "+str(report.target.get("name","Borderlands")),20,Color(0.94,0.80,0.50)))
+		column.add_child(game.label(outcome+" · "+str(report.target.get("name","Borderlands")),20,game.RoyalUI.GOLD_TEXT))
 		column.add_child(game.label(enemy+" · "+Text.name_for(str(report.territoryChange)),15))
 		var losses: Dictionary = report.attackerLosses if report.perspective=="attacker" else report.defenderLosses
 		for key in losses:
@@ -1019,7 +1053,7 @@ func build_extra(column: VBoxContainer,section: String) -> void:
 	var data: Dictionary = extra_data[section]
 	if section=="Commanders":
 		for leader in data.commanders:
-			column.add_child(game.label(str(leader.name)+" · "+str(leader.title),20,Color(0.94,0.80,0.50)))
+			column.add_child(game.label(str(leader.name)+" · "+str(leader.title),20,game.RoyalUI.GOLD_TEXT))
 			column.add_child(game.label(Text.copy("%s leadership · Level %d") % [Text.name_for(str(leader.specialty)),leader.level],15))
 			var key: String = leader.key
 			if not leader.owned:
@@ -1030,7 +1064,7 @@ func build_extra(column: VBoxContainer,section: String) -> void:
 		column.add_child(game.label("Assign an appointed commander while organizing your army. Campaigns improve their leadership.",14))
 	elif section=="Goals":
 		for goal in data.goals:
-			column.add_child(game.label(str(goal.title),20,Color(0.94,0.80,0.50)))
+			column.add_child(game.label(str(goal.title),20,game.RoyalUI.GOLD_TEXT))
 			column.add_child(game.label(str(goal.message),15))
 			column.add_child(game.label(Text.copy("%d / %d · %d XP · %d Gold") % [goal.progress,goal.target,goal.xp,goal.gold],14))
 			var key: String = goal.key
@@ -1040,20 +1074,20 @@ func build_extra(column: VBoxContainer,section: String) -> void:
 	elif section=="Inbox":
 		if data.messages.is_empty(): column.add_child(game.label("Your couriers have no new dispatches.",16))
 		for message in data.messages:
-			column.add_child(game.label(str(message.title),20,Color(0.94,0.80,0.50)))
+			column.add_child(game.label(str(message.title),20,game.RoyalUI.GOLD_TEXT))
 			column.add_child(game.label(str(message.message),15))
 			var id: String = message.id
 			if not message.read: column.add_child(game.button("Mark Read",func(): submit("/v2/inbox/read",{"id":id})))
 	elif section=="Rankings":
-		column.add_child(game.label("Realm Prestige",20,Color(0.94,0.80,0.50)))
+		column.add_child(game.label("Realm Prestige",20,game.RoyalUI.GOLD_TEXT))
 		for ruler in data.rulers:
 			column.add_child(game.label(Text.copy("%d · %s · %d Prestige · %d Conquests") % [ruler.rank,ruler.name,ruler.prestige,ruler.conquests],15))
-		column.add_child(game.label("Clan Accomplishments",20,Color(0.94,0.80,0.50)))
+		column.add_child(game.label("Clan Accomplishments",20,game.RoyalUI.GOLD_TEXT))
 		for group in data.clans: column.add_child(game.label(Text.copy("[%s] %s · Level %d") % [group.tag,group.name,group.level],15))
 	elif section=="Wars":
 		if data.wars.is_empty(): column.add_child(game.label("Your clan is at peace. Officers may declare a war from the clan directory.",16))
 		for war in data.wars:
-			column.add_child(game.label(str(war.attackerName)+" · "+str(war.defenderName),20,Color(0.94,0.80,0.50)))
+			column.add_child(game.label(str(war.attackerName)+" · "+str(war.defenderName),20,game.RoyalUI.GOLD_TEXT))
 			column.add_child(game.label(Text.copy("%s · %d : %d") % [Text.name_for(str(war.phase)),war.attackerScore,war.defenderScore],16))
 			if war.phase in ["preparation","battle"]:
 				var timer = game.label("",15)

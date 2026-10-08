@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib,json,struct
 root=Path(__file__).resolve().parents[2]
 assets=[]
-for manifest_path in ['docs/ROYAL_ART_0_9_2.json','design/royal-frontier/assets.json']:
+for manifest_path in ['docs/ROYAL_ART_0_9_2.json','design/royal-frontier/assets.json','design/royal-dawn/assets.json']:
     assets.extend(json.loads((root/manifest_path).read_text())['assets'])
 for entry in assets:
     source=(root/entry['path']).read_bytes()

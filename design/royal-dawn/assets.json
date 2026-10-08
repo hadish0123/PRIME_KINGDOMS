@@ -1,0 +1,398 @@
+{
+  "version": "0.9.5",
+  "direction": "Ivory surfaces, champagne gold, sage glass and the original crown-and-keep crest.",
+  "assets": [
+    {
+      "path": "client/assets/ui/dawn/army.svg",
+      "bytes": 350,
+      "sha256": "6a1d065e027166b4b0f8a70197723e6458e27e0ebb82dea533f300df9de32f7a",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/back.svg",
+      "bytes": 261,
+      "sha256": "4b3a7356c83ba3bed3b2b495da69104fbc6c25dc1814f2aba3bca7798a5d4b11",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/brand-crest.svg",
+      "bytes": 675,
+      "sha256": "a4aae2631ef4cad273003200488839344193bfd62f4e677fa2bfcf6e1caea23f",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-academy.svg",
+      "bytes": 1489,
+      "sha256": "b5b38cb6f95bfea0c0a4afff10199c15708258b4f24c113b6ee97240d633fbd9",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-archery_range.svg",
+      "bytes": 1306,
+      "sha256": "5403c7622efbe1b17df2c0013517da908b452f2c082b1ec4671fb37724357c12",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-barracks.svg",
+      "bytes": 1306,
+      "sha256": "c10297a8c80d612133dd1c5d8869fe26d379a3276ea15b851ee5877c22f424b2",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-blacksmith.svg",
+      "bytes": 1386,
+      "sha256": "28e03474b2a9c1bd7040ca5bae03b400b72991ca5c7f36a1960a33e3e8695be4",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-clan_hall.svg",
+      "bytes": 1511,
+      "sha256": "06b585f3672d69de8630a839359d9c355333e28b81af54db2c1d9a40e7750f58",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-commander_hall.svg",
+      "bytes": 1511,
+      "sha256": "06b585f3672d69de8630a839359d9c355333e28b81af54db2c1d9a40e7750f58",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-embassy.svg",
+      "bytes": 1694,
+      "sha256": "a4c9c442f6824bcb92d9801c2983256e15bb7277489ae78bb1318d7c2e3ea9d4",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-farm.svg",
+      "bytes": 1383,
+      "sha256": "e0cce182a988b6b60e1ae735f1153c5bd99333fd0bcf8951506a886ea6c5da79",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-gatehouse.svg",
+      "bytes": 1352,
+      "sha256": "09fe62e670486bdc858ddafb6fa8157af3d8379dead36da78d2283b3e6b02191",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-granary.svg",
+      "bytes": 1386,
+      "sha256": "e16086dd71eaf3f6b15fc184e3053a491b788c3e6097d606d14922663019bd0a",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-hospital.svg",
+      "bytes": 1555,
+      "sha256": "7d983cf33a4b1473a2b3060b0c21fc8ba72a8666415a7024d85d7d656645f33e",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-iron_mine.svg",
+      "bytes": 1320,
+      "sha256": "9864be4158140795a69a9656dad841abdc52192c2c26bb1ae2ab11d1f51643f0",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-keep.svg",
+      "bytes": 1352,
+      "sha256": "09fe62e670486bdc858ddafb6fa8157af3d8379dead36da78d2283b3e6b02191",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-lumber_mill.svg",
+      "bytes": 1476,
+      "sha256": "61c7fe2f3cdb1c9fbd9f2293fd13efbee03243c460062f52d81b458b9f99c465",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-market.svg",
+      "bytes": 1361,
+      "sha256": "6a95d55bc19119c2f08ad8bda3966e76cf63136d0215e6ac91aec918dfc8e65d",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-quarry.svg",
+      "bytes": 1320,
+      "sha256": "9864be4158140795a69a9656dad841abdc52192c2c26bb1ae2ab11d1f51643f0",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-siege_workshop.svg",
+      "bytes": 1386,
+      "sha256": "28e03474b2a9c1bd7040ca5bae03b400b72991ca5c7f36a1960a33e3e8695be4",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-stable.svg",
+      "bytes": 1361,
+      "sha256": "8a020d593779f1df523f8304e769ace8279b9dee3a579dbddafc004bbd2f1464",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-trading_post.svg",
+      "bytes": 1361,
+      "sha256": "8a020d593779f1df523f8304e769ace8279b9dee3a579dbddafc004bbd2f1464",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-training_grounds.svg",
+      "bytes": 1306,
+      "sha256": "c10297a8c80d612133dd1c5d8869fe26d379a3276ea15b851ee5877c22f424b2",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-walls.svg",
+      "bytes": 1352,
+      "sha256": "6eedbf97b5f2770b05c0c3bdc56873a23100d100fb26ae88ee6396abb14accb9",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-warehouse.svg",
+      "bytes": 1386,
+      "sha256": "28e03474b2a9c1bd7040ca5bae03b400b72991ca5c7f36a1960a33e3e8695be4",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-watch_towers.svg",
+      "bytes": 1352,
+      "sha256": "09fe62e670486bdc858ddafb6fa8157af3d8379dead36da78d2283b3e6b02191",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/building-workshop.svg",
+      "bytes": 1386,
+      "sha256": "28e03474b2a9c1bd7040ca5bae03b400b72991ca5c7f36a1960a33e3e8695be4",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/buildings.svg",
+      "bytes": 396,
+      "sha256": "a302cd9a6d964177f9c63b3279e13ee1dc14fadb2474ec9a2fc0700f47945c81",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/chat.svg",
+      "bytes": 291,
+      "sha256": "8dfdb615f7d1eca7362ade1cc8d06f50da1cb04d0b2c2b037ada9bd65ee133c2",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/check.svg",
+      "bytes": 316,
+      "sha256": "5f8e2faa80e34e7732206cf468b37b6e7d3500bd198b5b18a8417f0f033b6307",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/chevron.svg",
+      "bytes": 252,
+      "sha256": "af25e915a18b4572023767d3595e557620ffa6198e481ac22e77083e799a215d",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/clan.svg",
+      "bytes": 416,
+      "sha256": "83be7e4d05c81084fb955309b279cb0f2ab83725b504ebed31521a7d1d48ce05",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/clock.svg",
+      "bytes": 291,
+      "sha256": "04bbc06050971c0b3ffdf0e8895dcb5814057ed9520cf0bc6cb22c4a38726a14",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/close.svg",
+      "bytes": 257,
+      "sha256": "adcd331a6bc2b05851a62cbb1ee2568d675206018164fbf7cc7c1b2ab11aef82",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/construct.svg",
+      "bytes": 339,
+      "sha256": "adc85b4c2526a393a6d0f9e26a49ba5ceb48ef1616f898e0b394c1b39db9f158",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/crown.svg",
+      "bytes": 359,
+      "sha256": "e593db0c23ba044e978c10dbc3c812a9db87daa8052643fb0a27cb111057d0ef",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/fine.svg",
+      "bytes": 524,
+      "sha256": "bfab6e91e6921e1e9d27d5f88e8b7a3f51c9792e331cdd646c7c3a408f9d184e",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/food.svg",
+      "bytes": 328,
+      "sha256": "7a7ed2493d36f1cf61fc9f7d0fee3de005d6cdd7ef4826d3822bf3c6978b46bc",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/forward.svg",
+      "bytes": 261,
+      "sha256": "6009e2a94e43b74dc63d2ee7458486555837ad6abf36535111959847155a26fa",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/frame.svg",
+      "bytes": 664,
+      "sha256": "59ccefb86e04aab7009d563000eec5387e52ba59bb024b1427ed2df3232d1b1b",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/goals.svg",
+      "bytes": 351,
+      "sha256": "bfa6bbd7b6685ce3005759d111152e1cf24d97ff31420d04b128a4de227b30ef",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/gold-coin.svg",
+      "bytes": 498,
+      "sha256": "4e516e3fe0e234b1a887e55bce3af4dcc7fc0eaf3674aaedbc67e4ddc7ce6bb6",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/gold.svg",
+      "bytes": 524,
+      "sha256": "92b5e29eb1093333ef99e2bd62cc56a0adafee1a4b8e9c3c9201ed9e6b508404",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/inbox.svg",
+      "bytes": 358,
+      "sha256": "ffc0658545694ee478045cf5e797b119021e1ae3aff39c881f8841f5fedd68d3",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/iron.svg",
+      "bytes": 375,
+      "sha256": "5353bebc21fc9a611e4a6b9db5912a865dd070cd7b21931c9296123be673997e",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/knob.svg",
+      "bytes": 304,
+      "sha256": "245275440fa3a1a2517cf47a050464bb9f0ba7941cd493a79bd21ba93702e141",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/refresh.svg",
+      "bytes": 312,
+      "sha256": "0f91836db5c2c7f01594b1214b47d507aa296b3619d09f1358bd129d69359b3e",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/research.svg",
+      "bytes": 405,
+      "sha256": "b74547656186ee794c8decea593672ea5800ca51b2381163a52c3485bdb44376",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/save.svg",
+      "bytes": 314,
+      "sha256": "f966b1076574600af34fe01b7d47271649189858fd385c35f8326a3f3c21183c",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/settings.svg",
+      "bytes": 363,
+      "sha256": "c8f6cfbbee2b180b7da49fc42ac2bcc736a60dced32763fd72288d1b7e94e1a1",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/stone.svg",
+      "bytes": 382,
+      "sha256": "1a11b67663775be9e9ff7af7c7ec1227275d9b03af79f25dc411d5d1391484f5",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/trade.svg",
+      "bytes": 283,
+      "sha256": "10f9586258886600eb2323e7b8e6265db9cbea9442eab1a9251fe8f027c369e9",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/unchecked.svg",
+      "bytes": 259,
+      "sha256": "38272685fed481eea016c941a102dd7bdab722057c5a5ece1d6069b6edeeaad5",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/wood.svg",
+      "bytes": 396,
+      "sha256": "0bef8b170d26bc08f6ee4fdd04b7db8fbfd7748728a17096db65f977c88710de",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/dawn/world.svg",
+      "bytes": 360,
+      "sha256": "6f143bbb2365fcabb7e3d7d64a1883f983c3023fd8299d2085d6986bdbed1356",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    },
+    {
+      "path": "client/icon.svg",
+      "bytes": 730,
+      "sha256": "2af6bb24218ca65ebf971d9f964a3453db032ca89bc0c71a22568739c37c47bf",
+      "source": "Original PRIME KINGDOMS Royal Dawn vector artwork",
+      "license": "Original project artwork; no external source"
+    }
+  ]
+}

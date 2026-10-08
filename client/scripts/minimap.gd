@@ -1,4 +1,5 @@
 extends Control
+const RoyalUI = preload("res://scripts/royal_ui.gd")
 
 var game: Node3D
 var view: SubViewport
@@ -48,16 +49,18 @@ func _process(delta: float) -> void:
 
 func draw_markers() -> void:
 	var center = size*0.5
+	overlay.draw_arc(center,size.x*0.5-6,0,TAU,80,RoyalUI.SURFACE,7,true)
 	overlay.draw_arc(center,size.x*0.5-4,0,TAU,80,Color(0.78,0.62,0.34),2,true)
 	overlay.draw_arc(center,size.x*0.5-9,0,TAU,80,Color(0.78,0.62,0.34,0.5),1,true)
 	for index in range(4):
 		var angle = index*PI*0.5
 		var at = center+Vector2(cos(angle),sin(angle))*(size.x*0.5-4)
 		var jewel = PackedVector2Array([at+Vector2(0,-5),at+Vector2(4,0),at+Vector2(0,5),at+Vector2(-4,0),at+Vector2(0,-5)])
-		overlay.draw_colored_polygon(jewel,Color(0.31,0.23,0.13))
+		overlay.draw_colored_polygon(jewel,RoyalUI.CHAMPAGNE)
 		overlay.draw_polyline(jewel,Color(0.80,0.66,0.37),1.0,true)
 	if not game.in_world or not is_instance_valid(game.strategy_camera): return
 	var focus: Vector3 = game.strategy_camera.focus
 	var marker = center+Vector2(focus.x,focus.z)*size.x/175.0
 	overlay.draw_arc(marker,9,0,TAU,24,Color(0.96,0.78,0.25),2,true)
-	overlay.draw_string(ThemeDB.fallback_font,Vector2(center.x-5,20),"N",HORIZONTAL_ALIGNMENT_LEFT,-1,15,Color(0.97,0.89,0.64))
+	overlay.draw_circle(Vector2(center.x,17),11,RoyalUI.SURFACE)
+	overlay.draw_string(ThemeDB.fallback_font,Vector2(center.x-5,22),"N",HORIZONTAL_ALIGNMENT_LEFT,-1,15,RoyalUI.TEXT)

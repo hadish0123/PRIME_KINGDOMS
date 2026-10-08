@@ -103,17 +103,9 @@ func _ready() -> void:
 	api.load_session()
 	if not api.token.is_empty(): await attempt_saved_session()
 
-func panel_style(color: Color, border: Color = Color(0.49,0.38,0.23)) -> StyleBoxFlat:
-	var style = StyleBoxFlat.new()
-	style.bg_color = color
-	style.border_color = border
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(7)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 11
-	style.content_margin_bottom = 11
-	style.shadow_color = Color(0,0,0,0.46)
+func panel_style(color: Color = RoyalUI.SURFACE, border: Color = RoyalUI.BORDER) -> StyleBoxFlat:
+	var style = RoyalUI.flat(color,12,border)
+	style.shadow_color = Color(0.24,0.20,0.12,0.16)
 	style.shadow_size = 4
 	style.shadow_offset = Vector2(0,2)
 	return style
@@ -157,10 +149,10 @@ func nav_icon_index(section: String) -> int:
 
 func apply_nav_style(item: Button,active: bool) -> void:
 	item.add_theme_stylebox_override("normal",royal_style(active,10))
-	item.add_theme_stylebox_override("hover",royal_style(true,10,Color(1.05,1.03,0.97)))
-	item.add_theme_stylebox_override("pressed",royal_style(true,10,Color(0.75,0.70,0.60)))
+	item.add_theme_stylebox_override("hover",royal_style(true,10,Color(1.0,1.0,0.98)))
+	item.add_theme_stylebox_override("pressed",royal_style(true,10,Color(0.94,0.93,0.87)))
 	var title: Label = item.get_meta("title_label",null)
-	if is_instance_valid(title): title.modulate = Color(0.20,0.13,0.045) if active else Color.WHITE
+	if is_instance_valid(title): title.add_theme_color_override("font_color",RoyalUI.LIGHT_GOLD if active else RoyalUI.TEXT)
 
 func set_nav_active(section: String) -> void:
 	for key in nav_buttons:
@@ -184,7 +176,7 @@ func premium_nav_button(section: String,callback: Callable) -> Button:
 	var pictogram = ui_icon(nav_icon_index(section),Vector2(42,42))
 	pictogram.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	row.add_child(pictogram)
-	var title = label(section,14,Color(0.97,0.88,0.69))
+	var title = label(section,14,RoyalUI.TEXT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
@@ -216,7 +208,7 @@ func profile_panel() -> PanelContainer:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation",1)
 	row.add_child(info)
-	profile_name_label = label("Ruler",17,Color(0.98,0.83,0.49))
+	profile_name_label = label("Ruler",17,RoyalUI.TEXT)
 	profile_name_label.clip_text = true
 	profile_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	profile_name_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
@@ -227,10 +219,10 @@ func profile_panel() -> PanelContainer:
 	profile_xp_bar.custom_minimum_size = Vector2(108,7)
 	profile_xp_bar.show_percentage = false
 	profile_xp_bar.max_value = 100
-	for entry in [["background",Color(0.09,0.085,0.06)],["fill",Color(0.91,0.69,0.29)]]:
+	for entry in [["background",RoyalUI.RAISED],["fill",RoyalUI.CHAMPAGNE]]:
 		var bar = StyleBoxFlat.new()
 		bar.bg_color = entry[1]
-		bar.border_color = Color(0.44,0.34,0.15)
+		bar.border_color = RoyalUI.BORDER
 		bar.set_border_width_all(1)
 		profile_xp_bar.add_theme_stylebox_override(entry[0],bar)
 	info.add_child(profile_xp_bar)
@@ -246,7 +238,7 @@ func crest_panel() -> PanelContainer:
 	hud_crest.texture = load("res://assets/heraldry/lion.svg")
 	hud_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hud_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	hud_crest.modulate = Color(0.96,0.72,0.25)
+	hud_crest.modulate = RoyalUI.GOLD_TEXT
 	hud_crest_card.add_child(hud_crest)
 	return hud_crest_card
 
@@ -278,7 +270,7 @@ func resource_card(key: String) -> PanelContainer:
 	resource_labels[key] = amount
 	return card
 
-func label(text_value: String, font_size: int = 18, color: Color = Color(0.86,0.84,0.76)) -> Label:
+func label(text_value: String, font_size: int = 18, color: Color = RoyalUI.TEXT) -> Label:
 	var item = Label.new()
 	item.text = Text.copy(text_value)
 	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -293,14 +285,18 @@ func button(text_value: String, callback: Callable) -> Button:
 	var item = Button.new()
 	item.text = Text.copy(text_value)
 	item.custom_minimum_size.y = 46
+	item.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	item.tooltip_text = Text.copy(text_value)
 	item.add_theme_font_size_override("font_size",16)
-	item.add_theme_color_override("font_color",Color(0.96,0.86,0.66))
-	item.add_theme_color_override("font_hover_color",Color(1.0,0.93,0.72))
-	item.add_theme_constant_override("icon_max_width",24)
+	item.add_theme_constant_override("icon_max_width",22)
+	item.add_theme_constant_override("h_separation",9)
 	item.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
-	for entry in [["normal",Color.WHITE],["hover",Color(1.12,1.08,0.95)],["pressed",Color(0.7,0.65,0.55)],["disabled",Color(0.45,0.45,0.43)]]:
-		item.add_theme_stylebox_override(entry[0],royal_style(false,10,entry[1]))
-	item.add_theme_color_override("font_disabled_color",Color(0.42,0.40,0.35))
+	if not text_value.is_empty():
+		item.icon = RoyalUI.action_icon(text_value)
+		item.expand_icon = true
+		# Expanded icons do not contribute to Godot's automatic minimum width.
+		# Reserve their space explicitly so short actions in an HBox remain legible.
+		item.custom_minimum_size.x = ceilf(item.get_theme_font("font").get_string_size(item.text,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x)+51
 	item.pressed.connect(func():
 		play_cue("select")
 		callback.call())
@@ -317,20 +313,7 @@ func input_field(placeholder: String, secret: bool = false) -> LineEdit:
 	return item
 
 func royal_theme() -> Theme:
-	var theme = Theme.new()
-	theme.default_font_size = 16
-	for type_name in ["Button","OptionButton","CheckButton","LineEdit","SpinBox"]:
-		for entry in [["normal",Color(0.055,0.050,0.043)],["hover",Color(0.14,0.11,0.075)],["pressed",Color(0.24,0.17,0.08)],["focus",Color(0.10,0.083,0.060)],["disabled",Color(0.06,0.058,0.052)]]:
-			theme.set_stylebox(entry[0],type_name,royal_style(false,10,Color(1.15,1.10,0.94) if entry[0]=="focus" else Color.WHITE))
-		theme.set_color("font_color",type_name,Color(0.92,0.83,0.65))
-		theme.set_color("font_hover_color",type_name,Color(1,0.9,0.7))
-		theme.set_color("font_focus_color",type_name,Color(1,0.9,0.7))
-		theme.set_color("font_placeholder_color",type_name,Color(0.59,0.56,0.49))
-	theme.set_stylebox("panel","PopupMenu",royal_style(false,10))
-	theme.set_stylebox("hover","PopupMenu",royal_style(false,10,Color(1.18,1.12,1.0)))
-	theme.set_color("font_color","PopupMenu",Color(0.9,0.84,0.7))
-	theme.set_color("font_hover_color","PopupMenu",Color(1,0.9,0.7))
-	return theme
+	return RoyalUI.theme()
 
 func build_ui() -> void:
 	ui = CanvasLayer.new()
@@ -358,8 +341,21 @@ func build_ui() -> void:
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation",12)
 	auth_card.add_child(column)
-	column.add_child(label("PRIME KINGDOMS",32,Color(0.92,0.77,0.47)))
-	column.add_child(label("Build a civilization. Command an empire.",17))
+	var brand = HBoxContainer.new()
+	brand.add_theme_constant_override("separation",12)
+	column.add_child(brand)
+	var crest = TextureRect.new()
+	crest.texture = RoyalUI.PORTRAIT
+	crest.custom_minimum_size = Vector2(64,64)
+	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	brand.add_child(crest)
+	var brand_text = VBoxContainer.new()
+	brand_text.alignment = BoxContainer.ALIGNMENT_CENTER
+	brand.add_child(brand_text)
+	brand_text.add_child(label("PRIME KINGDOMS",27,RoyalUI.TEXT))
+	brand_text.add_child(label("BUILD YOUR LEGACY",12,RoyalUI.GOLD_TEXT))
+	column.add_child(label("Build a civilization. Command an empire.",16,RoyalUI.MUTED))
 	display_name = input_field("Ruler name · for a new account")
 	display_name.max_length = 24
 	email = input_field("Email")
@@ -367,6 +363,7 @@ func build_ui() -> void:
 	password = input_field("Password · at least 10 characters",true)
 	for field in [display_name,email,password]: column.add_child(field)
 	login_button = button("Enter Your Realm",func(): authenticate_user(false))
+	login_button.add_theme_stylebox_override("normal",royal_style(true,10))
 	register_button = button("Found Your Realm",func(): authenticate_user(true))
 	column.add_child(login_button)
 	column.add_child(register_button)
@@ -406,7 +403,7 @@ func build_ui() -> void:
 	var identity = VBoxContainer.new()
 	identity.add_theme_constant_override("separation",3)
 	identity_card.add_child(identity)
-	village_label = label("Village",17,Color(0.98,0.84,0.52))
+	village_label = label("Village",17,RoyalUI.TEXT)
 	village_label.clip_text = true
 	village_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
 	population_label = label("",12,RoyalUI.MUTED)
@@ -439,6 +436,7 @@ func build_ui() -> void:
 	focus_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var focus = button("Focus Capital",func():
 		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20)))
+	focus.text = Text.copy("Capital")
 	focus.custom_minimum_size = Vector2(130,38)
 	focus.add_theme_font_size_override("font_size",12)
 	focus.icon = ui_icon_texture(5)
@@ -574,7 +572,7 @@ func build_settings() -> void:
 	var column = VBoxContainer.new()
 	column.add_theme_constant_override("separation",12)
 	settings_panel.add_child(column)
-	column.add_child(label("Settings",26,Color(0.92,0.77,0.47)))
+	column.add_child(label("Settings",26,RoyalUI.GOLD_TEXT))
 	column.add_child(label("Graphics Quality",16))
 	var quality = OptionButton.new()
 	for profile in Preferences.PROFILES: quality.add_item(profile.name)
@@ -628,7 +626,7 @@ func apply_empire(empire: Dictionary) -> void:
 	if in_world: EmpireVisuals.apply(world_root,empire)
 	if is_instance_valid(hud_crest):
 		hud_crest.texture = load("res://assets/heraldry/%s.svg" % str(empire.get("emblem","lion")))
-		hud_crest.modulate = Color(str(empire.get("secondaryColor","#ddbb66")))
+		hud_crest.modulate = Color(str(empire.get("primaryColor","#315b49")))
 
 func apply_realm(realm: Dictionary) -> void:
 	if not in_world or realm.is_empty(): return
@@ -992,7 +990,7 @@ func setup_lighting() -> void:
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_energy = 0.43
+	environment.ambient_light_energy = 0.58
 	environment.ambient_light_color = Color(0.82, 0.89, 0.94)
 	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
@@ -1006,8 +1004,8 @@ func setup_lighting() -> void:
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-34, -24, 0)
-	sun.light_color = Color(1.0, 0.92, 0.80)
-	sun.light_energy = 1.02
+	sun.light_color = Color(1.0, 0.96, 0.87)
+	sun.light_energy = 1.10
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04
