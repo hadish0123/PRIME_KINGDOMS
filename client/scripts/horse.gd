@@ -29,7 +29,7 @@ func _ready() -> void:
 	collider.position.y = 0.80
 	body.add_child(collider)
 	title = Label3D.new()
-	title.text = "YOUR HORSE · RIDE / E"
+	title.text = TranslationServer.translate("Stable Horse")
 	title.position.y = 2.20
 	title.font_size = 28
 	title.pixel_size = 0.007

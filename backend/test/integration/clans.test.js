@@ -49,6 +49,11 @@ test('clans: level gate, real region, permissions, replay, races and lossless se
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM strategic_tiles WHERE owner_clan_id=$1 AND kind='fort'", [clan.id])).rows[0].n, 1);
     const clanMap = (await api('/v2/world/map', undefined, founder)).body;
     assert.equal(clanMap.region.kind, 'clan'); assert.equal(clanMap.region.id, clan.regionId);
+    assert.deepEqual(clan.bounds,{minX:clan.capital.x,minZ:clan.capital.z,maxX:clan.capital.x+7,maxZ:clan.capital.z+7});
+    assert.deepEqual(clanMap.regions.find(r=>r.clanId===clan.id).bounds,clan.bounds);
+    assert.equal(clanMap.regions.find(r=>r.clanId===clan.id).secondaryColor,'#ddcc22');
+    const farMap=(await api('/v2/world/map?x=90000&z=90000',undefined,founder)).body;
+    assert.equal(farMap.regions.length,0,'A distant view exposed an unrelated clan boundary');
     assert.ok(clanMap.tiles.some(t => t.ownerClanId === clan.id && t.kind === 'fort' && t.primaryColor === '#117744'));
     assert.deepEqual((await api('/v1/game', undefined, founder)).body.village, founder.legacy.village);
     await level(second, 15);

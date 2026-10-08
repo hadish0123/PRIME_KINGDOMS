@@ -2,7 +2,7 @@ import { ApiError } from '../errors.js';
 import { transaction, integer, text } from './transaction.js';
 import { settle, levels, spend, scaledCost, storageCapacity } from './economy.js';
 import { progression } from './progression.js';
-import { realmStage } from './realm.js';
+import { realmStage, commandSnapshot } from './realm.js';
 import { availableUnits } from './campaign_inventory.js';
 
 export async function snapshot(db, profile, now) {
@@ -44,7 +44,10 @@ export async function snapshot(db, profile, now) {
   const progress = await progression(db, profile);
   const realm = await realmStage(db, profile, buildings, progress);
   const resources = Object.fromEntries((await db.query('SELECT resource,amount FROM kingdom_resources WHERE player_id=$1', [profile.player_id])).rows.map(r => [r.resource, Number(r.amount)]));
-  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: realm.stage, realm, empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: progress, resources, productionPerHour: economy.rates, storageCapacity: economy.capacity, buildings, research, units, healing, economyBonuses:{territory:economy.territoryBonus,clan:economy.clanBonus}, armyCapacity: (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), tasks, catalog, quotes };
+  // A single transaction gives the client one consistent settlement and army view.
+  // A second HTTP read can settle a newly arrived march between those snapshots.
+  const command = await commandSnapshot(db, profile, now, { buildings, progress, realm });
+  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: realm.stage, realm, command, empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: progress, resources, productionPerHour: economy.rates, storageCapacity: economy.capacity, buildings, research, units, healing, economyBonuses:{territory:economy.territoryBonus,clan:economy.clanBonus}, armyCapacity: (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), tasks, catalog, quotes };
 }
 
 export const getKingdom = (pool, identity) => transaction(pool, identity, 'snapshot', {}, snapshot, { replay: false });

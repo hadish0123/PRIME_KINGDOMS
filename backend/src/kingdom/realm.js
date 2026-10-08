@@ -123,11 +123,11 @@ export function getCommandState(pool, identity) {
   return transaction(pool, identity, 'command_state', {}, commandSnapshot, { replay: false });
 }
 
-export async function commandSnapshot(db, profile, now) {
-    const buildings = await levels(db, profile.player_id, 'building');
-    const progress = await progression(db, profile);
+export async function commandSnapshot(db, profile, now, { buildings = null, progress = null, realm = null } = {}) {
+    buildings ??= await levels(db, profile.player_id, 'building');
+    progress ??= await progression(db, profile);
     return {
-      realm: await realmStage(db, profile, buildings, progress),
+      realm: realm ?? await realmStage(db, profile, buildings, progress),
       presets: await presetSnapshot(db, profile.player_id),
       reports: await reportsSnapshot(db, profile.player_id),
       ...await campaignSnapshot(db,profile.player_id,now),

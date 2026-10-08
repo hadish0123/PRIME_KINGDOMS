@@ -80,7 +80,7 @@ func collision(size_value: Vector3, at: Vector3) -> void:
 	body.position = at
 	add_child(body)
 
-func house(width: float, depth: float, levels: int, variant: int) -> void:
+func house(width: float, depth: float, levels: int, variant: int, detailed: bool = true) -> void:
 	var height = 3.2 * levels
 	block(Vector3(width + 0.18, 0.65, depth + 0.18), Vector3(0, 0.325, 0), "stone")
 	block(Vector3(width, height - 0.5, depth), Vector3(0, (height + 0.5) * 0.5, 0), "plaster")
@@ -136,23 +136,29 @@ func house(width: float, depth: float, levels: int, variant: int) -> void:
 				for side in [-1, 1]: block(Vector3(0.35, 1.40, 0.10), Vector3(x + side * 0.94, y, z), "wood", Vector3(0, side * 0.2, 0))
 	block(Vector3(1.0, 3.8, 1.15), Vector3(width * 0.28, height + rise - 0.2, -depth * 0.20), "stone")
 	block(Vector3(1.15, 0.18, 1.30), Vector3(width * 0.28, height + rise + 1.78, -depth * 0.20), "stone")
-	if variant % 2 == 0:
+	if detailed and variant % 2 == 0:
 		for i in range(7):
 			cylinder(0.13, 1.8, Vector3(width * 0.5 + 0.22 + (i % 3) * 0.22, 0.14 + int(i / 3) * 0.21, 0.8), "wood", Vector3(PI * 0.5, 0, 0))
 	# Broken roof edges and overlap cast a silhouette instead of a single flat slab.
+	var roof_rows = 7 if detailed else 4
+	var roof_spacing = 0.64 if detailed else 1.15
 	for side in [-1, 1]:
-		for row in range(7):
-			var t = (row + 0.5) / 7.0
+		for row in range(roof_rows):
+			var t = (row + 0.5) / float(roof_rows)
 			var x = side * span * t
 			var y = height + rise * (1.0 - t) + 0.10
-			for column in range(ceili(depth / 0.64)):
-				var z = -depth * 0.5 + column * 0.64 + 0.30
-				block(Vector3(roof_length / 7.0 + 0.055, 0.047, 0.60), Vector3(x, y, z), "slate", Vector3(0, 0, -side * slope))
+			for column in range(ceili(depth / roof_spacing)):
+				var z = -depth * 0.5 + column * roof_spacing + roof_spacing*0.47
+				block(Vector3(roof_length / roof_rows + 0.055, 0.047, roof_spacing*0.94), Vector3(x, y, z), "slate", Vector3(0, 0, -side * slope))
 	# Corner ashlar, balcony, gutters, brackets and a recessed attic window.
 	for x in [-width * 0.5, width * 0.5]:
 		for z in [-depth * 0.5, depth * 0.5]:
-			for row in range(ceili(height / 0.48)):
-				block(Vector3(0.38 if row % 2 else 0.62, 0.43, 0.40), Vector3(x, row * 0.48 + 0.22, z), "stone")
+			if detailed:
+				for row in range(ceili(height / 0.48)):
+					block(Vector3(0.38 if row % 2 else 0.62, 0.43, 0.40), Vector3(x, row * 0.48 + 0.22, z), "stone")
+			else:
+				# Repeated residential blocks are viewed from the strategy camera.
+				for y in [0.45,height-0.25]: block(Vector3(0.52,0.43,0.40),Vector3(x,y,z),"stone")
 	for z in [-depth * 0.5 - 0.05, depth * 0.5 + 0.05]:
 		block(Vector3(0.78, 0.95, 0.10), Vector3(0, height + rise * 0.34, z), "dark")
 		for x in [-0.45, 0.45]: block(Vector3(0.08, 1.08, 0.13), Vector3(x, height + rise * 0.34, z), "wood")
