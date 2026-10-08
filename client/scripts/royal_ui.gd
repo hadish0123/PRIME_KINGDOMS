@@ -3,10 +3,20 @@ extends RefCounted
 const ICONS = preload("res://assets/ui/royal-icons.png")
 const BUILDINGS = preload("res://assets/ui/royal-buildings.png")
 const PORTRAIT = preload("res://assets/ui/royal-ruler.png")
-const FRAME = preload("res://assets/ui/royal-frame.svg")
-const FINE = preload("res://assets/ui/royal-fine.svg")
-const GOLD = preload("res://assets/ui/royal-gold.svg")
+const FRAME = preload("res://assets/ui/frontier/frame.svg")
+const FINE = preload("res://assets/ui/frontier/fine.svg")
+const GOLD = preload("res://assets/ui/frontier/gold.svg")
 const TOOLS = preload("res://assets/ui/royal-tools.svg")
+const BACKGROUND = Color("#071711")
+const SURFACE = Color("#101f1d")
+const RAISED = Color("#182b26")
+const BORDER = Color("#8a6a31")
+const GOLD_TEXT = Color("#dfb961")
+const LIGHT_GOLD = Color("#ffe1a0")
+const TEXT = Color("#f1ead6")
+const MUTED = Color("#b8baa0")
+const SUCCESS = Color("#8fbd86")
+const INK = Color("#302518")
 const BUILDING_CELLS = {
  "academy":0,"keep":1,"farm":2,"lumber_mill":3,"quarry":4,"iron_mine":5,
  "market":6,"trading_post":6,"warehouse":7,"granary":7,"barracks":8,

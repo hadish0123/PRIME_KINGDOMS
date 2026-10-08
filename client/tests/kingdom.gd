@@ -53,12 +53,18 @@ func run() -> void:
 	game.strategy_camera.set_focus(Vector3.ZERO)
 	var panel = game.kingdom_panel
 	check(not panel.kingdom.is_empty() and panel.kingdom.progression.level==1,"Persistent kingdom snapshot did not reach native UI")
+	check(game.realm_guide_title.text==str(panel.kingdom.realm.name),"Realm guide did not show the server-confirmed stage")
+	check(game.realm_guide_progress.value>=0 and game.realm_guide_progress.value<=1,"Realm milestone progress escaped its bounds")
 	check(panel.kingdom.buildings.walls==1 and panel.kingdom.buildings.gatehouse==1,"Fresh kingdom did not start with server-owned timber defenses")
 	if DisplayServer.get_name()!="headless":
 		game.strategy_camera.distance = 125
 		for frame in range(12): await process_frame
 		await RenderingServer.frame_post_draw
 		check(root.get_texture().get_image().save_png("res://builds/starter-village.png")==OK,"Fresh authoritative settlement could not be captured")
+		game.ui.visible = false
+		await RenderingServer.frame_post_draw
+		check(root.get_texture().get_image().save_png("res://builds/village-world.png")==OK,"Editable design could not capture its separate 3D world artwork")
+		game.ui.visible = true
 	await panel.open()
 	check(not game.strategy_camera.enabled,"Management panel did not own camera input")
 	await issue(panel,"/v2/buildings/upgrade",{"key":"keep"})

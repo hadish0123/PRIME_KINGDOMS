@@ -2,8 +2,10 @@
 from pathlib import Path
 import hashlib,json,struct
 root=Path(__file__).resolve().parents[2]
-manifest=json.loads((root/'docs/ROYAL_ART_0_9_2.json').read_text())
-for entry in manifest['assets']:
+assets=[]
+for manifest_path in ['docs/ROYAL_ART_0_9_2.json','design/royal-frontier/assets.json']:
+    assets.extend(json.loads((root/manifest_path).read_text())['assets'])
+for entry in assets:
     source=(root/entry['path']).read_bytes()
     if len(source)!=entry['bytes'] or hashlib.sha256(source).hexdigest()!=entry['sha256']:
         raise ValueError('Reviewed UI source changed: '+entry['path'])
@@ -13,4 +15,4 @@ for entry in manifest['assets']:
         if (width,height)!=(1254,1254):raise ValueError('UI atlas dimensions changed')
         if entry['path'].endswith('royal-icons.png') and source[25] not in (4,6):
             raise ValueError('UI icons require transparent backgrounds')
-print('ROYAL_ART_VERIFIED',len(manifest['assets']),'original pinned sources')
+print('ROYAL_ART_VERIFIED',len(assets),'original pinned sources')

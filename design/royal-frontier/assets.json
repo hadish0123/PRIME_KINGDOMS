@@ -1,0 +1,27 @@
+{
+  "version": "0.9.4",
+  "direction": "Scalable emerald surfaces and brass trim matching the Royal Frontier design tokens.",
+  "assets": [
+    {
+      "path": "client/assets/ui/frontier/fine.svg",
+      "sha256": "83f2d422144945ed87b7e0ba3a81db4347803cbfba4969d6fb41d9a51e3bf768",
+      "bytes": 731,
+      "source": "Original project SVG authored for Royal Frontier 0.9.4",
+      "license": "Original PRIME KINGDOMS project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/frontier/frame.svg",
+      "sha256": "a0a93ed374eba22863347d56461dae1df6519bc195bb06adbb98a790f4ade16d",
+      "bytes": 915,
+      "source": "Original project SVG authored for Royal Frontier 0.9.4",
+      "license": "Original PRIME KINGDOMS project artwork; no external source"
+    },
+    {
+      "path": "client/assets/ui/frontier/gold.svg",
+      "sha256": "732fb26dde995f3da3dce4c87f29a82753a0217fbc7492cf037ab9c829fb44cd",
+      "bytes": 645,
+      "source": "Original project SVG authored for Royal Frontier 0.9.4",
+      "license": "Original PRIME KINGDOMS project artwork; no external source"
+    }
+  ]
+}
