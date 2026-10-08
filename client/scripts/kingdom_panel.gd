@@ -34,7 +34,7 @@ var waiting_reads = 0
 func apply_section_layout(section: String) -> void:
 	anchor_left = 0.015
 	anchor_top = 0.16
-	anchor_bottom = 0.88
+	anchor_bottom = 0.855
 	# Building/economy screens stay as a council sidebar so the settlement
 	# remains visible. Tactical and social screens receive the full workspace.
 	if section in ["Army","Empire","Clan","Map","Rankings","Wars","Chat"]:
@@ -395,13 +395,13 @@ func rebuild() -> void:
 	title_row.add_theme_constant_override("separation",9)
 	heading.add_child(title_row)
 	var crown_frame = PanelContainer.new()
-	crown_frame.custom_minimum_size = Vector2(54,54)
+	crown_frame.custom_minimum_size = Vector2(44,44)
 	crown_frame.add_theme_stylebox_override("panel",game.royal_style(false,4))
 	var crown_center = CenterContainer.new()
 	crown_frame.add_child(crown_center)
-	crown_center.add_child(game.ui_icon(17,Vector2(38,38)))
+	crown_center.add_child(game.ui_icon(17,Vector2(32,32)))
 	title_row.add_child(crown_frame)
-	var council_title = game.label("ROYAL COUNCIL",31,Color(0.99,0.86,0.56))
+	var council_title = game.label("ROYAL COUNCIL",27,game.RoyalUI.LIGHT_GOLD)
 	council_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	council_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	council_title.tooltip_text = "Command construction, armies, research and realm affairs."
@@ -425,7 +425,9 @@ func rebuild() -> void:
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.visible = false
 	column.add_child(status)
-	if not kingdom.is_empty():
+	# The persistent header already exposes identity and resources. Wide social
+	# and tactical workspaces use this space for the actual region/army content.
+	if not kingdom.is_empty() and anchor_right<0.5:
 		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
 		var resource_strip = GridContainer.new()
 		resource_strip.columns = 5
@@ -861,7 +863,7 @@ func build_clans(column: VBoxContainer) -> void:
 	region.group = group
 	region.player_id = str(game.state.player.id)
 	region.emblem = load("res://assets/heraldry/%s.svg" % str(group.emblem))
-	var region_edge = clampf(get_viewport_rect().size.y*0.26,112,190)
+	var region_edge = clampf(get_viewport_rect().size.y*0.35,128,252)
 	region.custom_minimum_size = Vector2(region_edge,region_edge)
 	region.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	region.holding_selected.connect(func(member): game.toast(Text.copy("%s · %s") % [member.empireName,Text.name_for(str(member.role))]))

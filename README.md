@@ -4,7 +4,10 @@ An online medieval realm strategy game for Android, built with Godot 4.7.2,
 GL Compatibility, Node.js 24 and PostgreSQL. The ruler is a visual court
 representation. Players command settlement development, armies and territory.
 
-The current 0.9.3 candidate is developed on feature/starter-realm-093.
+The current 0.9.4 candidate is developed on feature/royal-frontier-094.
+Its editable [Royal Frontier design](https://www.figma.com/design/ENUteLxvRgApkWKUmrYQ5w)
+and native interface share a dark emerald/brass palette, clearer resource counters,
+vertical navigation, a server-driven realm guide and a framed clan region.
 Production readiness remains subject to the gates and open items in
 [HANDOFF](docs/HANDOFF.md). Existing player identities, worlds, villages, resident
 identities, resources and queues are preserved.
@@ -68,5 +71,5 @@ signing uses private ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD and
 ANDROID_KEY_ALIAS secrets. Without them, builds use a development certificate.
 
 The v2 backend must be deployed before the new APK can enter a kingdom.
-[Release notes](docs/RELEASE_0_9_0.md) · [Architecture](docs/ARCHITECTURE.md)
+[Release notes](docs/RELEASE_0_9_4.md) · [Architecture](docs/ARCHITECTURE.md)
 · [API](docs/API.md) · [Deployment](docs/DEPLOYMENT.md)

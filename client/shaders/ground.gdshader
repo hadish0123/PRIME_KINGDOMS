@@ -33,7 +33,7 @@ void fragment() {
     float fine = noise(UV * 0.24);
     vec2 tile = UV * 0.17;
     vec3 grass = mix(texture(grass_map,tile).rgb,texture(grass_map,vec2(-tile.y,tile.x)*0.73+vec2(0.29,0.57)).rgb,0.48);
-    grass *= mix(vec3(0.61,0.80,0.43),vec3(0.85,0.94,0.66),macro);
+    grass *= mix(vec3(0.52,0.76,0.45),vec3(0.73,0.91,0.64),macro);
     float settlement = 1.0 - smoothstep(43.0, 76.0, distance(UV, village_center));
     vec3 earth = texture(mud_map, tile).rgb;
     float patch = smoothstep(0.49,0.79,fine*0.40+macro*0.60);

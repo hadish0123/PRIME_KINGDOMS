@@ -1,0 +1,1023 @@
+{
+  "createdNodeIds": [
+    "3:39",
+    "3:40",
+    "3:41",
+    "3:42",
+    "3:43",
+    "3:44",
+    "3:45",
+    "3:46",
+    "3:47",
+    "3:48",
+    "3:49",
+    "3:50",
+    "3:51",
+    "3:52",
+    "3:53",
+    "3:54",
+    "3:55",
+    "3:56",
+    "3:57",
+    "3:58",
+    "3:59",
+    "3:60",
+    "3:61",
+    "3:62",
+    "3:63",
+    "3:64",
+    "4:2",
+    "4:3",
+    "4:4",
+    "4:5",
+    "4:6",
+    "4:7",
+    "4:8",
+    "4:9",
+    "4:10",
+    "4:11",
+    "4:12",
+    "4:13",
+    "4:14",
+    "5:2",
+    "5:3",
+    "5:4",
+    "5:5",
+    "5:6",
+    "5:7",
+    "5:8",
+    "5:9",
+    "5:10",
+    "5:11",
+    "5:12",
+    "5:13",
+    "5:21",
+    "5:22",
+    "5:31",
+    "5:32",
+    "5:33",
+    "5:34",
+    "5:35",
+    "5:40",
+    "5:45",
+    "5:50",
+    "5:55",
+    "5:60",
+    "5:61",
+    "5:62",
+    "5:64",
+    "5:65",
+    "5:68",
+    "5:71",
+    "5:74",
+    "5:77",
+    "5:80",
+    "5:83",
+    "5:86",
+    "5:89",
+    "5:90",
+    "5:91",
+    "5:92",
+    "5:93",
+    "5:94",
+    "5:95",
+    "5:96",
+    "5:97",
+    "5:98",
+    "5:99",
+    "5:100",
+    "5:101",
+    "5:102",
+    "5:103",
+    "5:104",
+    "5:105",
+    "5:106",
+    "5:107",
+    "5:108",
+    "5:109",
+    "5:110",
+    "5:111",
+    "5:112",
+    "5:113",
+    "5:121",
+    "5:122",
+    "5:131",
+    "5:132",
+    "5:133",
+    "5:134",
+    "5:135",
+    "5:140",
+    "5:145",
+    "5:150",
+    "5:155",
+    "5:160",
+    "5:161",
+    "5:162",
+    "5:164",
+    "5:165",
+    "5:168",
+    "5:171",
+    "5:174",
+    "5:177",
+    "5:180",
+    "5:183",
+    "5:186",
+    "5:189",
+    "5:190",
+    "5:191",
+    "5:192",
+    "5:193",
+    "5:194",
+    "5:195",
+    "5:196",
+    "5:197",
+    "5:198",
+    "5:199",
+    "5:200",
+    "5:201",
+    "5:202",
+    "5:203",
+    "5:204",
+    "5:205",
+    "5:206",
+    "5:207",
+    "5:208",
+    "5:209",
+    "5:210",
+    "5:211",
+    "5:212",
+    "5:213",
+    "5:214",
+    "5:215",
+    "5:216",
+    "5:217",
+    "5:218",
+    "5:219",
+    "5:220",
+    "5:221",
+    "5:222",
+    "5:223",
+    "5:224",
+    "5:225",
+    "5:226",
+    "5:227",
+    "5:228",
+    "5:229",
+    "5:230",
+    "5:231",
+    "5:232",
+    "5:233",
+    "5:234",
+    "5:235",
+    "5:236",
+    "5:237",
+    "5:239",
+    "5:240",
+    "5:242",
+    "5:244",
+    "5:245",
+    "5:246",
+    "5:247",
+    "5:255",
+    "5:256",
+    "5:265",
+    "5:266",
+    "5:267",
+    "5:268",
+    "5:269",
+    "5:274",
+    "5:279",
+    "5:284",
+    "5:289",
+    "5:294",
+    "5:295",
+    "5:296",
+    "5:298",
+    "5:299",
+    "5:302",
+    "5:305",
+    "5:308",
+    "5:311",
+    "5:314",
+    "5:317",
+    "5:320",
+    "5:323",
+    "5:324",
+    "5:325",
+    "5:326",
+    "5:327",
+    "5:328",
+    "5:329",
+    "5:330",
+    "5:331",
+    "5:332",
+    "5:333",
+    "5:334",
+    "5:335",
+    "5:336",
+    "5:337",
+    "5:338",
+    "5:339",
+    "5:340",
+    "5:341",
+    "5:342",
+    "5:343",
+    "5:344",
+    "5:345",
+    "5:346",
+    "5:347",
+    "5:348",
+    "5:349",
+    "5:358",
+    "5:359",
+    "5:360",
+    "5:362",
+    "5:363",
+    "5:364",
+    "5:366",
+    "5:367",
+    "5:368",
+    "5:369",
+    "5:370",
+    "5:371",
+    "5:372",
+    "5:373",
+    "5:374",
+    "5:375",
+    "5:376",
+    "5:377",
+    "5:378",
+    "5:379",
+    "5:380",
+    "5:381",
+    "5:382",
+    "5:383",
+    "5:384",
+    "5:385",
+    "5:386",
+    "5:387",
+    "5:388",
+    "5:389",
+    "5:390",
+    "5:391",
+    "5:392",
+    "5:393",
+    "5:394",
+    "5:395",
+    "5:396",
+    "5:397",
+    "5:398",
+    "5:399",
+    "5:400",
+    "5:401",
+    "5:402",
+    "5:403",
+    "5:404",
+    "5:405",
+    "5:406",
+    "5:407",
+    "5:408",
+    "5:409",
+    "5:410",
+    "5:411",
+    "5:412",
+    "5:413",
+    "5:414",
+    "5:415",
+    "5:416",
+    "5:417",
+    "5:418",
+    "5:419",
+    "5:420",
+    "5:421",
+    "5:422",
+    "5:423",
+    "5:424",
+    "5:425",
+    "5:426",
+    "5:427",
+    "5:428",
+    "5:429",
+    "5:430",
+    "5:431",
+    "5:432",
+    "5:433",
+    "5:435",
+    "5:436",
+    "5:438"
+  ],
+  "mutatedNodeIds": [
+    "0:1"
+  ],
+  "pageId": "0:1",
+  "collections": [
+    "VariableCollectionId:3:2",
+    "VariableCollectionId:3:3"
+  ],
+  "variables": {
+    "background": {
+      "id": "VariableID:3:5",
+      "name": "color/background",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "surface": {
+      "id": "VariableID:3:7",
+      "name": "color/surface",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "raised": {
+      "id": "VariableID:3:9",
+      "name": "color/raised",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "border": {
+      "id": "VariableID:3:11",
+      "name": "color/border",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "gold": {
+      "id": "VariableID:3:13",
+      "name": "color/gold",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "goldLight": {
+      "id": "VariableID:3:15",
+      "name": "color/goldLight",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "text": {
+      "id": "VariableID:3:17",
+      "name": "color/text",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "muted": {
+      "id": "VariableID:3:19",
+      "name": "color/muted",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "success": {
+      "id": "VariableID:3:21",
+      "name": "color/success",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "ink": {
+      "id": "VariableID:3:23",
+      "name": "color/ink",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "disabled": {
+      "id": "VariableID:3:25",
+      "name": "color/disabled",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL",
+        "STROKE_COLOR"
+      ]
+    },
+    "xs": {
+      "id": "VariableID:3:26",
+      "name": "spacing/xs",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    "sm": {
+      "id": "VariableID:3:27",
+      "name": "spacing/sm",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    "md": {
+      "id": "VariableID:3:28",
+      "name": "spacing/md",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    "lg": {
+      "id": "VariableID:3:29",
+      "name": "spacing/lg",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    "xl": {
+      "id": "VariableID:3:30",
+      "name": "spacing/xl",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    "radius": {
+      "id": "VariableID:3:31",
+      "name": "radius/card",
+      "scopes": [
+        "CORNER_RADIUS"
+      ]
+    }
+  },
+  "styles": {
+    "display": "S:8a2a3cbfba186f20a22ea98054b4daff2a483fc2,",
+    "title": "S:29fb1931e1b3d47585c20b42785c64f4b5bb4b2a,",
+    "navigation": "S:e50f2a7f0381fb7937b8607a6a54a117d9d04a08,",
+    "body": "S:564358b68acf7fdb58f0b4bb8d680081c7e26180,",
+    "value": "S:d61424879e8c4871f14293013b0d0f03be0877dc,",
+    "caption": "S:1d5af415410af5aa0ccf1132c9be35811056c8fb,"
+  },
+  "shadowStyleId": "S:93f6da92ee8a502bfce83a9e16034d5c1b1f2d14,",
+  "icons": {
+    "icons-0.png": "3:39",
+    "icons-5.png": "3:40",
+    "icons-1.png": "4:2",
+    "icons-2.png": "4:3",
+    "icons-3.png": "4:4",
+    "icons-4.png": "4:5",
+    "icons-6.png": "4:6",
+    "icons-7.png": "4:7",
+    "icons-8.png": "4:8",
+    "icons-9.png": "4:9",
+    "icons-10.png": "4:10",
+    "icons-11.png": "4:11",
+    "icons-12.png": "4:12",
+    "ruler.png": "4:13",
+    "buildings-0.png": "4:14"
+  },
+  "hashes": {
+    "icons-0.png": "148dd1f2958dbdee16a9b59b307f8883d19d4a95",
+    "icons-5.png": "afb6b9053211581d4dcd83dfefa2bf5522c87c2e",
+    "icons-1.png": "9d67645b827d7fe981f3eaf93b29147dfa84c1b1",
+    "icons-2.png": "e168949bd7b4caf86eab322ef0ab32341008a5a5",
+    "icons-3.png": "48508ba38880ebdb8888804916317f819798ed52",
+    "icons-4.png": "47b5104fed625f523cf6b7c35afa73d48570461a",
+    "icons-6.png": "b0bf8e18ff5f78776fb8c695c53fb3d2943df707",
+    "icons-7.png": "a6ba179240ecfff36ccfe88692da52508569e47a",
+    "icons-8.png": "d420daa26190bfec07753a7e3d1c6c1257659541",
+    "icons-9.png": "63aca056c06980542da8c361dacc495d0590e77f",
+    "icons-10.png": "589c6699ca9b975ecd72013b960e4d42dbc2c201",
+    "icons-11.png": "f07336b9fab51c0c113a679838ad1710076b4228",
+    "icons-12.png": "2d8d6d5effd9bb85daf55748abb2c2d12edc0e02",
+    "ruler.png": "bc5fba97874b2c7ac46746e528fde8475da18ffa",
+    "buildings-0.png": "dbec4106d119244a087135e4944ccdfde82a52b5"
+  },
+  "components": {
+    "RealmNavigation": {
+      "setId": "3:50",
+      "variantIds": [
+        "3:41",
+        "3:44",
+        "3:47"
+      ],
+      "properties": {
+        "label": "Label#3:0",
+        "icon": "Icon#3:4"
+      }
+    },
+    "ResourceCounter": {
+      "id": "3:51",
+      "properties": {
+        "label": "Label#3:8",
+        "amount": "Amount#3:9",
+        "icon": "Icon#3:10"
+      }
+    },
+    "RoyalAction": {
+      "setId": "3:62",
+      "variantIds": [
+        "3:56",
+        "3:58",
+        "3:60"
+      ],
+      "properties": {
+        "label": "Label#3:11"
+      }
+    },
+    "RealmBadge": {
+      "id": "3:63",
+      "properties": {
+        "label": "Label#3:15"
+      }
+    }
+  },
+  "validation": {
+    "nodeCount": 26,
+    "colors": 11,
+    "spacing": 5,
+    "navStates": 3,
+    "actionStates": 3,
+    "fontFamilies": [
+      "Cinzel",
+      "Noto Sans"
+    ]
+  },
+  "fileKey": "ENUteLxvRgApkWKUmrYQ5w",
+  "fileUrl": "https://www.figma.com/design/ENUteLxvRgApkWKUmrYQ5w",
+  "screens": {
+    "01 · Village HUD": "5:10",
+    "02 · Royal Council": "5:110",
+    "03 · Clan Region": "5:244"
+  },
+  "profile": {
+    "id": "5:2",
+    "properties": {
+      "name": "Name#5:0",
+      "level": "Level#5:1",
+      "prestige": "Prestige#5:2"
+    }
+  },
+  "worldImageHash": "2f86de3f8d23f44458d6549a79fecb7186a20b1d",
+  "screenEvidence": [
+    {
+      "id": "5:10",
+      "name": "01 · Village HUD",
+      "width": 1280,
+      "height": 720,
+      "nodeTypes": {
+        "FRAME": 19,
+        "INSTANCE": 30,
+        "TEXT": 28,
+        "RECTANGLE": 12,
+        "GROUP": 1,
+        "VECTOR": 7,
+        "ELLIPSE": 2
+      },
+      "imageNodes": [
+        {
+          "id": "5:11",
+          "name": "3D world viewport — no interface pixels",
+          "type": "FRAME",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "id": "I5:13;5:3",
+          "name": "Artwork / ruler",
+          "type": "INSTANCE",
+          "width": 70,
+          "height": 70
+        },
+        {
+          "id": "I5:35;3:52",
+          "name": "Artwork / icons-0",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:40;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:45;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:50;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:55;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:65;3:45",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:68;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:71;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:74;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:77;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:80;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:83;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:86;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "5:104",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 42,
+          "height": 42
+        }
+      ],
+      "fonts": [
+        "Cinzel",
+        "Noto Sans"
+      ]
+    },
+    {
+      "id": "5:110",
+      "name": "02 · Royal Council",
+      "width": 1280,
+      "height": 720,
+      "nodeTypes": {
+        "FRAME": 29,
+        "INSTANCE": 39,
+        "TEXT": 44,
+        "RECTANGLE": 11,
+        "GROUP": 1,
+        "VECTOR": 7,
+        "ELLIPSE": 2
+      },
+      "imageNodes": [
+        {
+          "id": "5:111",
+          "name": "3D world viewport — no interface pixels",
+          "type": "FRAME",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "id": "I5:113;5:3",
+          "name": "Artwork / ruler",
+          "type": "INSTANCE",
+          "width": 70,
+          "height": 70
+        },
+        {
+          "id": "I5:135;3:52",
+          "name": "Artwork / icons-0",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:140;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:145;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:150;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:155;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:165;3:45",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:168;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:171;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:174;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:177;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:180;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:183;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:186;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "5:205",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "id": "5:213",
+          "name": "Artwork / icons-0",
+          "type": "INSTANCE",
+          "width": 25,
+          "height": 25
+        },
+        {
+          "id": "5:216",
+          "name": "Artwork / icons-1",
+          "type": "INSTANCE",
+          "width": 25,
+          "height": 25
+        },
+        {
+          "id": "5:219",
+          "name": "Artwork / icons-2",
+          "type": "INSTANCE",
+          "width": 25,
+          "height": 25
+        },
+        {
+          "id": "5:222",
+          "name": "Artwork / icons-3",
+          "type": "INSTANCE",
+          "width": 25,
+          "height": 25
+        },
+        {
+          "id": "5:225",
+          "name": "Artwork / icons-4",
+          "type": "INSTANCE",
+          "width": 25,
+          "height": 25
+        },
+        {
+          "id": "5:229",
+          "name": "Artwork / buildings-0",
+          "type": "INSTANCE",
+          "width": 106,
+          "height": 116
+        }
+      ],
+      "fonts": [
+        "Cinzel",
+        "Noto Sans"
+      ]
+    },
+    {
+      "id": "5:244",
+      "name": "03 · Clan Region",
+      "width": 1280,
+      "height": 720,
+      "nodeTypes": {
+        "FRAME": 27,
+        "INSTANCE": 33,
+        "TEXT": 35,
+        "RECTANGLE": 80,
+        "GROUP": 2,
+        "VECTOR": 16,
+        "ELLIPSE": 2
+      },
+      "imageNodes": [
+        {
+          "id": "5:245",
+          "name": "3D world viewport — no interface pixels",
+          "type": "FRAME",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "id": "I5:247;5:3",
+          "name": "Artwork / ruler",
+          "type": "INSTANCE",
+          "width": 70,
+          "height": 70
+        },
+        {
+          "id": "I5:269;3:52",
+          "name": "Artwork / icons-0",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:274;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:279;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:284;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:289;3:52",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 38,
+          "height": 42
+        },
+        {
+          "id": "I5:299;3:42",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:302;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:305;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:308;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:311;3:45",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:314;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:317;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "I5:320;3:42",
+          "name": "Icon",
+          "type": "INSTANCE",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "id": "5:339",
+          "name": "Artwork / icons-5",
+          "type": "INSTANCE",
+          "width": 36,
+          "height": 36
+        }
+      ],
+      "fonts": [
+        "Cinzel",
+        "Noto Sans"
+      ]
+    }
+  ]
+}

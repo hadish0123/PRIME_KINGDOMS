@@ -38,6 +38,10 @@ var profile_name_label: Label
 var profile_level_label: Label
 var profile_stat_label: Label
 var profile_xp_bar: ProgressBar
+var realm_guide: Button
+var realm_guide_title: Label
+var realm_guide_detail: Label
+var realm_guide_progress: ProgressBar
 var nav_buttons: Dictionary = {}
 var login_button: Button
 var register_button: Button
@@ -73,6 +77,7 @@ var resource_labels: Dictionary = {}
 var displayed_resources: Dictionary = {}
 var resource_targets: Dictionary = {}
 var toast_label: Label
+var toast_panel: PanelContainer
 var toast_time = 0.0
 var last_rank = 0
 var settlement_clock = 0.0
@@ -163,19 +168,24 @@ func set_nav_active(section: String) -> void:
 
 func premium_nav_button(section: String,callback: Callable) -> Button:
 	var item = button("",callback)
-	item.custom_minimum_size = Vector2(116,66)
+	item.custom_minimum_size = Vector2(116,74)
+	item.tooltip_text = Text.copy(section)
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item.set_meta("section",section)
 	var center = CenterContainer.new()
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	item.add_child(center)
-	var row = HBoxContainer.new()
+	var row = VBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation",8)
+	row.add_theme_constant_override("separation",3)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(row)
-	row.add_child(ui_icon(nav_icon_index(section),Vector2(40,40)))
+	var pictogram = ui_icon(nav_icon_index(section),Vector2(42,42))
+	pictogram.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row.add_child(pictogram)
 	var title = label(section,14,Color(0.97,0.88,0.69))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
 	item.set_meta("title_label",title)
@@ -186,7 +196,7 @@ func premium_nav_button(section: String,callback: Callable) -> Button:
 
 func profile_panel() -> PanelContainer:
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(207,78)
+	card.custom_minimum_size = Vector2(250,78)
 	card.add_theme_stylebox_override("panel",royal_style(false,7))
 	var row = HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
@@ -210,7 +220,7 @@ func profile_panel() -> PanelContainer:
 	profile_name_label.clip_text = true
 	profile_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	profile_name_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
-	profile_level_label = label("Lv. 1",12,Color(0.95,0.90,0.78))
+	profile_level_label = label("Lv. 1",14,RoyalUI.TEXT)
 	info.add_child(profile_name_label)
 	info.add_child(profile_level_label)
 	profile_xp_bar = ProgressBar.new()
@@ -224,13 +234,13 @@ func profile_panel() -> PanelContainer:
 		bar.set_border_width_all(1)
 		profile_xp_bar.add_theme_stylebox_override(entry[0],bar)
 	info.add_child(profile_xp_bar)
-	profile_stat_label = label("Prestige 0",11,Color(0.83,0.77,0.65))
+	profile_stat_label = label("Prestige 0",12,RoyalUI.MUTED)
 	info.add_child(profile_stat_label)
 	return card
 
 func crest_panel() -> PanelContainer:
 	hud_crest_card = PanelContainer.new()
-	hud_crest_card.custom_minimum_size = Vector2(55,78)
+	hud_crest_card.custom_minimum_size = Vector2(48,78)
 	hud_crest_card.add_theme_stylebox_override("panel",royal_style(false,6))
 	hud_crest = TextureRect.new()
 	hud_crest.texture = load("res://assets/heraldry/lion.svg")
@@ -243,19 +253,24 @@ func crest_panel() -> PanelContainer:
 func resource_card(key: String) -> PanelContainer:
 	var card = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size = Vector2(91,78)
+	card.custom_minimum_size = Vector2(96,78)
 	card.add_theme_stylebox_override("panel",royal_style(false,6))
 	var row = HBoxContainer.new()
-	row.add_theme_constant_override("separation",2)
+	row.add_theme_constant_override("separation",4)
 	card.add_child(row)
-	row.add_child(ui_icon(resource_icon_index(key),Vector2(36,42)))
+	row.add_child(ui_icon(resource_icon_index(key),Vector2(38,42)))
 	var values = VBoxContainer.new()
 	values.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	values.alignment = BoxContainer.ALIGNMENT_CENTER
 	values.add_theme_constant_override("separation",2)
 	row.add_child(values)
-	values.add_child(label(key.capitalize(),10,Color(0.85,0.80,0.68)))
-	var amount = label("—",17,Color(1.0,0.92,0.74))
+	values.add_child(label(key.capitalize(),12,RoyalUI.MUTED))
+	var amount = label("—",20,RoyalUI.TEXT)
+	# Numeric counters stay in the readable body face, even at title sizes.
+	var counter_font = FontVariation.new()
+	counter_font.base_font = ThemeDB.fallback_font
+	counter_font.variation_embolden = 0.6
+	amount.add_theme_font_override("font",counter_font)
 	amount.clip_text = true
 	amount.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	amount.custom_minimum_size.x = 34
@@ -384,7 +399,7 @@ func build_ui() -> void:
 	top_row.add_child(profile_panel())
 	top_row.add_child(crest_panel())
 	var identity_card = PanelContainer.new()
-	identity_card.custom_minimum_size = Vector2(211,78)
+	identity_card.custom_minimum_size = Vector2(180,78)
 	identity_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	identity_card.add_theme_stylebox_override("panel",royal_style(false,8))
 	top_row.add_child(identity_card)
@@ -394,7 +409,7 @@ func build_ui() -> void:
 	village_label = label("Village",17,Color(0.98,0.84,0.52))
 	village_label.clip_text = true
 	village_label.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
-	population_label = label("",11,Color(0.88,0.83,0.72))
+	population_label = label("",12,RoyalUI.MUTED)
 	population_label.clip_text = true
 	population_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	identity.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -407,15 +422,16 @@ func build_ui() -> void:
 	for key in ["food","wood","stone","iron","gold"]:
 		wallets.add_child(resource_card(key))
 	var status_card = PanelContainer.new()
-	status_card.custom_minimum_size = Vector2(167,78)
+	status_card.custom_minimum_size = Vector2(146,78)
 	status_card.add_theme_stylebox_override("panel",royal_style(false,7))
 	top_row.add_child(status_card)
 	var status_box = VBoxContainer.new()
 	status_box.add_theme_constant_override("separation",3)
 	status_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	status_card.add_child(status_box)
-	connection_label = label("● Connected",10,Color(0.47,0.94,0.47))
+	connection_label = label("● Connected",11,RoyalUI.SUCCESS)
 	connection_label.clip_text = true
+	connection_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	connection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_box.add_child(connection_label)
 	var focus_row = HBoxContainer.new()
@@ -423,7 +439,7 @@ func build_ui() -> void:
 	focus_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var focus = button("Focus Capital",func():
 		if is_instance_valid(strategy_camera): strategy_camera.set_focus(Vector3(0,0.8,-20)))
-	focus.custom_minimum_size = Vector2(143,38)
+	focus.custom_minimum_size = Vector2(130,38)
 	focus.add_theme_font_size_override("font_size",12)
 	focus.icon = ui_icon_texture(5)
 	focus.expand_icon = true
@@ -442,7 +458,7 @@ func build_ui() -> void:
 	nav_shell.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	nav_shell.offset_left = -500
 	nav_shell.offset_right = 500
-	nav_shell.offset_top = -85
+	nav_shell.offset_top = -91
 	nav_shell.offset_bottom = -7
 	nav_shell.add_theme_stylebox_override("panel",royal_style(false,7,Color.WHITE,true))
 	hud.add_child(nav_shell)
@@ -459,15 +475,94 @@ func build_ui() -> void:
 		set_nav_active("Settings")
 		toggle_settings()))
 	set_nav_active("Buildings")
-	toast_label = label("",17,Color(0.94,0.83,0.59))
-	toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	toast_label.position = Vector2(-340,98)
-	toast_label.custom_minimum_size.x = 680
+	build_realm_guide()
+	toast_panel = PanelContainer.new()
+	toast_panel.name = "RealmNotification"
+	toast_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	toast_panel.offset_left = -340
+	toast_panel.offset_right = 340
+	toast_panel.offset_top = 116
+	toast_panel.offset_bottom = 162
+	toast_panel.z_index = 50
+	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast_panel.visible = false
+	toast_panel.add_theme_stylebox_override("panel",royal_style(false,12))
+	hud.add_child(toast_panel)
+	toast_label = label("",16,RoyalUI.TEXT)
+	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hud.add_child(toast_label)
+	toast_panel.add_child(toast_label)
 	get_viewport().size_changed.connect(update_safe_area)
 	update_safe_area()
+
+func build_realm_guide() -> void:
+	realm_guide = button("",func(): kingdom_panel.open_section("Overview"))
+	realm_guide.name = "RealmGuide"
+	realm_guide.tooltip_text = Text.copy("Review the milestones for your next realm stage.")
+	realm_guide.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	realm_guide.offset_left = 18
+	realm_guide.offset_right = 358
+	realm_guide.offset_top = -181
+	realm_guide.offset_bottom = -103
+	realm_guide.visible = false
+	hud.add_child(realm_guide)
+	var inset = MarginContainer.new()
+	inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left","right"]: inset.add_theme_constant_override("margin_"+side,14)
+	for side in ["top","bottom"]: inset.add_theme_constant_override("margin_"+side,10)
+	inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	realm_guide.add_child(inset)
+	var row = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation",10)
+	inset.add_child(row)
+	row.add_child(ui_icon(5,Vector2(42,42)))
+	var info = VBoxContainer.new()
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation",3)
+	row.add_child(info)
+	realm_guide_title = label("Village",16,RoyalUI.LIGHT_GOLD)
+	realm_guide_title.add_theme_font_override("font",load("res://assets/fonts/Cinzel.ttf"))
+	info.add_child(realm_guide_title)
+	realm_guide_detail = label("",12,RoyalUI.MUTED)
+	info.add_child(realm_guide_detail)
+	realm_guide_progress = ProgressBar.new()
+	realm_guide_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	realm_guide_progress.show_percentage = false
+	realm_guide_progress.max_value = 1.0
+	realm_guide_progress.custom_minimum_size.y = 5
+	for entry in [["background",RoyalUI.BACKGROUND],["fill",RoyalUI.GOLD_TEXT]]:
+		var bar = StyleBoxFlat.new()
+		bar.bg_color = entry[1]
+		bar.set_corner_radius_all(2)
+		realm_guide_progress.add_theme_stylebox_override(entry[0],bar)
+	info.add_child(realm_guide_progress)
+
+func update_realm_guide(kingdom: Dictionary) -> void:
+	var realm: Dictionary = kingdom.realm
+	realm_guide_title.text = str(realm.name)
+	if realm.next == null:
+		realm_guide_detail.text = Text.copy("Empire attained · view your realm")
+		realm_guide_progress.value = 1.0
+		return
+	var next: Dictionary = realm.next
+	var economy = 0
+	for key in ["farm","lumber_mill","quarry","iron_mine","market"]: economy += int(kingdom.buildings.get(key,0))
+	var research = 0
+	for value in kingdom.research.values(): research += int(value)
+	var fulfilled = 0
+	var total = 0
+	var progress = 0.0
+	for gate in [[kingdom.buildings.keep,next.keep],[kingdom.progression.level,next.playerLevel],[realm.ownedTiles,next.ownedTiles],[kingdom.progression.conquests,next.conquests],[economy,next.economy],[research,next.research],[kingdom.progression.prestige,next.prestige]]:
+		if int(gate[1])<=0: continue
+		total += 1
+		progress += clampf(float(gate[0])/float(gate[1]),0.0,1.0)
+		if int(gate[0])>=int(gate[1]): fulfilled += 1
+	realm_guide_detail.text = Text.copy("Rise to %s · %d / %d milestones") % [str(next.name),fulfilled,total]
+	realm_guide_progress.value = progress/maxi(total,1)
 
 func build_settings() -> void:
 	settings_panel = PanelContainer.new()
@@ -546,6 +641,7 @@ func apply_realm(realm: Dictionary) -> void:
 
 func update_garrison(kingdom: Dictionary) -> void:
 	if not in_world: return
+	update_realm_guide(kingdom)
 	resource_targets = kingdom.resources.duplicate()
 	if displayed_resources.is_empty(): displayed_resources = resource_targets.duplicate()
 	population_label.text = Text.copy("%s · Level %d · %d holdings") % [kingdom.empire.name,kingdom.progression.level,kingdom.realm.ownedTiles]
@@ -594,6 +690,7 @@ func enter_world(game_state: Dictionary) -> void:
 		set_auth_busy(false,"Your settlement could not be loaded. Reconnect to continue.")
 		return
 	world_epoch += 1
+	var entry_epoch = world_epoch
 	kingdom_panel.clear_session()
 	if is_instance_valid(world_root): world_root.queue_free()
 	if is_instance_valid(auth_stage): auth_stage.queue_free()
@@ -643,16 +740,23 @@ func enter_world(game_state: Dictionary) -> void:
 	app_paused = false
 	reconnect_delay = 1
 	poll_clock = 0
+	settlement_clock = 0
 	auth_panel.visible = false
 	hud.visible = true
 	settings_panel.visible = false
 	preferences.apply(self)
-	connection_label.text = "● Connected · realm restored"
+	connection_label.text = "● Connected"
+	connection_label.tooltip_text = ""
 	apply_control_state()
-	await get_tree().process_frame
-	# Finish the first settlement draw before callers start an HTTP deadline.
-	# Shader compilation and texture uploads can block the main thread on entry.
-	if DisplayServer.get_name() != "headless": await RenderingServer.frame_post_draw
+	# Build the first bounded foliage batch now, rather than introducing its
+	# materials while the first snapshot/reconnect request is already running.
+	terrain.stream_at(Vector3.ZERO)
+	# Render complete entry frames before a caller starts an HTTP deadline.
+	# Texture uploads and newly submitted material variants can span frames.
+	for frame in range(2):
+		await get_tree().process_frame
+		if entry_epoch!=world_epoch or not in_world: return
+		if DisplayServer.get_name() != "headless": await RenderingServer.frame_post_draw
 
 func select_settlement(screen_position: Vector2) -> void:
 	if not in_world or not strategy_camera.enabled: return
@@ -679,6 +783,7 @@ func connection_failed(message: String = "Reconnecting to your realm…") -> voi
 	network_online = false
 	reconnect_clock = 0
 	connection_label.text = message
+	connection_label.tooltip_text = message
 	apply_control_state()
 
 func expire_session() -> void:
@@ -690,11 +795,12 @@ func _process(delta: float) -> void:
 		update_auth_camera(delta)
 		update_safe_area()
 		return
+	realm_guide.visible = not kingdom_panel.visible and not settings_panel.visible and not kingdom_panel.kingdom.is_empty()
 	for key in resource_targets:
 		displayed_resources[key] = lerpf(float(displayed_resources.get(key,resource_targets[key])),float(resource_targets[key]),1-exp(-8*delta))
 		resource_labels[key].text = format_amount(int(round(displayed_resources[key])))
 	toast_time = maxf(0,toast_time-delta)
-	toast_label.visible = toast_time>0
+	toast_panel.visible = toast_time>0
 	settlement_clock += delta
 	if settlement_clock>=0.75:
 		settlement_clock = 0
@@ -718,7 +824,7 @@ func format_amount(amount: int) -> String:
 func toast(message: String) -> void:
 	toast_label.text = Text.copy(message)
 	toast_time = 4.0
-	toast_label.visible = true
+	toast_panel.visible = true
 
 func play_cue(key: String) -> void:
 	if not is_instance_valid(sound) or preferences.sound_volume<=0: return
@@ -749,7 +855,8 @@ func recover_connection() -> void:
 	state = response.data
 	network_online = true
 	reconnect_delay = 1
-	connection_label.text = "Connected · realm restored"
+	connection_label.text = "● Connected"
+	connection_label.tooltip_text = ""
 	await kingdom_panel.refresh()
 	if epoch!=world_epoch or not in_world: return
 	if not network_online: return
@@ -885,8 +992,8 @@ func setup_lighting() -> void:
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_energy = 0.34
-	environment.ambient_light_color = Color(0.82, 0.80, 0.77)
+	environment.ambient_light_energy = 0.43
+	environment.ambient_light_color = Color(0.82, 0.89, 0.94)
 	environment.ambient_light_sky_contribution = 0.25
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
@@ -900,7 +1007,7 @@ func setup_lighting() -> void:
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-34, -24, 0)
 	sun.light_color = Color(1.0, 0.92, 0.80)
-	sun.light_energy = 0.82
+	sun.light_energy = 1.02
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 180.0
 	sun.shadow_bias = 0.04

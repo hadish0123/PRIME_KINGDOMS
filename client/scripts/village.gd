@@ -315,6 +315,9 @@ func apply_development(kingdom: Dictionary) -> void:
 		architecture.position=SLOTS[key]
 		building_nodes[key]=architecture
 		architecture.begin()
+		if int(kingdom.realm.rank)<3:
+			architecture.mats.roof = Surfaces.pbr("grey_roof_tiles",Color(0.54,0.39,0.25),0.28)
+			architecture.mats.slate = Surfaces.plain(Color(0.38,0.27,0.16),0.80)
 		if key in ["walls","watch_towers","gatehouse"] and level_value>0:
 			build_defenses(architecture,key,level_value)
 		elif level_value==0:
@@ -401,14 +404,14 @@ func build_gardens() -> void:
 	var colors: Array[Color] = []
 	var sites = [Vector3(-49,0,-37),Vector3(46,0,32),Vector3(-9,0,-44),Vector3(11,0,-48),Vector3(46,0,-6),Vector3(-47,0,16),Vector3(-49,0,44),Vector3(-5,0,34),Vector3(9,0,39),Vector3(-24,0,46),Vector3(22,0,44),Vector3(48,0,19),Vector3(-48,0,-2),Vector3(47,0,-48)]
 	for at in sites:
-		var transform_value = Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*rng.randf_range(0.60,0.82)),at)
+		var transform_value = Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*rng.randf_range(0.78,1.02)),at)
 		trees.append(transform_value)
 		for leaf in range(144):
 			var tier = leaf%7
 			var angle = rng.randf()*TAU
 			var radius = rng.randf_range(0.2,3.2-tier*0.40)
 			var local = Vector3(sin(angle)*radius,3.0+tier*0.86+rng.randf_range(-0.2,0.25),cos(angle)*radius)
-			var basis = Basis.from_euler(Vector3(rng.randf_range(-0.7,0.7),angle+PI*0.5,0)).scaled(Vector3.ONE*lerpf(1.1,0.55,tier/6.0))
+			var basis = Basis.from_euler(Vector3(rng.randf_range(-0.7,0.7),angle+PI*0.5,0)).scaled(Vector3.ONE*lerpf(1.25,0.70,tier/6.0))
 			leaves.append(transform_value*Transform3D(basis,local))
 			colors.append(Color(rng.randf(),0,0,0))
 	var helper = Nature.new()
