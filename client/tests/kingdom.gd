@@ -169,14 +169,32 @@ func run() -> void:
 		await panel.refresh()
 	check(panel.kingdom.buildings.keep>=2,"The real construction queue did not complete")
 	check(game.villages[game.state.village.id].population.size()>=13,"Visual progression removed original residents")
+	# Review all server-populated workspaces, including data-dependent social
+	# screens, before resizing. These are rendered native controls, not mockups.
+	var review_sections = ["Overview","Queues","Buildings","Army","Research","Empire","Clan","Map","Reports","Commanders","Goals","Inbox","Rankings","Wars","Chat"]
+	game.toast_panel.visible = false
+	game.toast_time = 0
+	game.preferences.quality = 1
+	game.preferences.apply(game)
+	for section in review_sections:
+		print("NATIVE_REVIEW_START ",section," ",Time.get_ticks_msec())
+		await panel.open_section(section)
+		for frame in range(3): await process_frame
+		check_layout(game,panel,section)
+		load("res://tests/ui_design_snapshot.gd").save(game,str(section).to_lower())
+		if DisplayServer.get_name()!="headless":
+			await RenderingServer.frame_post_draw
+			check(root.get_texture().get_image().save_png("res://builds/royal-"+str(section).to_lower()+".png")==OK,"Workspace could not be captured: "+section)
 	# Check the actual server-populated council at different viewport sizes.
 	for viewport_size in [Vector2i(1280,720),Vector2i(1536,864),Vector2i(960,540)]:
+		print("NATIVE_LAYOUT_VIEWPORT ",viewport_size," ",Time.get_ticks_msec())
 		root.size = viewport_size
-		for section in ["Buildings","Research","Reports","Queues","Goals","Clan"]:
+		for section in review_sections:
 			panel.visible = true
 			panel.select_section(section)
 			for frame in range(3): await process_frame
 			check_layout(game,panel,section)
+			print("NATIVE_LAYOUT_PASS ",section," ",Time.get_ticks_msec())
 	root.size = Vector2i(1280,720)
 	game.preferences.quality = 1
 	game.preferences.apply(game)
@@ -216,3 +234,12 @@ func check_layout(game: Node,panel: Control,section: String) -> void:
 	var page: ScrollContainer = panel.tabs.get_current_tab_control()
 	if page==null: return
 	check(page.get_child(0).size.x<=page.size.x+1.0,section+": council content requires horizontal scrolling")
+	check_action_widths(page,section)
+
+func check_action_widths(node: Node,section: String) -> void:
+	if node is CanvasItem and not node.is_visible_in_tree(): return
+	if node is Button and not node is OptionButton and not node is ColorPickerButton and not node.text.is_empty() and not node.clip_text:
+		var font = node.get_theme_font("font")
+		var width = font.get_string_size(node.text,HORIZONTAL_ALIGNMENT_LEFT,-1,node.get_theme_font_size("font_size")).x
+		check(node.size.x>=width+20,section+": action label is clipped: "+node.text)
+	for child in node.get_children(): check_action_widths(child,section)

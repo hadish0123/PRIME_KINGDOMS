@@ -5,16 +5,21 @@ var batches: Dictionary = {}
 var mats: Dictionary = {}
 
 func begin() -> void:
-	mats.wood = Surfaces.pbr("wood_planks", Color(0.65, 0.53, 0.39), 0.7)
-	mats.plaster = Surfaces.pbr("rough_plaster_03", Color(0.91, 0.85, 0.72), 0.22)
+	mats.wood = Surfaces.pbr("wood_planks", Color(0.82, 0.70, 0.53), 0.7)
+	mats.plaster = Surfaces.pbr("rough_plaster_03", Color(1.0, 0.98, 0.89), 0.22)
 	mats.plaster.normal_scale = 0.22
-	mats.stone = Surfaces.pbr("stone_wall_02", Color(0.78, 0.79, 0.74), 0.32)
-	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.52, 0.55, 0.54), 0.28)
+	mats.stone = Surfaces.pbr("stone_wall_02", Color(0.96, 0.92, 0.80), 0.32)
+	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.66, 0.79, 0.69), 0.28)
 	mats.iron = Surfaces.plain(Color(0.20, 0.23, 0.25), 0.56, 0.8)
-	mats.dark = Surfaces.plain(Color(0.025, 0.033, 0.035))
-	mats.fabric = Surfaces.pbr("rough_linen", Color(0.54, 0.31, 0.15), 0.6)
+	mats.glass = Surfaces.plain(Color(0.33,0.47,0.43),0.28,0.12)
+	mats.shutter = Surfaces.plain(Color(0.38,0.58,0.44))
+	mats.shutter_alt = Surfaces.plain(Color(0.68,0.44,0.26))
+	mats.leaf = Surfaces.plain(Color(0.41,0.58,0.27))
+	mats.bloom = Surfaces.plain(Color(0.94,0.79,0.50))
+	mats.dark = Surfaces.plain(Color(0.12, 0.21, 0.19))
+	mats.fabric = Surfaces.pbr("rough_linen", Color(0.77, 0.83, 0.59), 0.6)
 	mats.water = Surfaces.plain(Color(0.065, 0.12, 0.14), 0.16, 0.28)
-	mats.slate = Surfaces.plain(Color(0.20, 0.26, 0.30), 0.77)
+	mats.slate = Surfaces.plain(Color(0.44, 0.61, 0.51), 0.77)
 	mats.gold = Surfaces.plain(Color(0.57, 0.40, 0.16), 0.35, 0.8)
 
 func piece(mesh: Mesh, at: Vector3, material_name: String, rotation_value: Vector3 = Vector3.ZERO) -> void:
@@ -130,17 +135,23 @@ func house(width: float, depth: float, levels: int, variant: int, detailed: bool
 		for x in [-width * 0.30, width * 0.30]:
 			for z in [-depth * 0.5 - 0.05, depth * 0.5 + 0.05]:
 				var y = 2.0 + level * 3.2
-				block(Vector3(1.16, 1.40, 0.10), Vector3(x, y, z), "dark")
+				block(Vector3(1.16, 1.40, 0.10), Vector3(x, y, z), "glass")
 				for dx in [-0.62, 0, 0.62]: block(Vector3(0.07, 1.58, 0.16), Vector3(x + dx, y, z), "wood")
 				for dy in [-0.77, 0, 0.77]: block(Vector3(1.35, 0.07, 0.16), Vector3(x, y + dy, z), "wood")
-				for side in [-1, 1]: block(Vector3(0.35, 1.40, 0.10), Vector3(x + side * 0.94, y, z), "wood", Vector3(0, side * 0.2, 0))
+				for side in [-1, 1]: block(Vector3(0.35, 1.40, 0.10), Vector3(x + side * 0.94, y, z), "shutter" if variant%2==0 else "shutter_alt", Vector3(0, side * 0.2, 0))
+	for x in [-width*0.30,width*0.30]:
+		block(Vector3(1.46,0.21,0.44),Vector3(x,1.18,front+0.15),"shutter")
+		block(Vector3(1.30,0.14,0.31),Vector3(x,1.36,front+0.16),"leaf")
+		for offset in [-0.40,0.40]: block(Vector3(0.15,0.10,0.17),Vector3(x+offset,1.49,front+0.17),"bloom")
+	block(Vector3(2.16,0.13,1.05),Vector3(0,2.89,front+0.40),"roof",Vector3(0.13,0,0))
+	for x in [-0.89,0.89]: beam(Vector3(x,2.25,front+0.10),Vector3(x,2.80,front+0.82),0.065)
 	block(Vector3(1.0, 3.8, 1.15), Vector3(width * 0.28, height + rise - 0.2, -depth * 0.20), "stone")
 	block(Vector3(1.15, 0.18, 1.30), Vector3(width * 0.28, height + rise + 1.78, -depth * 0.20), "stone")
 	if detailed and variant % 2 == 0:
 		for i in range(7):
 			cylinder(0.13, 1.8, Vector3(width * 0.5 + 0.22 + (i % 3) * 0.22, 0.14 + int(i / 3) * 0.21, 0.8), "wood", Vector3(PI * 0.5, 0, 0))
 	# Broken roof edges and overlap cast a silhouette instead of a single flat slab.
-	var roof_rows = 7 if detailed else 4
+	var roof_rows = 7 if detailed else (3 if levels>=3 else 4)
 	var roof_spacing = 0.64 if detailed else 1.15
 	for side in [-1, 1]:
 		for row in range(roof_rows):
@@ -160,7 +171,7 @@ func house(width: float, depth: float, levels: int, variant: int, detailed: bool
 				# Repeated residential blocks are viewed from the strategy camera.
 				for y in [0.45,height-0.25]: block(Vector3(0.52,0.43,0.40),Vector3(x,y,z),"stone")
 	for z in [-depth * 0.5 - 0.05, depth * 0.5 + 0.05]:
-		block(Vector3(0.78, 0.95, 0.10), Vector3(0, height + rise * 0.34, z), "dark")
+		block(Vector3(0.78, 0.95, 0.10), Vector3(0, height + rise * 0.34, z), "glass")
 		for x in [-0.45, 0.45]: block(Vector3(0.08, 1.08, 0.13), Vector3(x, height + rise * 0.34, z), "wood")
 	if levels > 1:
 		block(Vector3(width * 0.65, 0.18, 1.30), Vector3(0, 3.31, front + 0.48), "wood")

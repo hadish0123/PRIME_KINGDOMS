@@ -1,4 +1,5 @@
 extends Control
+const RoyalUI = preload("res://scripts/royal_ui.gd")
 
 signal target_selected(tile: Dictionary)
 var tiles: Array = []
@@ -33,8 +34,8 @@ func _draw() -> void:
 	for tile in tiles:
 		var at=point(float(tile.x),float(tile.z))
 		var tint=Color(str(tile.primaryColor)) if tile.get("primaryColor")!=null else Color(0.16,0.20,0.15)
-		draw_rect(Rect2(at-cell*0.5,cell),tint.darkened(0.56))
-		draw_rect(Rect2(at-cell*0.5,cell),Color(0.40,0.37,0.27),false,1.0)
+		draw_rect(Rect2(at-cell*0.5,cell),Color("#e6ebd2").lerp(tint,0.17))
+		draw_rect(Rect2(at-cell*0.5,cell),RoyalUI.BORDER,false,1.0)
 		if tile.kind=="settlement":
 			draw_rect(Rect2(at-Vector2(5,5),Vector2(10,10)),Color(0.82,0.73,0.52))
 		elif tile.kind=="fort":

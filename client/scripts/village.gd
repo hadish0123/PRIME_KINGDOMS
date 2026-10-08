@@ -194,9 +194,9 @@ func build_neighborhood(rank_value: int) -> void:
 		home.rotation.y = PI*0.5 if index%2==0 else -PI*0.5
 		home.begin()
 		home.mats.roof = home.mats.roof.duplicate()
-		home.mats.roof.albedo_color = Color(0.47,0.41,0.31) if rank_value<3 else Color(0.40,0.44,0.46)
+		home.mats.roof.albedo_color = Color(0.81,0.54,0.34) if rank_value<3 else Color(0.66,0.79,0.69)
 		home.mats.slate = home.mats.slate.duplicate()
-		home.mats.slate.albedo_color = Color(0.38,0.27,0.16) if rank_value<3 else Color(0.22,0.26,0.29)
+		home.mats.slate.albedo_color = Color(0.63,0.36,0.20) if rank_value<3 else Color(0.44,0.61,0.51)
 		home.house(5.6,4.6,1 if rank_value<3 else (2 if rank_value<5 else 3),index,false)
 		if rank_value>=4: home.block(Vector3(5.8,0.18,4.8),Vector3(0,0.09,0),"stone")
 		home.finish()
@@ -316,8 +316,8 @@ func apply_development(kingdom: Dictionary) -> void:
 		building_nodes[key]=architecture
 		architecture.begin()
 		if int(kingdom.realm.rank)<3:
-			architecture.mats.roof = Surfaces.pbr("grey_roof_tiles",Color(0.54,0.39,0.25),0.28)
-			architecture.mats.slate = Surfaces.plain(Color(0.38,0.27,0.16),0.80)
+			architecture.mats.roof = Surfaces.pbr("grey_roof_tiles",Color(0.81,0.54,0.34),0.28)
+			architecture.mats.slate = Surfaces.plain(Color(0.63,0.36,0.20),0.80)
 		if key in ["walls","watch_towers","gatehouse"] and level_value>0:
 			build_defenses(architecture,key,level_value)
 		elif level_value==0:

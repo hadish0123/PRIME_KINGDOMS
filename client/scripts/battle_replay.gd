@@ -19,11 +19,11 @@ func _ready() -> void:
 	offset_right = -24
 	offset_top = 100
 	offset_bottom = -82
-	add_theme_stylebox_override("panel",game.panel_style(Color(0.03,0.03,0.027,0.99)))
+	add_theme_stylebox_override("panel",game.panel_style(game.RoyalUI.SURFACE))
 	var column = VBoxContainer.new()
 	add_child(column)
 	var name_value: String = str(report.get("target",{}).get("name","The Borderlands"))
-	column.add_child(game.label("Battle of "+name_value,24,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("Battle of "+name_value,24,game.RoyalUI.GOLD_TEXT))
 	phase_label = game.label("Deployment",16)
 	column.add_child(phase_label)
 	var container = SubViewportContainer.new()

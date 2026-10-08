@@ -58,3 +58,14 @@ Exact paths, SHA-256 hashes, atlas order and generation provenance are recorded 
 ## Royal Frontier frames · 0.9.4
 
 The emerald/brass panel frames and gold action frame in `client/assets/ui/frontier` are original project SVG artwork. They use no external imagery. Their exact SHA-256 hashes and byte lengths are recorded in `design/royal-frontier/assets.json` and checked by the existing UI asset pipeline. The original raster atlases and earlier frames remain byte-for-byte preserved.
+
+## Royal Dawn 0.9.5
+
+The original crown-and-keep crest, 27 semantic vector pictograms, three scalable
+light skins and 24 architectural vector plates in `ui/dawn` are authored for
+PRIME KINGDOMS. They have no external source. The reproducible source is
+`tools/assets/build_dawn.py`; exact byte sizes and SHA-256 hashes are pinned in
+`design/royal-dawn/assets.json` and verified before native import/export.
+Existing fonts, photographic surfaces and character models keep their original
+licenses and checksums. SVG plates illustrate building categories; they do not
+replace the authoritative 3D scene or grant an unbuilt facility.

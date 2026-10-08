@@ -67,6 +67,13 @@ func run() -> void:
 		if rank_value in [1,6]:
 			for frame in range(3): await process_frame
 			await capture("district-village.png" if rank_value==1 else "district-empire.png")
+			if rank_value==1:
+				camera.position = Vector3(-27,23,12)
+				camera.look_at(Vector3(0,3,-20))
+				for frame in range(3): await process_frame
+				await capture("architecture-close.png")
+				camera.position = Vector3(-61,85,100)
+				camera.look_at(Vector3(0,1,0))
 	check(triangles(settlement.building_nodes.walls)<20000,"Perimeter defense exceeded its geometry budget")
 	var actor = game.ruler
 	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 49, "Anatomical character rig did not load")
