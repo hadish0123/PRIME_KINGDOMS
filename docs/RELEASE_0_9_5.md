@@ -11,7 +11,8 @@ original architectural vector plates. The launcher and login carry the same cres
 Native homes use brighter cream plaster and stone, terracotta village roofs,
 sage mature roofs, colored shutters, glass, window planters and entrance canopies.
 Repeated three-storey homes use fewer roof strips to keep the district within its
-existing geometry ceiling. Lighting remains bounded for the mobile renderer.
+existing geometry ceiling. Straight timber beams use a single axial ring without
+changing their silhouette. Lighting remains bounded for the mobile renderer.
 Settlement coordinates, ownership, NPC identities, construction gates, resources
 and queues are preserved. Starter villages retain timber defenses, an open gate,
 eight soldiers and five civilians. Village → Town → City → Country → Kingdom →

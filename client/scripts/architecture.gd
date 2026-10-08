@@ -59,6 +59,9 @@ func beam(from: Vector3, to: Vector3, thickness: float, material_name: String = 
 	mesh.bottom_radius = thickness
 	mesh.height = direction.length()
 	mesh.radial_segments = 6
+	# A straight timber needs only one axial ring; extra rings add triangles
+	# without changing its silhouette, normal or triplanar material.
+	mesh.rings = 1
 	var basis = Basis(Quaternion(Vector3.UP, direction.normalized()))
 	if not batches.has(material_name):
 		var surface = SurfaceTool.new()
