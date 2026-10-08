@@ -141,6 +141,22 @@ test('strategic command: presets, online presence, deterministic battles, report
     await pool.query("UPDATE kingdom_buildings SET level=1 WHERE player_id=$1 AND key='keep'",[attacker.id]);
     assert.equal((await api('/v2/kingdom',undefined,attacker)).body.stage,'town','Earned realm title regressed');
 
+    // Every earned visual stage must be reachable and persist through repeated reads.
+    const sovereign=await register('Sovereign');
+    const requirements=(await pool.query('SELECT * FROM realm_stage_requirements ORDER BY rank')).rows;
+    for (const requirement of requirements.slice(1)) {
+      await pool.query('UPDATE kingdom_buildings SET level=$2 WHERE player_id=$1',[sovereign.id,requirement.min_keep]);
+      await pool.query('UPDATE kingdom_research SET level=3 WHERE player_id=$1',[sovereign.id]);
+      await pool.query('UPDATE kingdoms SET xp=(SELECT cumulative_xp FROM kingdom_level_requirements WHERE level=$2),prestige=1000,conquests=$3 WHERE player_id=$1',[sovereign.id,requirement.min_player_level,requirement.min_conquests]);
+      await pool.query("INSERT INTO strategic_tiles(world_id,x,z,kind,owner_player_id) SELECT world_id,20000+n,20000,'neutral',$1 FROM players CROSS JOIN generate_series(1,$2::integer) n WHERE id=$1 ON CONFLICT(world_id,x,z) DO UPDATE SET owner_player_id=$1",[sovereign.id,requirement.min_owned_tiles]);
+      const promoted=(await api('/v2/kingdom',undefined,sovereign)).body;
+      assert.equal(promoted.realm.stage,requirement.stage);
+      assert.equal(promoted.realm.rank,requirement.rank);
+      const gold=promoted.resources.gold;
+      assert.equal((await api('/v2/kingdom',undefined,sovereign)).body.resources.gold,gold,'A repeated stage read paid promotion rewards twice');
+    }
+    assert.equal((await api('/v2/kingdom',undefined,sovereign)).body.realm.next,null);
+
     // Connected-edge and stale-preset protections are enforced by the server.
     assert.equal((await api('/v2/battles/attack', { requestId: randomUUID(), x: own.x + 30, z: own.z + 30, presetSlot: 1 }, attacker)).body.error, 'target_not_connected');
     await pool.query("UPDATE kingdom_units SET alive=1 WHERE player_id=$1 AND type='swordsman'", [attacker.id]);

@@ -50,6 +50,24 @@ func run() -> void:
 	development.buildings.walls=12
 	settlement.apply_development(development)
 	check(settlement.population.size()==13,"Architectural progression replaced resident identities")
+	var resident_ids = settlement.population.map(func(npc): return npc.npc_id)
+	var camera = Camera3D.new()
+	game.world_root.add_child(camera)
+	camera.fov = 48
+	camera.position = Vector3(-61,85,100)
+	camera.look_at(Vector3(0,1,0))
+	camera.current = true
+	for rank_value in range(1,7):
+		development.realm.rank = rank_value
+		settlement.apply_development(development)
+		check(settlement.neighborhood.get_meta("realm_rank")==rank_value,"Neighborhood did not follow the earned realm stage")
+		check(settlement.population.map(func(npc): return npc.npc_id)==resident_ids,"Realm development replaced persistent residents")
+		check(triangles(settlement.neighborhood)<50000,"District architecture exceeded its mobile geometry budget")
+		print("NATIVE_DISTRICT ",JSON.stringify({"rank":rank_value,"triangles":triangles(settlement.neighborhood),"households":settlement.neighborhood.get_meta("households")}))
+		if rank_value in [1,6]:
+			for frame in range(3): await process_frame
+			await capture("district-village.png" if rank_value==1 else "district-empire.png")
+	check(triangles(settlement.building_nodes.walls)<20000,"Perimeter defense exceeded its geometry budget")
 	var actor = game.ruler
 	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 49, "Anatomical character rig did not load")
 	for name_value in ["idle","walk","guard","work","attack","death","block","hit"]:
@@ -61,9 +79,6 @@ func run() -> void:
 	actor.animation.seek(0.35, true)
 	var after: Transform3D = actor.skeleton.get_bone_global_pose(bone)
 	check(not before.is_equal_approx(after), "Walking did not deform the actual skeleton")
-	var camera = Camera3D.new()
-	game.world_root.add_child(camera)
-	camera.fov = 48
 	for frame in range(80): await process_frame
 	check(game.terrain.nature.grass.size() <= 49 and game.terrain.nature.groves.size() <= 25, "Balanced scenery allocation exceeded its budget")
 	# Two players can render the same global place relative to different homes.

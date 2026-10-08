@@ -3,6 +3,7 @@ extends Control
 signal target_selected(tile: Dictionary)
 var tiles: Array = []
 var campaigns: Array = []
+var regions: Array = []
 var server_time = 0
 var received_ticks = 0
 var player_id = ""
@@ -42,6 +43,17 @@ func _draw() -> void:
 			draw_circle(at,3,Color(0.60,0.68,0.42))
 		if tile.ownerPlayerId==player_id:
 			draw_rect(Rect2(at-cell*0.5+Vector2.ONE*2,cell-Vector2.ONE*4),Color(0.78,0.66,0.37),false,1.5)
+	# Draw complete server-allocated clan perimeters; the viewport clips distant edges.
+	for region in regions:
+		var bounds: Dictionary = region.bounds
+		var start = point(float(bounds.minX),float(bounds.minZ))-cell*0.5
+		var finish = point(float(bounds.maxX),float(bounds.maxZ))+cell*0.5
+		var area = Rect2(start,finish-start).grow(-2)
+		var trim = Color(str(region.secondaryColor))
+		draw_rect(area,trim,false,3,true)
+		var marker = Rect2(start+Vector2(6,6),Vector2(24,24))
+		var crest = load("res://assets/heraldry/%s.svg" % str(region.emblem))
+		draw_texture_rect(crest,marker,false,trim)
 	var now=server_time+(Time.get_ticks_msec()-received_ticks)/1000.0
 	for march in campaigns:
 		var route: Dictionary=march.route

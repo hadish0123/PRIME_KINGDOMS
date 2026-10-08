@@ -29,7 +29,17 @@ func run() -> void:
 		quit(1)
 		return
 	await game.enter_world(scene.data)
+	# A failed first snapshot must leave a recoverable UI and the same account.
+	game.api.base_url = "http://127.0.0.1:1"
 	await game.kingdom_panel.refresh()
+	check(not game.network_online and game.kingdom_panel.kingdom.is_empty(),"Initial snapshot loss left an online empty council")
+	game.api.base_url = base
+	await game.recover_connection()
+	check(game.network_online and game.state.player.id==scene.data.player.id,"Initial snapshot loss failed to recover the same player")
+	if game.kingdom_panel.kingdom.is_empty():
+		check(false,"Recovered initial snapshot is empty")
+		quit(1)
+		return
 	check(game.in_world and game.state.scene.halfSize == 128,"Strategy entry did not select a bounded settlement")
 	check(game.terrain.chunks.size()==4 and game.terrain.horizon.is_empty(),"Settlement allocated streamed world geometry")
 	game.terrain.stream_at(Vector3(9600,0,-9600))
@@ -40,8 +50,15 @@ func run() -> void:
 	var camera_start: Vector3 = game.strategy_camera.focus
 	game.strategy_camera.pan_screen(Vector2(80,-20))
 	check(game.strategy_camera.focus.distance_to(camera_start)>0.1,"Command camera could not pan independently")
+	game.strategy_camera.set_focus(Vector3.ZERO)
 	var panel = game.kingdom_panel
 	check(not panel.kingdom.is_empty() and panel.kingdom.progression.level==1,"Persistent kingdom snapshot did not reach native UI")
+	check(panel.kingdom.buildings.walls==1 and panel.kingdom.buildings.gatehouse==1,"Fresh kingdom did not start with server-owned timber defenses")
+	if DisplayServer.get_name()!="headless":
+		game.strategy_camera.distance = 125
+		for frame in range(12): await process_frame
+		await RenderingServer.frame_post_draw
+		check(root.get_texture().get_image().save_png("res://builds/starter-village.png")==OK,"Fresh authoritative settlement could not be captured")
 	await panel.open()
 	check(not game.strategy_camera.enabled,"Management panel did not own camera input")
 	await issue(panel,"/v2/buildings/upgrade",{"key":"keep"})
@@ -70,6 +87,7 @@ func run() -> void:
 		if not panel.command_data.get("reports",[]).is_empty(): panel.show_replay(panel.command_data.reports[0])
 		check(not panel.command_data.reports.is_empty(),"Battle result did not create a command report")
 		check(panel.kingdom.realm.ownedTiles>=2,"Successful strategic battle did not expand territory")
+		check(panel.kingdom.realm.ownedTiles==panel.command_data.realm.ownedTiles,"Battle report and settlement used different territory snapshots")
 		check(not panel.command_data.reports.is_empty() and panel.command_data.reports[0].replay!=null,"Server did not persist replay input")
 		if DisplayServer.get_name()!="headless":
 			for frame in range(3): await process_frame
@@ -105,6 +123,12 @@ func run() -> void:
 			check(panel.kingdom.tasks.any(func(task_after): return str(task_after.id)==task_id),"Native join lost an unfinished server queue task")
 		await panel.load_map()
 		check(panel.map_data.region.kind=="clan" and panel.map_data.region.plots.size()==64,"Native map did not display the allocated clan plots")
+		check(panel.map_data.regions.any(func(region): return region.clanId==test_clan),"World view omitted the authoritative clan perimeter")
+		await panel.open_section("Clan")
+		if DisplayServer.get_name()!="headless":
+			for frame in range(3): await process_frame
+			await RenderingServer.frame_post_draw
+			check(root.get_texture().get_image().save_png("res://builds/clan-region.png")==OK,"Clan region presentation could not be captured")
 		await issue(panel,"/v2/clans/donate",{"resource":"wood","amount":10})
 		check(panel.clan_data.own!=null and panel.clan_data.own.treasury.wood==10,"Native donation did not reach the persistent treasury")
 		await issue(panel,"/v2/clans/leave",{})
@@ -142,7 +166,7 @@ func run() -> void:
 	# Check the actual server-populated council at different viewport sizes.
 	for viewport_size in [Vector2i(1280,720),Vector2i(1536,864),Vector2i(960,540)]:
 		root.size = viewport_size
-		for section in ["Buildings","Research","Reports","Queues","Goals"]:
+		for section in ["Buildings","Research","Reports","Queues","Goals","Clan"]:
 			panel.visible = true
 			panel.select_section(section)
 			for frame in range(3): await process_frame

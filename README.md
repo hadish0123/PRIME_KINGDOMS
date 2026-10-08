@@ -4,7 +4,7 @@ An online medieval realm strategy game for Android, built with Godot 4.7.2,
 GL Compatibility, Node.js 24 and PostgreSQL. The ruler is a visual court
 representation. Players command settlement development, armies and territory.
 
-The current 0.9.2 candidate is developed on feature/production-strategy-polish.
+The current 0.9.3 candidate is developed on feature/starter-realm-093.
 Production readiness remains subject to the gates and open items in
 [HANDOFF](docs/HANDOFF.md). Existing player identities, worlds, villages, resident
 identities, resources and queues are preserved.

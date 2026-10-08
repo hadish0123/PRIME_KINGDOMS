@@ -2,6 +2,7 @@ extends PanelContainer
 
 const Text = preload("res://scripts/game_text.gd")
 const CampaignMap = preload("res://scripts/campaign_map.gd")
+const ClanRegionMap = preload("res://scripts/clan_region_map.gd")
 const BattleReplay = preload("res://scripts/battle_replay.gd")
 var game: Node
 var kingdom: Dictionary = {}
@@ -159,9 +160,13 @@ func refresh() -> void:
 		game.apply_empire(kingdom.empire)
 		game.apply_realm(kingdom.realm)
 		game.update_garrison(kingdom)
-		var command_response: Dictionary = await game.api.call_api("/v2/command")
-		if epoch != game.world_epoch or not game.in_world: return
-		if command_response.ok: command_data = command_response.data
+		if kingdom.has("command"):
+			command_data = kingdom.command
+		else:
+			# Compatibility with earlier API releases during a staged rollout.
+			var command_response: Dictionary = await game.api.call_api("/v2/command")
+			if epoch != game.world_epoch or not game.in_world: return
+			if command_response.ok: command_data = command_response.data
 		busy = false
 		rebuild()
 	elif response.status == 401:
@@ -171,6 +176,8 @@ func refresh() -> void:
 		busy = false
 		rebuild()
 		status.text = "Could not refresh realm. Retry when connected."
+		status.visible = true
+		if response.status==0 or response.status>=500 or response.error=="invalid_response": game.connection_failed()
 
 func submit(path: String, body: Dictionary) -> void:
 	if busy or not game.network_online: return
@@ -207,6 +214,7 @@ func submit(path: String, body: Dictionary) -> void:
 		pending_body.clear()
 		if response.data.has("kingdom"):
 			kingdom = response.data.kingdom
+			if kingdom.has("command"): command_data = kingdom.command
 			game.apply_empire(kingdom.empire)
 			game.apply_realm(kingdom.realm)
 			game.update_garrison(kingdom)
@@ -445,9 +453,12 @@ func rebuild() -> void:
 		build_map(page("Map"))
 		build_reports(page("Reports"))
 		for title in ["Commanders","Goals","Inbox","Rankings","Wars","Chat"]: build_extra(page(title),title)
-	tabs.current_tab = mini(selected,maxi(0,tabs.get_tab_count()-1))
-	if not desired_section.is_empty(): select_section(desired_section)
-	navigation.selected = tabs.current_tab
+	if tabs.get_tab_count()>0:
+		tabs.current_tab = clampi(selected,0,tabs.get_tab_count()-1)
+		if not desired_section.is_empty(): select_section(desired_section)
+		navigation.selected = tabs.current_tab
+	else:
+		navigation.disabled = true
 	var action_shell = PanelContainer.new()
 	action_shell.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	column.add_child(action_shell)
@@ -488,13 +499,23 @@ func build_overview(column: VBoxContainer) -> void:
 	column.add_child(game.label(Text.copy("Ruler level %d · Keep %d · Conquests %d · Prestige %d") % [kingdom.progression.level,kingdom.buildings.keep,kingdom.progression.conquests,kingdom.progression.prestige],15))
 	if realm.next != null:
 		var next: Dictionary = realm.next
-		column.add_child(game.label(Text.copy("NEXT: %s") % next.name,17))
-		column.add_child(game.label(Text.copy("Requirements · Keep %d · Ruler level %d · %d territories · %d conquests") % [next.keep,next.playerLevel,next.ownedTiles,next.conquests],14))
+		column.add_child(game.label(Text.copy("Rise to %s") % next.name,17))
+		var economy = 0
+		for key in ["farm","lumber_mill","quarry","iron_mine","market"]: economy += int(kingdom.buildings.get(key,0))
+		var research = 0
+		for value in kingdom.research.values(): research += int(value)
+		for gate in [["Keep",kingdom.buildings.keep,next.keep],["Ruler Level",kingdom.progression.level,next.playerLevel],["Territories",realm.ownedTiles,next.ownedTiles],["Conquests",kingdom.progression.conquests,next.conquests],["Economic Development",economy,next.economy],["Research",research,next.research],["Prestige",kingdom.progression.prestige,next.prestige]]:
+			if int(gate[2])==0: continue
+			column.add_child(game.label(Text.copy("%s · %d / %d") % [Text.copy(str(gate[0])),int(gate[1]),int(gate[2])],14))
+			var progress = ProgressBar.new()
+			progress.max_value = int(gate[2])
+			progress.value = mini(int(gate[1]),int(gate[2]))
+			progress.show_percentage = false
+			progress.custom_minimum_size.y = 8
+			column.add_child(progress)
 	else:
 		column.add_child(game.label("Empire tier reached. Endgame prestige and level progression continue.",14))
 	column.add_child(game.label("Drag to survey your settlement. Tap a building to inspect it. Open the World to expand your borders.",14))
-	if realm.next!=null:
-		column.add_child(game.label(Text.copy("Economic development %d · Research %d · Prestige %d") % [realm.next.economy,realm.next.research,realm.next.prestige],14))
 
 func build_queue(column: VBoxContainer) -> void:
 	column.add_child(game.label("Production per hour: "+cost_text(kingdom.productionPerHour),15))
@@ -733,6 +754,7 @@ func build_map(column: VBoxContainer) -> void:
 	column.add_child(game.label(str(map_data.region.name),20,Color(0.94,0.80,0.50)))
 	var routes = CampaignMap.new()
 	routes.tiles = map_data.tiles
+	routes.regions = map_data.get("regions",[])
 	routes.campaigns = command_data.get("marches",[])+command_data.get("incoming",[])
 	routes.server_time = server_seconds
 	routes.received_ticks = received_ticks
@@ -792,10 +814,12 @@ func build_map(column: VBoxContainer) -> void:
 			column.add_child(game.button(("Reinforce · " if friendly else "March · ")+str(preset.name),func(): submit("/v2/army/march",{"x":target_x,"z":target_z,"presetSlot":slot_value,"kind":march_kind})))
 
 func build_clans(column: VBoxContainer) -> void:
-	column.add_child(game.label("Build lasting alliances and defend a shared region.",14))
-	column.add_child(game.button("Browse Clans",load_clans))
-	if clan_data.is_empty(): return
+	if clan_data.is_empty():
+		column.add_child(game.button("Browse Clans",load_clans))
+		return
 	if clan_data.own == null:
+		column.add_child(game.label("Build lasting alliances and defend a shared region.",14))
+		column.add_child(game.button("Browse Clans",load_clans))
 		column.add_child(game.label("Create at ruler level 15 · Gold 500 · 63 member plots",15))
 		var name_input = game.input_field("Clan name (3–32 characters)")
 		var tag_input = game.input_field("Unique tag (3–6 letters/digits)")
@@ -808,7 +832,7 @@ func build_clans(column: VBoxContainer) -> void:
 		admission.set_item_metadata(1,"open")
 		column.add_child(admission)
 		var create = game.button("Found Clan",func(): submit("/v2/clans/create",{"name":name_input.text,"tag":tag_input.text,"admission":admission.get_item_metadata(admission.selected),"emblem":kingdom.empire.emblem,"primaryColor":kingdom.empire.primaryColor,"secondaryColor":kingdom.empire.secondaryColor}))
-		create.disabled = kingdom.progression.level < 15
+		create.disabled = kingdom.progression.level < 15 or kingdom.resources.gold < 500
 		column.add_child(create)
 		for invite in clan_data.invitations:
 			var invited_id: String = invite.clanId
@@ -822,6 +846,40 @@ func build_clans(column: VBoxContainer) -> void:
 		return
 	var group: Dictionary = clan_data.own
 	var group_id: String = group.id
+	var region_card = PanelContainer.new()
+	region_card.add_theme_stylebox_override("panel",game.royal_style(false,10))
+	column.add_child(region_card)
+	var region_body = VBoxContainer.new()
+	region_card.add_child(region_body)
+	var region_title = game.label(Text.copy("[%s] %s · Clan Region") % [group.tag,group.name],20,Color(0.94,0.80,0.50))
+	region_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	region_body.add_child(region_title)
+	var region_row = HBoxContainer.new()
+	region_row.add_theme_constant_override("separation",14)
+	region_body.add_child(region_row)
+	var region = ClanRegionMap.new()
+	region.group = group
+	region.player_id = str(game.state.player.id)
+	region.emblem = load("res://assets/heraldry/%s.svg" % str(group.emblem))
+	var region_edge = clampf(get_viewport_rect().size.y*0.26,112,190)
+	region.custom_minimum_size = Vector2(region_edge,region_edge)
+	region.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	region.holding_selected.connect(func(member): game.toast(Text.copy("%s · %s") % [member.empireName,Text.name_for(str(member.role))]))
+	region_row.add_child(region)
+	var region_details = VBoxContainer.new()
+	region_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	region_details.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	region_row.add_child(region_details)
+	var region_summary = game.label(Text.copy("Capital · %d member settlements · %d open plots") % [group.members.size(),63-group.members.size()],14)
+	region_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	region_details.add_child(region_summary)
+	var region_tip = game.label(Text.copy("The outer border marks your clan region. Select a settlement to identify its ruler."),13)
+	region_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	region_details.add_child(region_tip)
+	region_details.add_child(game.button(Text.copy("Survey Clan Region"),func():
+		map_center = {"x":int(group.capital.x)+3,"z":int(group.capital.z)+3}
+		open_section("Map")))
+	column.add_child(game.button("Browse Clans",load_clans))
 	column.add_child(game.label(str(group.get("description","")),14))
 	column.add_child(game.label(str(group.get("announcement","")),15))
 	if group.role in ["leader","officer"]:

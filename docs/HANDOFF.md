@@ -1,4 +1,28 @@
-# Production strategy handoff — 0.9.2 royal design candidate
+# Starter realm handoff — 0.9.3 candidate
+
+Work branch: feature/starter-realm-093, based on ee8aa991990937f5515ebc7661d06af05369f9c9.
+App/backend 0.9.3; Android code 17. See RELEASE_0_9_3.md for exact scope.
+
+This milestone adds real initial palisade/gatehouse defaults with safe migration 011,
+stationed persistent guards, unobtrusive unbuilt sites, six earned district stages,
+progress against every realm gate and a full heraldic clan region/perimeter.
+No new player identity, troop, queue or reward authority moves to the client.
+
+Required verification: native PostgreSQL migration/preservation and clan boundary tests,
+actual fresh-account/clan renders, bounded geometry, Android export/signature and
+exact-commit GitHub CI. Local SQL rendering is supplementary serialized PGlite.
+Do not carry 0.9.2 green checks forward as proof for this source revision.
+
+Read-only production checks on 8 October returned HTTP 200 for /ready with a connected
+database. The running API reports 0.9.1 and exposes authenticated v2 routes.
+The service is pinned; publishing a GitHub candidate alone does not update production.
+No migration 011 or 0.9.3 production rollout has occurred. Never reset the existing world.
+Physical-device performance, final signing, premium unit art/battle choreography,
+equipment/seasons, moderation operations and final balance remain uncertified.
+
+The previous design handoff and historical validation follow below.
+
+## Prior royal design candidate — 0.9.2
 
 Base implementation: feature/strategic-command-online-08 at
 90c34eb3f3c6a00705375ab106381d7b5518d986.

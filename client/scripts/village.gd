@@ -15,6 +15,10 @@ var loaded_models: int = 0
 var development_signature = ""
 var building_root: Node3D
 var building_nodes: Dictionary = {}
+var neighborhood: Node3D
+var visual_rank = 0
+var village_well: Node3D
+const HOME_SITES = [Vector3(-14,0,19),Vector3(12,0,26),Vector3(-14,0,-19),Vector3(-12,0,34),Vector3(12,0,17),Vector3(-12,0,45),Vector3(12,0,39),Vector3(-40,0,-35),Vector3(-40,0,12),Vector3(43,0,17),Vector3(10,0,-18),Vector3(-25,0,-7),Vector3(-39,0,48),Vector3(23,0,-2),Vector3(44,0,-8)]
 const SLOTS = {
 	"keep":Vector3(0,0,-27), "farm":Vector3(31,0,33), "lumber_mill":Vector3(-39,0,-15),
 	"quarry":Vector3(40,0,-38), "iron_mine":Vector3(38,0,-24), "market":Vector3(15,0,-8),
@@ -105,11 +109,10 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		asset("house_3", Vector3(-26, 0, 6), 10.0, PI * 0.5)
 		asset("house_1", Vector3(28, 0, 14), 10.0, -PI * 0.5)
 		asset("blacksmith", Vector3(-27, 0, 32), 12.0, PI * 0.5)
-	# Residential scenery has no resource effects or construction levels.
-	var homes = [Vector3(-14,0,19),Vector3(12,0,26),Vector3(-12,0,-19),Vector3(-12,0,34),Vector3(12,0,17),Vector3(31,0,-5),Vector3(-31,0,-44)]
-	for index in range(homes.size()): asset("house_2" if index in [1,5] else "house_1",homes[index],6.8,PI*0.5 if index%2==0 else -PI*0.5)
+	# Household scenery develops only with an earned server realm rank.
+	build_neighborhood(1)
 	build_gardens()
-	asset("well", Vector3(0, 0.1, 0), 3.3)
+	village_well = asset("well", Vector3(0, 0.1, 0), 3.3)
 	asset("market_stand_1", Vector3(12, 0, -7), 4.5, -PI * 0.5)
 	asset("market_stand_2", Vector3(-12, 0, -7), 4.2, PI * 0.5)
 	asset("cart", Vector3(17, 0, 12), 3.4, PI * 0.25)
@@ -165,7 +168,58 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 			var jobs = [Vector3(33,0.1,28),Vector3(-34,0.1,-15),Vector3(37,0.1,-33),Vector3(11,0.1,-6),Vector3(-20,0.1,31)]
 			npc.home = jobs[npc.ordinal%jobs.size()]
 			npc.position = npc.home
+		elif owner and npc.role=="soldier":
+			var posts = [Vector3(-5,0.1,49),Vector3(5,0.1,49),Vector3(-45,0.1,43),Vector3(45,0.1,43),Vector3(-45,0.1,-44),Vector3(45,0.1,-44),Vector3(-23,0.1,17),Vector3(-20,0.1,17)]
+			npc.home = posts[npc.ordinal%posts.size()]
+			npc.position = npc.home
 		population.append(npc)
+
+func build_neighborhood(rank_value: int) -> void:
+	rank_value = clampi(rank_value,1,6)
+	if rank_value==visual_rank: return
+	visual_rank = rank_value
+	if is_instance_valid(village_well): village_well.visible = rank_value<3
+	if is_instance_valid(neighborhood):
+		remove_child(neighborhood)
+		neighborhood.queue_free()
+	neighborhood = Node3D.new()
+	neighborhood.name = "RealmDistricts"
+	neighborhood.set_meta("realm_rank",rank_value)
+	neighborhood.set_meta("households",[5,7,9,11,13,15][rank_value-1])
+	add_child(neighborhood)
+	for index in range([5,7,9,11,13,15][rank_value-1]):
+		var home = Architecture.new()
+		neighborhood.add_child(home)
+		home.position = HOME_SITES[index]
+		home.rotation.y = PI*0.5 if index%2==0 else -PI*0.5
+		home.begin()
+		home.mats.roof = home.mats.roof.duplicate()
+		home.mats.roof.albedo_color = Color(0.47,0.41,0.31) if rank_value<3 else Color(0.40,0.44,0.46)
+		home.mats.slate = home.mats.slate.duplicate()
+		home.mats.slate.albedo_color = Color(0.38,0.27,0.16) if rank_value<3 else Color(0.22,0.26,0.29)
+		home.house(5.6,4.6,1 if rank_value<3 else (2 if rank_value<5 else 3),index,false)
+		if rank_value>=4: home.block(Vector3(5.8,0.18,4.8),Vector3(0,0.09,0),"stone")
+		home.finish()
+	if rank_value>=3:
+		# Side lanes, fountains and civic squares distinguish urban stages without
+		# claiming that an unbuilt production facility has been constructed.
+		var civic = Architecture.new()
+		neighborhood.add_child(civic)
+		civic.begin()
+		for x in [-12,12]: civic.block(Vector3(2.2,0.045,32),Vector3(x,0.025,29),"stone")
+		civic.cylinder(3.2,0.30,Vector3(0,0.15,0),"stone")
+		civic.cylinder(2.6,0.32,Vector3(0,0.46,0),"water")
+		civic.cylinder(0.42,2.8,Vector3(0,1.4,0),"stone")
+		if rank_value>=4:
+			for side in [-1,1]: civic.block(Vector3(4.5,0.055,10),Vector3(side*11,0.04,-4),"stone")
+		if rank_value>=5:
+			for side in [-1,1]:
+				civic.cylinder(0.45,5.2,Vector3(side*9,2.6,-10),"stone")
+				civic.cone(0.60,1.0,Vector3(side*9,5.7,-10),"gold")
+		if rank_value==6:
+			civic.block(Vector3(18,0.10,10),Vector3(0,0.08,-14),"stone")
+			for side in [-1,1]: civic.block(Vector3(2.5,0.55,2.5),Vector3(side*9,0.28,-18),"stone")
+		civic.finish()
 
 func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 	architecture.set_meta("defense_level",level_value)
@@ -182,21 +236,24 @@ func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 			var to: Vector3=segment[1]
 			var length_value=from.distance_to(to)
 			if level_value<4:
-				# A level-1 palisade must stay cheap enough for mobile and software CI.
-				# The previous 0.5 m log+cone loop generated ~1,600 procedural pieces
-				# for one enclosure and could stall llvmpipe/low-end Android at startup.
+				# Repeated planks and pointed tips are merged into one material batch.
+				# The initial enclosure is low; actual upgrades add height and stone.
 				var direction=to-from
 				var center=(from+to)*0.5
 				var rotation_value=Vector3(0,atan2(-direction.z,direction.x),0)
-				architecture.block(Vector3(length_value,2.75,0.62),center+Vector3(0,1.375,0),"wood",rotation_value)
-				architecture.block(Vector3(length_value+0.12,0.16,0.82),center+Vector3(0,0.72,0),"wood",rotation_value)
-				architecture.block(Vector3(length_value+0.12,0.16,0.82),center+Vector3(0,1.86,0),"wood",rotation_value)
-				var post_count=ceili(length_value/3.0)
-				for index in range(post_count+1):
-					var distance_value=minf(float(index)*3.0,length_value)
-					var at=from.lerp(to,distance_value/length_value)
-					var post_height=3.0+float(index%3)*0.08
-					architecture.block(Vector3(0.30,post_height,0.92),at+Vector3(0,post_height*0.5,0),"wood",rotation_value)
+				var height_value=1.75+level_value*0.25
+				var count=ceili(length_value/0.82)
+				var tip = CylinderMesh.new()
+				tip.top_radius = 0
+				tip.bottom_radius = 0.34
+				tip.height = 0.36
+				tip.radial_segments = 4
+				for index in range(count):
+					var at=from.lerp(to,(index+0.5)/float(count))
+					var height=height_value+float(index%3)*0.035
+					architecture.block(Vector3(length_value/count-0.03,height,0.34),at+Vector3(0,height*0.5,0),"wood",rotation_value)
+					architecture.piece(tip,at+Vector3(0,height+0.16,0),"wood",rotation_value)
+				for height in [0.55,1.45]: architecture.block(Vector3(length_value,0.15,0.55),center+Vector3(0,height,0),"wood",rotation_value)
 			else:
 				var direction=to-from
 				var center=(from+to)*0.5
@@ -227,6 +284,8 @@ func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 				architecture.block(Vector3(0.65,4,0.65),Vector3(side*7.5,2,0),"wood")
 				architecture.block(Vector3(2.6,2.1,2.8),Vector3(side*9,1.05,0),"wood")
 			architecture.beam(Vector3(-7.5,3.7,0),Vector3(7.5,3.7,0),0.24)
+			for side in [-1,1]:
+				architecture.block(Vector3(4.8,2.2,0.22),Vector3(side*9.7,1.1,-2.2),"wood",Vector3(0,side*0.65,0))
 			architecture.collision(Vector3(1,4,2),Vector3(-7.5,2,0))
 			architecture.collision(Vector3(1,4,2),Vector3(7.5,2,0))
 		else:
@@ -235,6 +294,7 @@ func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 				for side in [-1,1]: architecture.tower(2.5,10,Vector3(side*9,0,0),true)
 
 func apply_development(kingdom: Dictionary) -> void:
+	build_neighborhood(int(kingdom.realm.rank))
 	var active: Dictionary = {}
 	for task in kingdom.tasks:
 		if task.kind=="building": active[task.key]=true
@@ -262,6 +322,7 @@ func apply_development(kingdom: Dictionary) -> void:
 			for x in [-3,3]:
 				for z in [-2.5,2.5]: architecture.cylinder(0.08,1.1,Vector3(x,0.55,z),"wood")
 			architecture.collision(Vector3(7,0.25,6),Vector3(0,0.13,0))
+			architecture.visible = active.has(key)
 		elif key=="keep":
 			if level_value<4:
 				architecture.house(11,9,2 if level_value>=2 else 1,1)

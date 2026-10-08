@@ -27,6 +27,10 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
     assert.equal((await api('/v2/kingdom')).status,401);
     const first=(await api('/v2/kingdom',undefined,token)).body;
     assert.equal(first.progression.level,1); assert.equal(first.buildings.keep,1); assert.equal(first.units[0].alive,8);
+    assert.equal(first.buildings.walls,1); assert.equal(first.buildings.gatehouse,1);
+    assert.equal(first.progression.xp,0,'Starter enclosure must not grant replayable XP');
+    assert.deepEqual(first.command.realm,first.realm,'Settlement and command must share one authoritative realm snapshot');
+    assert.deepEqual(first.command.marches,[]);
     assert.equal(first.catalog.filter(c=>c.kind==='building').length,24); assert.equal(first.catalog.filter(c=>c.kind==='unit').length,16);
     assert.deepEqual((await api('/v1/game',undefined,token)).body.village,legacy.village);
     await pool.query("UPDATE kingdoms SET settled_at=clock_timestamp()-interval '1 hour' WHERE player_id=$1",[player]);
@@ -48,6 +52,7 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
       return (await api('/v2/kingdom',undefined,token)).body;
     }
     const upgraded=await finish('building'); assert.equal(upgraded.buildings.keep,2); assert.equal(upgraded.progression.xp,100);
+    assert.deepEqual(upgraded.command.realm,upgraded.realm);
     const xp=upgraded.progression.xp; assert.equal((await api('/v2/kingdom',undefined,token)).body.progression.xp,xp);
     assert.equal((await api('/v2/buildings/upgrade',{requestId:randomUUID(),key:'farm'},token)).status,200);
     assert.equal((await finish('building')).buildings.farm,2);
