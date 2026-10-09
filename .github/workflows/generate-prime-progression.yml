@@ -47,12 +47,6 @@ jobs:
           sudo tar -xJf "$archive" -C /opt/blender --strip-components=1
           echo "/opt/blender" >> "$GITHUB_PATH"
 
-      - name: Fetch PRIME Blender source
-        run: |
-          git clone --depth 1 https://github.com/hadish0123/RRT.git /tmp/prime-rrt
-          /opt/blender/4.5/python/bin/python3.11 -m ensurepip
-          /opt/blender/4.5/python/bin/python3.11 -m pip install --no-cache-dir --only-binary=:all: -r /tmp/prime-rrt/cloud-worker/requirements.txt
-
       - name: Generate City Country Kingdom Empire
         shell: bash
         run: |
@@ -60,7 +54,7 @@ jobs:
           blender --background --factory-startup --disable-autoexec --threads 2 \
             --python-exit-code 1 \
             --python tools/generate_prime_progression_stages.py \
-            -- "$GITHUB_WORKSPACE" /tmp/prime-rrt
+            -- "$GITHUB_WORKSPACE"
 
       - name: Verify generated assets
         shell: bash
