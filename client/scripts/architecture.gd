@@ -5,17 +5,17 @@ var batches: Dictionary = {}
 var mats: Dictionary = {}
 
 func begin() -> void:
-	mats.wood = Surfaces.pbr("wood_planks", Color(0.65, 0.53, 0.39), 0.7)
-	mats.plaster = Surfaces.pbr("rough_plaster_03", Color(0.91, 0.85, 0.72), 0.22)
+	mats.wood = Surfaces.pbr("wood_planks", Color(0.49, 0.32, 0.18), 0.62)
+	mats.plaster = Surfaces.pbr("rough_plaster_03", Color(0.70, 0.62, 0.49), 0.26)
 	mats.plaster.normal_scale = 0.22
-	mats.stone = Surfaces.pbr("stone_wall_02", Color(0.78, 0.79, 0.74), 0.32)
-	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.52, 0.55, 0.54), 0.28)
+	mats.stone = Surfaces.pbr("stone_wall_02", Color(0.50, 0.51, 0.47), 0.38)
+	mats.roof = Surfaces.pbr("grey_roof_tiles", Color(0.16, 0.23, 0.29), 0.34)
 	mats.iron = Surfaces.plain(Color(0.20, 0.23, 0.25), 0.56, 0.8)
 	mats.dark = Surfaces.plain(Color(0.025, 0.033, 0.035))
-	mats.fabric = Surfaces.pbr("rough_linen", Color(0.54, 0.31, 0.15), 0.6)
+	mats.fabric = Surfaces.pbr("rough_linen", Color(0.07, 0.18, 0.40), 0.55)
 	mats.water = Surfaces.plain(Color(0.065, 0.12, 0.14), 0.16, 0.28)
-	mats.slate = Surfaces.plain(Color(0.20, 0.26, 0.30), 0.77)
-	mats.gold = Surfaces.plain(Color(0.57, 0.40, 0.16), 0.35, 0.8)
+	mats.slate = Surfaces.plain(Color(0.10, 0.17, 0.23), 0.76)
+	mats.gold = Surfaces.plain(Color(0.66, 0.45, 0.14), 0.32, 0.72)
 
 func piece(mesh: Mesh, at: Vector3, material_name: String, rotation_value: Vector3 = Vector3.ZERO) -> void:
 	var surface: SurfaceTool
