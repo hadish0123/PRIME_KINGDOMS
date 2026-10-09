@@ -151,7 +151,17 @@ func refresh() -> void:
 	busy = true
 	var epoch: int = game.world_epoch
 	var response: Dictionary = await game.api.call_api("/v2/kingdom")
-	if epoch != game.world_epoch or not game.in_world: return
+	# A freshly-started local/production backend can need one warm-up request.
+	# Retry only transient transport/server failures; never retry auth/contract errors.
+	if not response.ok and (int(response.status)==0 or int(response.status)>=500):
+		await get_tree().create_timer(0.35).timeout
+		if epoch != game.world_epoch or not game.in_world:
+			busy = false
+			return
+		response = await game.api.call_api("/v2/kingdom")
+	if epoch != game.world_epoch or not game.in_world:
+		busy = false
+		return
 	if response.ok:
 		kingdom = response.data
 		received_ticks = Time.get_ticks_msec()
@@ -445,9 +455,16 @@ func rebuild() -> void:
 		build_map(page("Map"))
 		build_reports(page("Reports"))
 		for title in ["Commanders","Goals","Inbox","Rankings","Wars","Chat"]: build_extra(page(title),title)
-	tabs.current_tab = mini(selected,maxi(0,tabs.get_tab_count()-1))
-	if not desired_section.is_empty(): select_section(desired_section)
-	navigation.selected = tabs.current_tab
+	var tab_count = tabs.get_tab_count()
+	if tab_count > 0:
+		var target_tab = clampi(selected,0,tab_count-1)
+		tabs.current_tab = target_tab
+		if not desired_section.is_empty(): select_section(desired_section)
+		navigation.selected = maxi(0,tabs.current_tab)
+	else:
+		# Empty kingdom/error states intentionally render without management pages.
+		# Do not assign current_tab when no tabs exist; Godot reports that as an error.
+		navigation.selected = 0
 	var action_shell = PanelContainer.new()
 	action_shell.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 	column.add_child(action_shell)
