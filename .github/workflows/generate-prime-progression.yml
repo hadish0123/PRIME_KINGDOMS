@@ -10,11 +10,15 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: prime-progression-graphics
+  cancel-in-progress: true
+
 jobs:
   generate:
     if: contains(github.event.head_commit.message, 'Run full PRIME progression graphics')
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 75
     steps:
       - name: Checkout PRIME KINGDOMS
         uses: actions/checkout@v4
