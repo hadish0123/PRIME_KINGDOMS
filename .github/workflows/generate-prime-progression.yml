@@ -1,0 +1,99 @@
+name: Generate PRIME Progression Graphics
+
+on:
+  push:
+    branches:
+      - feature/production-strategy-polish
+    paths:
+      - .github/workflows/generate-prime-progression.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: contains(github.event.head_commit.message, 'Run full PRIME progression graphics')
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout PRIME KINGDOMS
+        uses: actions/checkout@v4
+        with:
+          ref: feature/production-strategy-polish
+          fetch-depth: 0
+
+      - name: Install Blender runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl xz-utils \
+            libglib2.0-0 libx11-6 libxxf86vm1 libxi6 libxrandr2 libxrender1 \
+            libxfixes3 libxkbcommon0 libsm6 libegl1 libgl1 libgomp1 libdbus-1-3 \
+            libfontconfig1 libfreetype6
+
+      - name: Install Blender 4.5.14
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive=blender-4.5.14-linux-x64.tar.xz
+          base=https://download.blender.org/release/Blender4.5
+          curl -fL --retry 4 --retry-delay 3 "$base/$archive" -o "/tmp/$archive"
+          curl -fL --retry 4 --retry-delay 3 "$base/blender-4.5.14.sha256" -o /tmp/blender.sha256
+          cd /tmp
+          awk -v file="$archive" '$2 == file || $2 == "*" file {print}' blender.sha256 > chosen.sha256
+          test "$(wc -l < chosen.sha256)" -eq 1
+          sha256sum --check chosen.sha256
+          sudo mkdir -p /opt/blender
+          sudo tar -xJf "$archive" -C /opt/blender --strip-components=1
+          echo "/opt/blender" >> "$GITHUB_PATH"
+
+      - name: Fetch PRIME Blender source
+        run: |
+          git clone --depth 1 https://github.com/hadish0123/RRT.git /tmp/prime-rrt
+          /opt/blender/4.5/python/bin/python3.11 -m ensurepip
+          /opt/blender/4.5/python/bin/python3.11 -m pip install --no-cache-dir --only-binary=:all: -r /tmp/prime-rrt/cloud-worker/requirements.txt
+
+      - name: Generate City Country Kingdom Empire
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup --disable-autoexec --threads 2 \
+            --python-exit-code 1 \
+            --python tools/generate_prime_progression_stages.py \
+            -- "$GITHUB_WORKSPACE" /tmp/prime-rrt
+
+      - name: Verify generated assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for stage in city_stage3 country_stage4 kingdom_stage5 empire_stage6; do
+            test -s "client/assets/models/environment/prime_${stage}.glb"
+            test -s "client/assets/models/environment/prime_${stage}.metadata.json"
+            test -s "client/assets/models/environment/prime_${stage}.gd"
+            test -s "client/assets/models/environment/prime_${stage}.tscn"
+            test -s "docs/evidence/graphics/prime_${stage}.png"
+            echo "${stage} GLB: $(stat -c%s "client/assets/models/environment/prime_${stage}.glb") bytes"
+          done
+
+      - name: Commit production progression assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "PRIME Blender Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f \
+            client/assets/models/environment/prime_city_stage3.* \
+            client/assets/models/environment/prime_country_stage4.* \
+            client/assets/models/environment/prime_kingdom_stage5.* \
+            client/assets/models/environment/prime_empire_stage6.* \
+            docs/evidence/graphics/prime_city_stage3.png \
+            docs/evidence/graphics/prime_city_stage3.json \
+            docs/evidence/graphics/prime_country_stage4.png \
+            docs/evidence/graphics/prime_country_stage4.json \
+            docs/evidence/graphics/prime_kingdom_stage5.png \
+            docs/evidence/graphics/prime_kingdom_stage5.json \
+            docs/evidence/graphics/prime_empire_stage6.png \
+            docs/evidence/graphics/prime_empire_stage6.json
+          git status --short
+          git commit -m "Add production City Country Kingdom and Empire graphics"
+          git push origin HEAD:feature/production-strategy-polish
