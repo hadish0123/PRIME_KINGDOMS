@@ -54,9 +54,32 @@ def merge_asset(d, root_name):
     if len(meshes) == 1:
         ob = meshes[0]
         ob.name = root_name + "_Merged"
-    else:
-        result = d.ops.join_objects({"objects":[o.name for o in meshes], "name":root_name+"_Merged"})
-        ob = bpy.data.objects[result["object"]["name"]]
+        cleanup_mesh(ob)
+        return ob.name
+
+    # PRIME's join tool intentionally caps one call at 500 objects. Advanced
+    # Citadel/Empire generators can exceed that, so collapse them in bounded
+    # batches and then join the small set of intermediates.
+    pending = [o.name for o in meshes]
+    round_no = 0
+    while len(pending) > 1:
+        next_round = []
+        for offset in range(0, len(pending), 400):
+            chunk = pending[offset:offset+400]
+            if len(chunk) == 1:
+                next_round.append(chunk[0])
+                continue
+            result = d.ops.join_objects({
+                "objects": chunk,
+                "name": f"{root_name}_MergeR{round_no}_{offset//400:02d}",
+            })
+            joined = result["object"]["name"]
+            cleanup_mesh(bpy.data.objects[joined])
+            next_round.append(joined)
+        pending = next_round
+        round_no += 1
+    ob = bpy.data.objects[pending[0]]
+    ob.name = root_name + "_Merged"
     cleanup_mesh(ob)
     return ob.name
 
