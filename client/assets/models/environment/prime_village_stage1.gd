@@ -2,6 +2,7 @@ extends Node3D
 
 const GAMEPLAY_MESH_PREFIXES := [
     "PK_Village_Castle_L1",
+    "PK_Village_House_",
     "PK_Village_Academy_L1",
     "PK_Village_Blacksmith_L1",
     "PK_Village_Warehouse_L1",
