@@ -3,9 +3,8 @@ import sys, json, math, traceback
 from pathlib import Path
 import bpy, bmesh
 
-REPO = Path(sys.argv[-2]).resolve()
-RRT = Path(sys.argv[-1]).resolve()
-sys.path.insert(0, str(RRT / "blender-addon"))
+REPO = Path(sys.argv[-1]).resolve()
+sys.path.insert(0, str(REPO / "tools/prime_vendor"))
 from prime_blender_bridge.dispatcher import Dispatcher
 
 OUT_MODELS = REPO / "client/assets/models/environment"
