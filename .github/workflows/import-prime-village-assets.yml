@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
           git config user.name "PRIME Blender Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add client/assets/models/environment/prime_village_stage1.*
+          git add -f client/assets/models/environment/prime_village_stage1.*
           if git diff --cached --quiet; then
             echo "Assets already current."
             exit 0
