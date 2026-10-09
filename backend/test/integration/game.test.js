@@ -6,7 +6,7 @@ import pg from 'pg';
 import { createDatabase, initializeDatabase } from '../../src/database.js';
 import { createApplication } from '../../src/server.js';
 
-test('real PostgreSQL: register once, rejoin the same village, own movement and opaque sessions', async () => {
+test('real PostgreSQL: register once, rejoin the same village, archived state and opaque sessions', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable database');
   const admin = new pg.Pool({ connectionString: process.env.TEST_DATABASE_URL });
   const schema = `game_${randomUUID().replaceAll('-', '')}`;
@@ -47,42 +47,11 @@ test('real PostgreSQL: register once, rejoin the same village, own movement and 
     const second = await api('/v1/auth/register', { ...credentials, email: 'settler@example.com', displayName: 'Settler' });
     assert.equal(second.status, 201);
     assert.notDeepEqual(second.body.state.village.position, state.village.position);
-    // Real controllers continuously produce fractional coordinates, including
-    // negative values. Integer range literals must not make PostgreSQL infer
-    // these parameters as integer: that used to cause 503 and snap-back.
-    for (const [dx, dz] of [[-2.146629571914673, 0.34905490279197693], [0.3417304456233978, -1.5233107805252075]]) {
-      const fractional = { ...state.player.position, x: state.player.position.x + dx, z: state.player.position.z + dz };
-      await pool.query("UPDATE players SET movement_credit=4, position_updated_at=now()-interval '2 seconds' WHERE id=$1", [state.player.id]);
-      const moved = await api('/v1/player/move', { position: fractional, yaw: -0.2345 }, token);
-      assert.equal(moved.status, 200, JSON.stringify(moved.body));
-      assert.deepEqual(moved.body.position, fractional);
-      const vicinity = await api('/v1/world/nearby', undefined, token);
-      assert.equal(vicinity.status, 200, JSON.stringify(vicinity.body));
-      assert.ok(vicinity.body.villages.some(v => v.id === state.village.id));
-      assert.ok(vicinity.body.players.some(p => p.id === second.body.state.player.id));
-      assert.deepEqual((await api('/v1/game', undefined, token)).body.player.position, fractional);
+    const target=state.player.position;
+    for(const route of ['/v1/player/move','/v1/player/mount','/v1/player/order','/v1/territory/claim']) {
+      assert.equal((await api(route,{},token)).status,404,'Obsolete gameplay route remains active');
     }
-    const target = { ...state.player.position, x: state.player.position.x + 24 };
-    await pool.query("UPDATE players SET position_updated_at=now()-interval '5 seconds' WHERE id=$1", [state.player.id]);
-    assert.equal((await api('/v1/player/move', { position: target, yaw: 0.5, playerId: second.body.state.player.id }, token)).status, 200);
-    assert.deepEqual((await api('/v1/game', undefined, second.body.session.token)).body.player.position, second.body.state.player.position);
-    assert.equal((await api('/v1/player/move', { position: { ...target, x: 9000 }, yaw: 0 }, token)).status, 409);
-    assert.equal((await api('/v1/player/move', { position: { ...target, x: 40000 }, yaw: 0 }, token)).status, 400);
-    assert.equal((await api('/v1/player/move', { position: { ...target, y: 'wrong' }, yaw: 0 }, token)).status, 400);
-    assert.equal((await api('/v1/player/move', { position: { ...target, y: 230 }, yaw: 0 }, token)).body.error, 'height_rejected');
-    assert.equal((await api('/v1/player/move', { position: { ...target, y: 0 }, yaw: 0 }, token)).body.error, 'height_rejected');
-    // A spammer cannot claim the four-metre jitter margin over and over.
-    await pool.query('UPDATE players SET movement_credit=4, position_updated_at=clock_timestamp() WHERE id=$1', [state.player.id]);
-    let acceptedX = target.x;
-    const burstStarted = performance.now();
-    for (let attempt = 0; attempt < 12; attempt++) {
-      const response = await api('/v1/player/move', { position: { ...target, x: acceptedX + 4 }, yaw: 0.5 }, token);
-      if (response.status === 200) acceptedX += 4;
-      else assert.equal(response.body.error, 'movement_rejected');
-    }
-    const allowedBurst = 4 + 12 * (performance.now() - burstStarted) / 1000;
-    assert.ok(acceptedX - target.x <= allowedBurst + 0.01, 'Movement request spam regenerated the latency allowance');
-    await pool.query('UPDATE players SET x=$2, movement_credit=4 WHERE id=$1', [state.player.id, target.x]);
+    assert.deepEqual((await api('/v1/game',undefined,token)).body.player.position,target);
     const nearby = await api('/v1/world/nearby', undefined, token);
     assert.equal(nearby.status, 200); assert.equal(nearby.body.villages.length, 2);
     assert.equal(nearby.body.players.length, 1);

@@ -1,6 +1,6 @@
 export async function grantXP(db, profile, source, eventId, requested, now) {
   let amount = Math.min(100000, Math.max(0, Math.floor(requested)));
-  if (source === 'training' || source === 'research') {
+  if (source === 'training' || source === 'research' || source==='battle') {
     const cap = Number((await db.query('SELECT value FROM kingdom_config WHERE key=$1', [`daily_${source}_xp_cap`])).rows[0].value);
     const used = Number((await db.query("SELECT coalesce(sum(amount),0) AS used FROM kingdom_xp_events WHERE player_id=$1 AND source=$2 AND occurred_at >= date_trunc('day',$3::timestamptz AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'", [profile.player_id, source, now])).rows[0].used);
     amount = Math.max(0, Math.min(amount, cap - used));

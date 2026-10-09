@@ -38,11 +38,11 @@ func _ready() -> void:
 	overlay.draw.connect(draw_markers)
 
 func _process(delta: float) -> void:
-	if not is_visible_in_tree() or not game.in_world or not is_instance_valid(game.player): return
+	if not is_visible_in_tree() or not game.in_world or not is_instance_valid(game.strategy_camera): return
 	clock += delta
 	if clock < 0.45: return
 	clock = 0.0
-	camera.position = game.player.global_position+Vector3(0,700,0)
+	camera.position = Vector3(0,700,0)
 	view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	overlay.queue_redraw()
 
@@ -50,9 +50,14 @@ func draw_markers() -> void:
 	var center = size*0.5
 	overlay.draw_arc(center,size.x*0.5-4,0,TAU,80,Color(0.78,0.62,0.34),2,true)
 	overlay.draw_arc(center,size.x*0.5-9,0,TAU,80,Color(0.78,0.62,0.34,0.5),1,true)
-	if not game.in_world or not is_instance_valid(game.player): return
-	var points = PackedVector2Array()
-	for p in [Vector2(0,-12),Vector2(-7,8),Vector2(0,4),Vector2(7,8)]:
-		points.append(center+p.rotated(PI-game.player.actor.rotation.y))
-	overlay.draw_colored_polygon(points,Color(0.96,0.78,0.25))
+	for index in range(4):
+		var angle = index*PI*0.5
+		var at = center+Vector2(cos(angle),sin(angle))*(size.x*0.5-4)
+		var jewel = PackedVector2Array([at+Vector2(0,-5),at+Vector2(4,0),at+Vector2(0,5),at+Vector2(-4,0),at+Vector2(0,-5)])
+		overlay.draw_colored_polygon(jewel,Color(0.31,0.23,0.13))
+		overlay.draw_polyline(jewel,Color(0.80,0.66,0.37),1.0,true)
+	if not game.in_world or not is_instance_valid(game.strategy_camera): return
+	var focus: Vector3 = game.strategy_camera.focus
+	var marker = center+Vector2(focus.x,focus.z)*size.x/175.0
+	overlay.draw_arc(marker,9,0,TAU,24,Color(0.96,0.78,0.25),2,true)
 	overlay.draw_string(ThemeDB.fallback_font,Vector2(center.x-5,20),"N",HORIZONTAL_ALIGNMENT_LEFT,-1,15,Color(0.97,0.89,0.64))

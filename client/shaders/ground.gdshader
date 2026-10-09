@@ -31,16 +31,25 @@ void fragment() {
     if (far_surface && distance(terrain_world.xz,CAMERA_POSITION_WORLD.xz) < 590.0) { discard; }
     float macro = noise(UV * 0.033);
     float fine = noise(UV * 0.24);
-    vec2 tile = UV * 0.50;
-    vec3 grass = mix(texture(grass_map,tile).rgb,texture(grass_map,vec2(-tile.y,tile.x)*0.77+vec2(0.29,0.57)).rgb,0.35);
-    grass *= mix(vec3(0.54,0.65,0.31),vec3(0.79,0.84,0.52),macro);
-    float settlement = 1.0 - smoothstep(43.0, 76.0, distance(UV, village_center));
+    vec2 tile = UV * 0.17;
+    vec3 grass = mix(texture(grass_map,tile).rgb,texture(grass_map,vec2(-tile.y,tile.x)*0.73+vec2(0.29,0.57)).rgb,0.48);
+    // Rich meadow greens keep the settlement from reading as one flat olive field.
+    grass *= mix(vec3(0.48,0.68,0.31),vec3(0.74,0.86,0.49),macro);
+    vec2 village_local = UV - village_center;
+    float settlement = 1.0 - smoothstep(40.0, 74.0, length(village_local));
     vec3 earth = texture(mud_map, tile).rgb;
-    float patch = smoothstep(0.49,0.79,fine*0.40+macro*0.60);
-    float blend = max(settlement*(0.30+patch*0.45),patch*0.38);
+    float patch = smoothstep(0.52,0.82,fine*0.42+macro*0.58);
+    // Two authored village paths match the clear corridors used by Nature.
+    float north_road = 1.0 - smoothstep(2.5,5.0,abs(village_local.x));
+    north_road *= 1.0 - smoothstep(58.0,72.0,abs(village_local.y));
+    float market_road = 1.0 - smoothstep(2.6,4.6,abs(village_local.y-8.0));
+    market_road *= 1.0 - smoothstep(40.0,50.0,abs(village_local.x));
+    float road = max(north_road,market_road) * settlement;
+    float blend = max(settlement*(0.035+patch*0.12),patch*0.18);
+    blend = max(blend,road*0.58);
     ALBEDO = mix(grass, earth, blend);
     NORMAL_MAP = mix(texture(grass_normal, tile).rgb, texture(mud_normal, tile).rgb, blend);
-    NORMAL_MAP_DEPTH = 0.85;
+    NORMAL_MAP_DEPTH = 0.55;
     ROUGHNESS = mix(texture(grass_rough, tile).r, texture(mud_rough, tile).r, blend);
     float cliff = smoothstep(0.10,0.39,1.0-terrain_normal.y);
     ALBEDO = mix(ALBEDO,texture(rock_map,UV*0.19).rgb * vec3(0.67,0.68,0.65),cliff);

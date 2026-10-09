@@ -1,8 +1,8 @@
 extends SceneTree
 
-# The production controller and actual wardrobe, under neutral inspection light.
+# The decorative ruler and actual wardrobe, under neutral inspection light.
 var failures: Array[String] = []
-var player: CharacterBody3D
+var actor: Node3D
 var camera: Camera3D
 
 func triangles(node: Node) -> int:
@@ -35,6 +35,7 @@ func capture(name_value: String,at: Vector3,target: Vector3) -> void:
 		check(root.get_texture().get_image().save_png("res://builds/"+name_value+".png")==OK,"Character render failed")
 
 func run() -> void:
+	DirAccess.make_dir_recursive_absolute("res://builds")
 	# Regression: a valid unindexed triangle must not disappear from the
 	# geometry budget when ARRAY_INDEX is absent.
 	var unindexed = MeshInstance3D.new()
@@ -76,45 +77,23 @@ func run() -> void:
 	collider.shape = shape
 	collider.position.y = -0.1
 	ground.add_child(collider)
-	player = load("res://scripts/player.gd").new()
-	scene.add_child(player)
-	player.position.y = 0.1
+	actor = load("res://scripts/actor.gd").new()
+	scene.add_child(actor)
+	actor.setup("player")
+	actor.position.y = 0.1
 	camera = Camera3D.new()
 	camera.fov = 38
 	camera.current = true
 	scene.add_child(camera)
 	for i in range(30): await physics_frame
-	check(player.actor.skeleton.get_bone_count()==49,"Production player rig missing")
-	var triangle_count = triangles(player.actor)
-	check(triangle_count<210000,"Player mesh exceeded the medium-quality geometry budget")
-	var identity: int = player.actor.wardrobe.sword.get_instance_id()
+	check(actor.skeleton.get_bone_count()==49,"Decorative ruler rig missing")
+	var triangle_count = triangles(actor)
+	check(triangle_count<210000,"Ruler mesh exceeded the medium-quality geometry budget")
 	await capture("character-front",Vector3(1.0,1.32,3.30),Vector3(0,1.0,0))
 	await capture("character-face",Vector3(0.26,1.79,0.93),Vector3(0,1.69,0))
 	await capture("character-profile",Vector3(-0.83,1.79,0.28),Vector3(0,1.69,0))
 	await capture("character-back",Vector3(-1.0,1.32,-3.30),Vector3(0,1.0,0))
-	player.toggle_weapon()
-	for i in range(100): await physics_frame
-	check(player.actor.weapon_drawn,"Production sword draw failed")
-	check(player.actor.wardrobe.sword.get_instance_id()==identity,"Sword instance changed")
-	await capture("character-sword",Vector3(1.10,1.32,3.30),Vector3(0,1.0,0))
-	player.attack()
-	for i in range(70): await physics_frame
-	player.toggle_weapon()
-	for i in range(100): await physics_frame
-	check(not player.actor.weapon_drawn,"Production sword sheathe failed")
-	if "--record" in OS.get_cmdline_user_args() and DisplayServer.get_name() != "headless":
-		DirAccess.make_dir_recursive_absolute("res://builds/character-frames")
-		for frame in range(240):
-			if frame == 25: player.toggle_weapon()
-			if frame == 90: player.attack()
-			if frame == 140: player.toggle_weapon()
-			var angle = float(frame)/240.0*TAU
-			camera.position = Vector3(sin(angle)*3.35,1.34,cos(angle)*3.35)
-			camera.look_at(Vector3(0,1.0,0))
-			await process_frame
-			await RenderingServer.frame_post_draw
-			check(root.get_texture().get_image().save_png("res://builds/character-frames/%04d.png"%frame)==OK,"Character recording frame failed")
-	print("CHARACTER_REVIEW ",JSON.stringify({"failures":failures,"actual_production_player":true,"triangles":triangle_count,"reference_match":"not_certified"}))
+	print("CHARACTER_REVIEW ",JSON.stringify({"failures":failures,"decorative_ruler":true,"triangles":triangle_count,"reference_match":"not_certified"}))
 	scene.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

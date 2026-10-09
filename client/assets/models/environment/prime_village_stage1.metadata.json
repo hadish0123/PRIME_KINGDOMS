@@ -1,0 +1,597 @@
+{
+  "asset_name": "prime_village_stage1",
+  "triangle_count": 45423,
+  "materials": [
+    "PK_Cloth_RoyalBlue",
+    "PK_Dark_Trim",
+    "PK_Grass_Meadow",
+    "PK_Ground_Earth",
+    "PK_Ground_GreenEarth",
+    "PK_Iron_Dark",
+    "PK_Limestone_Cream",
+    "PK_Monument_Gold",
+    "PK_Plaster_Warm",
+    "PK_Plaza_Stone",
+    "PK_Roof_BlueSlate",
+    "PK_Stone_Warm",
+    "PK_Timber_Warm",
+    "PRIME_Cloth",
+    "PRIME_Dark",
+    "PRIME_Grass",
+    "PRIME_Ground",
+    "PRIME_Iron",
+    "PRIME_Leaves",
+    "PRIME_Limestone",
+    "PRIME_Plaster",
+    "PRIME_Roof",
+    "PRIME_Stone",
+    "PRIME_Timber",
+    "PRIME_Water"
+  ],
+  "textures": [],
+  "lods": [
+    {
+      "name": "PK_Village_Castle_L1_LOD0",
+      "level": 0,
+      "triangles": 14972
+    },
+    {
+      "name": "PK_Village_Castle_L1_LOD1",
+      "level": 1,
+      "triangles": 8982
+    },
+    {
+      "name": "PK_Village_Castle_L1_LOD2",
+      "level": 2,
+      "triangles": 4416
+    },
+    {
+      "name": "PK_Village_Castle_L1_LOD3",
+      "level": 3,
+      "triangles": 1682
+    },
+    {
+      "name": "PK_Village_Academy_L1_LOD0",
+      "level": 0,
+      "triangles": 1933
+    },
+    {
+      "name": "PK_Village_Academy_L1_LOD1",
+      "level": 1,
+      "triangles": 1159
+    },
+    {
+      "name": "PK_Village_Academy_L1_LOD2",
+      "level": 2,
+      "triangles": 554
+    },
+    {
+      "name": "PK_Village_Academy_L1_LOD3",
+      "level": 3,
+      "triangles": 187
+    },
+    {
+      "name": "PK_Village_Blacksmith_L1_LOD0",
+      "level": 0,
+      "triangles": 1262
+    },
+    {
+      "name": "PK_Village_Blacksmith_L1_LOD1",
+      "level": 1,
+      "triangles": 756
+    },
+    {
+      "name": "PK_Village_Blacksmith_L1_LOD2",
+      "level": 2,
+      "triangles": 361
+    },
+    {
+      "name": "PK_Village_Blacksmith_L1_LOD3",
+      "level": 3,
+      "triangles": 109
+    },
+    {
+      "name": "PK_Village_Warehouse_L1_LOD0",
+      "level": 0,
+      "triangles": 1308
+    },
+    {
+      "name": "PK_Village_Warehouse_L1_LOD1",
+      "level": 1,
+      "triangles": 784
+    },
+    {
+      "name": "PK_Village_Warehouse_L1_LOD2",
+      "level": 2,
+      "triangles": 372
+    },
+    {
+      "name": "PK_Village_Warehouse_L1_LOD3",
+      "level": 3,
+      "triangles": 117
+    },
+    {
+      "name": "PK_Village_Stable_L1_LOD0",
+      "level": 0,
+      "triangles": 1270
+    },
+    {
+      "name": "PK_Village_Stable_L1_LOD1",
+      "level": 1,
+      "triangles": 762
+    },
+    {
+      "name": "PK_Village_Stable_L1_LOD2",
+      "level": 2,
+      "triangles": 360
+    },
+    {
+      "name": "PK_Village_Stable_L1_LOD3",
+      "level": 3,
+      "triangles": 115
+    },
+    {
+      "name": "PK_Village_House_B_LOD0",
+      "level": 0,
+      "triangles": 1084
+    },
+    {
+      "name": "PK_Village_House_B_LOD1",
+      "level": 1,
+      "triangles": 650
+    },
+    {
+      "name": "PK_Village_House_B_LOD2",
+      "level": 2,
+      "triangles": 306
+    },
+    {
+      "name": "PK_Village_House_B_LOD3",
+      "level": 3,
+      "triangles": 95
+    },
+    {
+      "name": "PK_Village_House_C_LOD0",
+      "level": 0,
+      "triangles": 1084
+    },
+    {
+      "name": "PK_Village_House_C_LOD1",
+      "level": 1,
+      "triangles": 650
+    },
+    {
+      "name": "PK_Village_House_C_LOD2",
+      "level": 2,
+      "triangles": 306
+    },
+    {
+      "name": "PK_Village_House_C_LOD3",
+      "level": 3,
+      "triangles": 95
+    },
+    {
+      "name": "PK_Village_House_L1_LOD0",
+      "level": 0,
+      "triangles": 2156
+    },
+    {
+      "name": "PK_Village_House_L1_LOD1",
+      "level": 1,
+      "triangles": 1292
+    },
+    {
+      "name": "PK_Village_House_L1_LOD2",
+      "level": 2,
+      "triangles": 640
+    },
+    {
+      "name": "PK_Village_House_L1_LOD3",
+      "level": 3,
+      "triangles": 235
+    },
+    {
+      "name": "PK_Village_Farm_L1_LOD0",
+      "level": 0,
+      "triangles": 1245
+    },
+    {
+      "name": "PK_Village_Farm_L1_LOD1",
+      "level": 1,
+      "triangles": 726
+    },
+    {
+      "name": "PK_Village_Farm_L1_LOD2",
+      "level": 2,
+      "triangles": 305
+    },
+    {
+      "name": "PK_Village_Farm_L1_LOD3",
+      "level": 3,
+      "triangles": 125
+    },
+    {
+      "name": "PK_Village_Market_LOD0",
+      "level": 0,
+      "triangles": 2246
+    },
+    {
+      "name": "PK_Village_Market_LOD1",
+      "level": 1,
+      "triangles": 1346
+    },
+    {
+      "name": "PK_Village_Market_LOD2",
+      "level": 2,
+      "triangles": 648
+    },
+    {
+      "name": "PK_Village_Market_LOD3",
+      "level": 3,
+      "triangles": 224
+    },
+    {
+      "name": "PK_Village_Well_LOD0",
+      "level": 0,
+      "triangles": 1496
+    },
+    {
+      "name": "PK_Village_Well_LOD1",
+      "level": 1,
+      "triangles": 896
+    },
+    {
+      "name": "PK_Village_Well_LOD2",
+      "level": 2,
+      "triangles": 436
+    },
+    {
+      "name": "PK_Village_Well_LOD3",
+      "level": 3,
+      "triangles": 146
+    },
+    {
+      "name": "PK_Village_Palisade_A_LOD0",
+      "level": 0,
+      "triangles": 1772
+    },
+    {
+      "name": "PK_Village_Palisade_A_LOD1",
+      "level": 1,
+      "triangles": 1062
+    },
+    {
+      "name": "PK_Village_Palisade_A_LOD2",
+      "level": 2,
+      "triangles": 466
+    },
+    {
+      "name": "PK_Village_Palisade_A_LOD3",
+      "level": 3,
+      "triangles": 127
+    },
+    {
+      "name": "PK_Village_Watchtower_L1_LOD0",
+      "level": 0,
+      "triangles": 1190
+    },
+    {
+      "name": "PK_Village_Watchtower_L1_LOD1",
+      "level": 1,
+      "triangles": 713
+    },
+    {
+      "name": "PK_Village_Watchtower_L1_LOD2",
+      "level": 2,
+      "triangles": 351
+    },
+    {
+      "name": "PK_Village_Watchtower_L1_LOD3",
+      "level": 3,
+      "triangles": 136
+    },
+    {
+      "name": "PK_Village_Road_Main_LOD0",
+      "level": 0,
+      "triangles": 3
+    },
+    {
+      "name": "PK_Village_Road_Main_LOD1",
+      "level": 1,
+      "triangles": 3
+    },
+    {
+      "name": "PK_Village_Road_Main_LOD2",
+      "level": 2,
+      "triangles": 3
+    },
+    {
+      "name": "PK_Village_Road_Main_LOD3",
+      "level": 3,
+      "triangles": 3
+    },
+    {
+      "name": "PK_Village_Road_Cross_LOD0",
+      "level": 0,
+      "triangles": 30
+    },
+    {
+      "name": "PK_Village_Road_Cross_LOD1",
+      "level": 1,
+      "triangles": 18
+    },
+    {
+      "name": "PK_Village_Road_Cross_LOD2",
+      "level": 2,
+      "triangles": 6
+    },
+    {
+      "name": "PK_Village_Road_Cross_LOD3",
+      "level": 3,
+      "triangles": 3
+    },
+    {
+      "name": "PK_Village_Cart_LOD0",
+      "level": 0,
+      "triangles": 1046
+    },
+    {
+      "name": "PK_Village_Cart_LOD1",
+      "level": 1,
+      "triangles": 610
+    },
+    {
+      "name": "PK_Village_Cart_LOD2",
+      "level": 2,
+      "triangles": 286
+    },
+    {
+      "name": "PK_Village_Cart_LOD3",
+      "level": 3,
+      "triangles": 117
+    },
+    {
+      "name": "PK_Village_Fence_A_LOD0",
+      "level": 0,
+      "triangles": 2102
+    },
+    {
+      "name": "PK_Village_Fence_A_LOD1",
+      "level": 1,
+      "triangles": 1260
+    },
+    {
+      "name": "PK_Village_Fence_A_LOD2",
+      "level": 2,
+      "triangles": 630
+    },
+    {
+      "name": "PK_Village_Fence_A_LOD3",
+      "level": 3,
+      "triangles": 252
+    },
+    {
+      "name": "PK_Village_Terrain_LOD0",
+      "level": 0,
+      "triangles": 1041
+    },
+    {
+      "name": "PK_Village_Terrain_LOD1",
+      "level": 1,
+      "triangles": 624
+    },
+    {
+      "name": "PK_Village_Terrain_LOD2",
+      "level": 2,
+      "triangles": 312
+    },
+    {
+      "name": "PK_Village_Terrain_LOD3",
+      "level": 3,
+      "triangles": 120
+    },
+    {
+      "name": "PK_Castle_Props_LOD0",
+      "level": 0,
+      "triangles": 108
+    },
+    {
+      "name": "PK_Castle_Props_LOD1",
+      "level": 1,
+      "triangles": 60
+    },
+    {
+      "name": "PK_Castle_Props_LOD2",
+      "level": 2,
+      "triangles": 26
+    },
+    {
+      "name": "PK_Castle_Props_LOD3",
+      "level": 3,
+      "triangles": 8
+    },
+    {
+      "name": "PK_Market_Props_LOD0",
+      "level": 0,
+      "triangles": 4900
+    },
+    {
+      "name": "PK_Market_Props_LOD1",
+      "level": 1,
+      "triangles": 2798
+    },
+    {
+      "name": "PK_Market_Props_LOD2",
+      "level": 2,
+      "triangles": 1328
+    },
+    {
+      "name": "PK_Market_Props_LOD3",
+      "level": 3,
+      "triangles": 612
+    },
+    {
+      "name": "PK_Tree_Edge_A_LOD0",
+      "level": 0,
+      "triangles": 1240
+    },
+    {
+      "name": "PK_Tree_Edge_A_LOD1",
+      "level": 1,
+      "triangles": 716
+    },
+    {
+      "name": "PK_Tree_Edge_A_LOD2",
+      "level": 2,
+      "triangles": 340
+    },
+    {
+      "name": "PK_Tree_Edge_A_LOD3",
+      "level": 3,
+      "triangles": 99
+    },
+    {
+      "name": "PK_Tree_Edge_B_LOD0",
+      "level": 0,
+      "triangles": 1240
+    },
+    {
+      "name": "PK_Tree_Edge_B_LOD1",
+      "level": 1,
+      "triangles": 716
+    },
+    {
+      "name": "PK_Tree_Edge_B_LOD2",
+      "level": 2,
+      "triangles": 340
+    },
+    {
+      "name": "PK_Tree_Edge_B_LOD3",
+      "level": 3,
+      "triangles": 100
+    },
+    {
+      "name": "PK_Rock_Cluster_LOD0",
+      "level": 0,
+      "triangles": 210
+    },
+    {
+      "name": "PK_Rock_Cluster_LOD1",
+      "level": 1,
+      "triangles": 126
+    },
+    {
+      "name": "PK_Rock_Cluster_LOD2",
+      "level": 2,
+      "triangles": 62
+    },
+    {
+      "name": "PK_Rock_Cluster_LOD3",
+      "level": 3,
+      "triangles": 23
+    },
+    {
+      "name": "PK_Grass_Cluster_LOD0",
+      "level": 0,
+      "triangles": 35
+    },
+    {
+      "name": "PK_Grass_Cluster_LOD1",
+      "level": 1,
+      "triangles": 21
+    },
+    {
+      "name": "PK_Grass_Cluster_LOD2",
+      "level": 2,
+      "triangles": 10
+    },
+    {
+      "name": "PK_Grass_Cluster_LOD3",
+      "level": 3,
+      "triangles": 4
+    }
+  ],
+  "bounding_box": {
+    "min": [
+      -31.025232315063477,
+      -31.01766014099121,
+      -4.979991912841797
+    ],
+    "max": [
+      39.573143005371094,
+      31.025632858276367,
+      13.747879028320312
+    ],
+    "dimensions": [
+      70.59837532043457,
+      62.04329299926758,
+      18.72787094116211
+    ]
+  },
+  "recommended_distance": 55,
+  "android_quality_tier": "android_medium",
+  "godot_validation": {
+    "valid": true,
+    "issues": [],
+    "warnings": [
+      "PRIME_Limestone: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Stone: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Timber: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Roof: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Plaster: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Grass: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Ground: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Leaves: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PK_Rock_Cluster_LOD0: unapplied scale (glTF carries the transform)",
+      "PK_Rock_Cluster_LOD1: unapplied scale (glTF carries the transform)",
+      "PK_Rock_Cluster_LOD2: unapplied scale (glTF carries the transform)",
+      "PK_Rock_Cluster_LOD3: unapplied scale (glTF carries the transform)"
+    ],
+    "scale": {
+      "unit": "metres",
+      "gltf_up_axis": "Y",
+      "godot_up_axis": "Y"
+    },
+    "rotation": "Blender Z-up converted to glTF/Godot Y-up",
+    "normals": "exported",
+    "materials": [
+      "PK_Cloth_RoyalBlue",
+      "PK_Dark_Trim",
+      "PK_Grass_Meadow",
+      "PK_Ground_Earth",
+      "PK_Ground_GreenEarth",
+      "PK_Iron_Dark",
+      "PK_Limestone_Cream",
+      "PK_Monument_Gold",
+      "PK_Plaster_Warm",
+      "PK_Plaza_Stone",
+      "PK_Roof_BlueSlate",
+      "PK_Stone_Warm",
+      "PK_Timber_Warm",
+      "PRIME_Cloth",
+      "PRIME_Dark",
+      "PRIME_Grass",
+      "PRIME_Ground",
+      "PRIME_Iron",
+      "PRIME_Leaves",
+      "PRIME_Limestone",
+      "PRIME_Plaster",
+      "PRIME_Roof",
+      "PRIME_Stone",
+      "PRIME_Timber",
+      "PRIME_Water"
+    ],
+    "textures": [],
+    "armatures": [],
+    "animations": [],
+    "file_size": 12227672,
+    "triangle_count": 89751
+  },
+  "lod_distances": [
+    0,
+    22.0,
+    38.5,
+    55
+  ],
+  "style": "Medieval semi-realistic premium mobile strategy"
+}

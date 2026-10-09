@@ -21,7 +21,7 @@ func save_session(value: String) -> void:
 
 func call_api(path: String, body = null) -> Dictionary:
 	var http = HTTPRequest.new()
-	http.timeout = 8.0
+	http.timeout = 20.0
 	http.body_size_limit = 1024 * 1024
 	http.max_redirects = 0
 	http.use_threads = true
@@ -37,7 +37,7 @@ func call_api(path: String, body = null) -> Dictionary:
 	var response = await http.request_completed
 	http.queue_free()
 	if response[0] != HTTPRequest.RESULT_SUCCESS:
-		return {"ok": false, "status": 0, "error": "connection_failed"}
+		return {"ok": false, "status": 0, "error": "connection_timeout" if response[0] == HTTPRequest.RESULT_TIMEOUT else "connection_failed"}
 	var parsed = JSON.parse_string(response[3].get_string_from_utf8())
 	if not parsed is Dictionary:
 		return {"ok": false, "status": response[1], "error": "invalid_response"}

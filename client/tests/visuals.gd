@@ -17,24 +17,42 @@ func capture(file_name: String) -> void:
 	if not result.is_empty(): check(result.save_png("res://builds/" + file_name) == OK, "Visual capture cannot be saved")
 
 func run() -> void:
+	DirAccess.make_dir_recursive_absolute("res://builds")
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixture.json"))
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
+	# This suite validates 3D architecture, characters and bounded scenery.
+	# Strategy HUD evidence is captured separately by smoke.gd as settlement.png.
+	# Disable the entire UI CanvasLayer BEFORE enter_world(), because enter_world()
+	# deliberately exposes the HUD and waits one rendered frame. With llvmpipe that
+	# single premium emoji/card frame can dominate this unrelated 3D test.
+	game.ui.visible = false
+	game.preferences.quality = 0
 	await game.enter_world(fixture.state)
-	game.player.position.x = 3.0
-	game.player.position.y = 0.1
-	var actor = game.player.actor
+	var settlement = game.villages[fixture.state.village.id]
+	var development={"tasks":[],"buildings":{"keep":1,"walls":0,"watch_towers":0,"gatehouse":0},"realm":{"rank":1}}
+	settlement.apply_development(development)
+	check(not settlement.building_nodes.walls.has_meta("defense_level"),"Unbuilt walls displayed a completed enclosure")
+	var survey_triangles=triangles(settlement.building_nodes.walls)
+	development.buildings.walls=1
+	development.buildings.watch_towers=1
+	development.buildings.gatehouse=1
+	settlement.apply_development(development)
+	check(settlement.building_nodes.walls.get_meta("defense_level")==1,"Timber walls did not follow the completed level")
+	check(triangles(settlement.building_nodes.walls)>survey_triangles,"Construction did not replace the surveyed site with defenses")
+	check(settlement.building_nodes.watch_towers.get_meta("defense_level")==1,"Watchtowers ignored their building level")
+	development.buildings.walls=4
+	development.buildings.watch_towers=4
+	development.buildings.gatehouse=4
+	settlement.apply_development(development)
+	check(settlement.building_nodes.walls.get_meta("defense_level")==4,"Stone wall milestone did not persist")
+	check(settlement.building_nodes.gatehouse.get_meta("defense_level")==4,"Gatehouse milestone did not follow the actual level")
+	development.buildings.walls=12
+	settlement.apply_development(development)
+	check(settlement.population.size()==13,"Architectural progression replaced resident identities")
+	var actor = game.ruler
 	check(actor.skeleton != null and actor.skeleton.get_bone_count() == 49, "Anatomical character rig did not load")
-	var inn = game.villages[fixture.state.village.id].get_node("inn")
-	var gable_present = false
-	for visual in inn.get_children():
-		if visual is not MeshInstance3D: continue
-		if visual.material_override.get_meta("source_asset", "") != "rough_plaster_03": continue
-		var arrays = visual.mesh.surface_get_arrays(0)
-		for index in arrays[Mesh.ARRAY_INDEX]:
-			if arrays[Mesh.ARRAY_VERTEX][index].y > 8.0: gable_present = true
-	check(gable_present, "Indexed village wall batch omitted its gable triangles")
-	for name_value in ["idle", "walk", "run", "jump", "fall", "land", "guard", "work", "draw", "sheathe", "attack", "lie_down", "prone", "crawl", "stand_up", "ride"]:
+	for name_value in ["idle","walk","guard","work","attack","death","block","hit"]:
 		check(actor.animation.has_animation(name_value), "Missing character motion: " + name_value)
 	var bone: int = actor.skeleton.find_bone("lowerleg01.L")
 	actor.animation.play("walk",0.0)
@@ -46,7 +64,6 @@ func run() -> void:
 	var camera = Camera3D.new()
 	game.world_root.add_child(camera)
 	camera.fov = 48
-	game.player.frozen = true
 	for frame in range(80): await process_frame
 	check(game.terrain.nature.grass.size() <= 49 and game.terrain.nature.groves.size() <= 25, "Balanced scenery allocation exceeded its budget")
 	# Two players can render the same global place relative to different homes.
@@ -61,6 +78,7 @@ func run() -> void:
 	var first_world: Vector3 = first.position + first.multimesh.get_instance_transform(0).origin + original_origin
 	var mirror = load("res://scripts/nature.gd").new()
 	mirror.terrain = game.terrain
+	mirror.settlement_sites = game.terrain.nature.settlement_sites
 	game.world_root.add_child(mirror)
 	game.terrain.origin += Vector3(512, 0, 512)
 	mirror.build_grass(key)
@@ -69,8 +87,8 @@ func run() -> void:
 	game.terrain.origin = original_origin
 	check(first_world.distance_to(second_world) < 0.001, "Shared-world foliage differs between village origins")
 	mirror.queue_free()
-	camera.position = game.player.position + Vector3(1.10, 1.65, -2.75)
-	camera.look_at(game.player.position + Vector3(0, 1.05, 0))
+	camera.position = game.ruler.position + Vector3(1.10, 1.65, -2.75)
+	camera.look_at(game.ruler.position + Vector3(0, 1.05, 0))
 	camera.current = true
 	for frame in range(3): await process_frame
 	await capture("human.png")
@@ -81,7 +99,16 @@ func run() -> void:
 	game.terrain.nature.set_quality(0)
 	for frame in range(15): await process_frame
 	check(game.terrain.nature.grass.size() <= 25 and game.terrain.nature.groves.size() <= 9, "Low scenery did not release higher quality allocations")
-	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 49, "motion_clips": 16, "horse_clips":5, "bounded_foliage": true}))
+	print("NATIVE_VISUALS ", JSON.stringify({"failures": failures, "human_bones": 49, "simulation_motions":5, "horse_clips":5, "bounded_foliage": true,"defense_milestones":[0,1,4,12]}))
 	game.queue_free()
 	await process_frame
 	quit(0 if failures.is_empty() else 1)
+
+func triangles(node: Node) -> int:
+	var total=0
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var arrays=node.mesh.surface_get_arrays(surface)
+			total+=arrays[Mesh.ARRAY_INDEX].size()/3
+	for child in node.get_children(): total+=triangles(child)
+	return total

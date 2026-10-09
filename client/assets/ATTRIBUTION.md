@@ -10,7 +10,7 @@ The game embeds CC0 graphical assets, the OFL-licensed Cinzel font and original 
 
 These graphical assets are CC0 1.0, separately from the application source code license. This project uses only data files, and its converter is original project code. Each selected core data file has its immutable Git object checksum. Each archive member has a pinned compressed byte range and decoded SHA-256; only selected members are transferred. The original copyright notices remain in source assets.
 
-The pipeline fits garments/eyes/hair to a young/old male morph blend, preserves UV seams and weights, removes helper geometry and hidden body faces, and emits an NPC GLB and a separate player GLB. The player rig has 49 bones including finger joints; NPCs retain 19. Sixteen original, in-place motion clips are generated with limb IK: idle, walk, run, jump, fall, land, guard, work, draw, sheathe, attack, lie_down, prone, crawl, stand_up and ride. These are procedurally authored skeletal motions, not captured human performances. Role-specific armor, boots, scabbard, sword and wind-animated cape are made in project code. The player's single sword is positioned continuously by the post-animation IK modifier.
+The pipeline fits garments/eyes/hair to a young/old male morph blend, preserves UV seams and weights, removes helper geometry and hidden body faces, and emits an NPC GLB and a separate player GLB. The player rig has 49 bones including finger joints; NPCs also use 49 joints. Nineteen original, in-place motion clips are generated with limb IK: idle, walk, run, jump, fall, land, guard, work, draw, sheathe, attack, lie_down, prone, crawl, stand_up, ride, death, block and hit. These are procedurally authored skeletal motions, not captured human performances. Role-specific armor, boots, scabbard, sword and wind-animated cape are made in project code. The player's single sword is positioned continuously by the post-animation IK modifier.
 
 Additional player assets, with checksum-pinned selected archive members (the beard is trimmed and the CC0 long01 hair is shortened and shaped into waves in the converter):
 
@@ -44,3 +44,13 @@ Cinzel by Natanael Gama is restored from an immutable google/fonts commit record
 CC0 legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 
 Run npm ci --prefix tools/assets and npm run --prefix tools/assets prepare:models to reproduce assets. Generated binary graphics stay outside git and are embedded in each APK.
+
+## Original interface audio
+
+select.wav and complete.wav are deterministic original synthesized cues produced by tools/assets/audio.py. No external samples or recordings are used.
+
+## Royal interface artwork · 0.9.2
+
+The realistic ruler portrait, sixteen resource/navigation icons and sixteen architectural previews were generated originally for PRIME KINGDOMS using OpenAI image generation. Source PNGs are preserved without pixel editing. Frames, action symbols and minimap ornaments are original SVG/code artwork. The user-supplied design reference informed layout; its raster artwork was not extracted or used as a game background.
+
+Exact paths, SHA-256 hashes, atlas order and generation provenance are recorded in `docs/ROYAL_ART_0_9_2.json`. UI uses shared atlas textures; production balances, building levels and action requirements come from the server.

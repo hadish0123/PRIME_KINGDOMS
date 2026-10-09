@@ -1,6 +1,7 @@
 import { loadConfig } from './config.js';
 import { createDatabase, initializeDatabase } from './database.js';
 import { createApplication } from './server.js';
+import { startMarchWorker } from './kingdom/campaigns.js';
 
 async function main() {
   const config = loadConfig();
@@ -17,6 +18,7 @@ async function main() {
     server.listen(config.port, config.host, resolve);
   });
   console.log(JSON.stringify({ event: 'server_started', port: config.port, version: config.version, commit: config.commit }));
+  const campaigns = startMarchWorker(pool);
 
   let stopping = false;
   const shutdown = async () => {
@@ -26,6 +28,7 @@ async function main() {
     console.log(JSON.stringify({ event: 'server_stopping' }));
     const deadline = setTimeout(() => process.exit(1), 15000);
     deadline.unref();
+    await campaigns.stop();
     await new Promise((resolve) => server.close(resolve));
     await pool.end();
     clearTimeout(deadline);

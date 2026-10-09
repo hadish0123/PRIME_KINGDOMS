@@ -19,13 +19,14 @@ function canonical(value) {
 }
 
 // All domain writes serialize on the same player row. HTTP identity is the only subject.
-export async function transaction(pool, identity, operation, body, perform, { replay = true, globalLock = false } = {}) {
+export async function transaction(pool, identity, operation, body, perform, { replay = true, globalLock = false, presence = true } = {}) {
   if (replay && !UUID.test(body?.requestId ?? '')) throw new ApiError(400, 'request_id_required');
   const db = await pool.connect();
   try {
     await db.query('BEGIN');
     if (globalLock) await db.query('SELECT pg_advisory_xact_lock(73462712)');
-    if (!(await db.query('UPDATE players SET last_seen_at=clock_timestamp() WHERE id=$1 RETURNING id', [identity.player_id])).rows.length) throw new ApiError(404, 'player_unavailable');
+    const playerLock = presence ? 'UPDATE players SET last_seen_at=clock_timestamp() WHERE id=$1 RETURNING id' : 'SELECT id FROM players WHERE id=$1 FOR UPDATE';
+    if (!(await db.query(playerLock, [identity.player_id])).rows.length) throw new ApiError(404, 'player_unavailable');
     await db.query('SELECT initialize_kingdom($1)', [identity.player_id]);
     const profile = (await db.query('SELECT * FROM kingdoms WHERE player_id=$1 FOR UPDATE', [identity.player_id])).rows[0];
     const hash = createHash('sha256').update(JSON.stringify(canonical(body))).digest('hex');

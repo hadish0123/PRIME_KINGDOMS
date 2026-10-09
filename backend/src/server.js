@@ -2,14 +2,16 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { ApiError } from './errors.js';
 import { authenticate } from './auth.js';
-import { register, login, gameState, movePlayer, nearbyWorld } from './game.js';
+import { register, login, gameState, nearbyWorld } from './game.js';
 import { readJSON, createAuthLimiter, createGameLimiter } from './http.js';
-import { commandArmy, claimTerritory, mountHorse } from './strategy.js';
 import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
-import { getScene, moveScene, mountScene } from './kingdom/scene.js';
+import { getScene } from './kingdom/scene.js';
 import { getMap } from './kingdom/world_map.js';
 import { getClans, clanAction } from './kingdom/clans.js';
-import { getCommandState, saveArmyPreset, deleteArmyPreset, attackTerritory, getPresence } from './kingdom/realm.js';
+import { getCommandState, saveArmyPreset, deleteArmyPreset, getPresence } from './kingdom/realm.js';
+import { startMarch, recallMarch, processDueMarches } from './kingdom/campaigns.js';
+import { getCommanders, recruitCommander, healUnits, getGoals, claimGoal, getInbox, readInbox, getRankings, getChat, socialAction } from './kingdom/experience.js';
+import { getWars, declareWar } from './kingdom/wars.js';
 
 function json(res, status, value, requestId, headers = {}) {
   res.writeHead(status, {
@@ -29,14 +31,17 @@ export function createApplication({ pool, config, logger = console }) {
   const routes = new Map([
     ['/', ['GET','HEAD']], ['/health', ['GET','HEAD']], ['/ready', ['GET','HEAD']], ['/v1/world', ['GET','HEAD']],
     ['/v1/auth/register', ['POST']], ['/v1/auth/login', ['POST']], ['/v1/auth/logout', ['POST']],
-    ['/v1/game', ['GET']], ['/v1/player/move', ['POST']], ['/v1/world/nearby', ['GET']],
-    ['/v1/player/order',['POST']], ['/v1/territory/claim',['POST']],
-    ['/v1/player/mount',['POST']],
+    ['/v1/game', ['GET']], ['/v1/world/nearby', ['GET']],
     ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']], ['/v2/command',['GET']], ['/v2/presence',['GET']],
     ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
-    ['/v2/empire/customize',['POST']], ['/v2/scene/move',['POST']], ['/v2/scene/mount',['POST']],
+    ['/v2/empire/customize',['POST']],
     ['/v2/army/preset',['POST']], ['/v2/army/preset/delete',['POST']], ['/v2/battles/attack',['POST']],
-    ['/v2/clans',['GET']], ...['create','join','application','invite','role','leave','kick','donate'].map(action => [`/v2/clans/${action}`,['POST']]),
+    ['/v2/army/march',['POST']], ['/v2/army/recall',['POST']],
+    ['/v2/commanders',['GET']], ['/v2/commanders/recruit',['POST']], ['/v2/units/heal',['POST']],
+    ['/v2/goals',['GET']], ['/v2/goals/claim',['POST']], ['/v2/inbox',['GET']], ['/v2/inbox/read',['POST']],
+    ['/v2/rankings',['GET']], ['/v2/chat',['GET']], ...['send','block','report'].map(a=>[`/v2/chat/${a}`,['POST']]),
+    ['/v2/wars',['GET']], ['/v2/wars/declare',['POST']],
+    ['/v2/clans',['GET']], ...['create','join','application','invite','role','leave','kick','donate','describe'].map(action => [`/v2/clans/${action}`,['POST']]),
   ]);
   const server = createServer(async (req, res) => {
     const requestId = randomUUID();
@@ -91,12 +96,11 @@ export function createApplication({ pool, config, logger = console }) {
         if (path.startsWith('/v2/')) {
           gameLimit(identity.player_id, req.method, path);
           const body = req.method === 'POST' ? await readJSON(req) : {};
+          await processDueMarches(pool,{playerId:identity.player_id});
           const handlers = {
             '/v2/kingdom': () => getKingdom(pool, identity),
-            '/v2/world/map': () => getMap(pool, identity),
+            '/v2/world/map': () => getMap(pool, identity, new URL(req.url,'http://localhost').searchParams),
             '/v2/scene': () => getScene(pool, identity),
-            '/v2/scene/move': () => moveScene(pool, identity, body),
-            '/v2/scene/mount': () => mountScene(pool, identity, body),
             '/v2/buildings/upgrade': () => enqueue(pool, identity, body, 'building'),
             '/v2/research/start': () => enqueue(pool, identity, body, 'research'),
             '/v2/units/train': () => enqueue(pool, identity, body, 'training'),
@@ -105,8 +109,24 @@ export function createApplication({ pool, config, logger = console }) {
             '/v2/presence': () => getPresence(pool, identity),
             '/v2/army/preset': () => saveArmyPreset(pool, identity, body),
             '/v2/army/preset/delete': () => deleteArmyPreset(pool, identity, body),
-            '/v2/battles/attack': () => attackTerritory(pool, identity, body),
+            '/v2/battles/attack': () => startMarch(pool, identity, body, true),
+            '/v2/army/march': () => startMarch(pool, identity, body),
+            '/v2/army/recall': () => recallMarch(pool, identity, body),
             '/v2/clans': () => getClans(pool, identity),
+            '/v2/commanders': () => getCommanders(pool, identity),
+            '/v2/commanders/recruit': () => recruitCommander(pool, identity, body),
+            '/v2/units/heal': () => healUnits(pool, identity, body),
+            '/v2/goals': () => getGoals(pool, identity),
+            '/v2/goals/claim': () => claimGoal(pool, identity, body),
+            '/v2/inbox': () => getInbox(pool, identity),
+            '/v2/inbox/read': () => readInbox(pool, identity, body),
+            '/v2/rankings': () => getRankings(pool, identity),
+            '/v2/chat': () => getChat(pool, identity, new URL(req.url,'http://localhost').searchParams.get('channel') ?? 'global'),
+            '/v2/chat/send': () => socialAction(pool, identity, body, 'send'),
+            '/v2/chat/block': () => socialAction(pool, identity, body, 'block'),
+            '/v2/chat/report': () => socialAction(pool, identity, body, 'report'),
+            '/v2/wars': () => getWars(pool, identity),
+            '/v2/wars/declare': () => declareWar(pool, identity, body),
           };
           const result = path.startsWith('/v2/clans/') ? await clanAction(pool, identity, body, path.split('/').at(-1)) : await handlers[path]();
           json(res, 200, result, requestId);
@@ -117,15 +137,6 @@ export function createApplication({ pool, config, logger = console }) {
           json(res, 200, { status: 'signed_out' }, requestId);
         } else if (path === '/v1/game') {
           json(res, 200, await gameState(pool, identity.player_id), requestId);
-        } else if (path === '/v1/player/move') {
-          json(res, 200, await movePlayer(pool, identity, await readJSON(req)), requestId);
-        } else if (path === '/v1/player/order') {
-          json(res,200,await commandArmy(pool,identity,await readJSON(req)),requestId);
-        } else if (path === '/v1/territory/claim') {
-          await readJSON(req);
-          json(res,200,await claimTerritory(pool,identity),requestId);
-        } else if (path === '/v1/player/mount') {
-          json(res,200,await mountHorse(pool,identity,await readJSON(req)),requestId);
         } else {
           json(res, 200, await nearbyWorld(pool, identity), requestId);
         }

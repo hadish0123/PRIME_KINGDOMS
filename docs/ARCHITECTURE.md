@@ -1,47 +1,39 @@
-# Kingdom strategy architecture
+# Strategy architecture
 
-Direction: a strategic empire map plus bounded settlements and battle instances,
-with a directly controlled third-person ruler. There is no continuous open-world
-travel in the new client mode. Godot renders locally; Railway hosts HTTP state,
-authority, economy, timers and deterministic battle services.
+The player commands the kingdom. There is no production avatar controller.
+Godot renders a bounded settlement, decorative ruler, local worker/patrol
+presentation and army aggregates. Twenty-four building sites project persistent
+server development and active construction onto batched original architecture.
+Camera input is blocked by council panels, connection recovery and application pause.
 
-## Compatibility and authority
+HTTPS connects the client to Node.js 24 and PostgreSQL. The server owns identity,
+wallets, queues, research, inventory, combat, progression, clans, territory and rewards.
+Client clocks and requested XP/victory/balances never authorize changes.
 
-Base main: 7532eb31187009c699fe0b6cd7017116431ddef7 (v0.5).
-Keep v1 accounts, sessions, village IDs, residents, positions, horse records and
-territory claims. Add v2 tables and adapters; do not edit migrations 001–005.
-Exactly one v2 settlement references each existing primary village. Legacy
-coordinates stay archival/compatible; strategic plots are separate identities.
-An existing army's eight soldier identities map to initial v2 unit inventory.
+All player writes serialize on authenticated player/kingdom rows. Cross-player
+battle/clan/war operations acquire advisory lock 73462712 first. Cached write
+results are bound to authenticated player, request UUID, operation and canonical
+payload hash. Mobile requests save that identifier before transmission; timeout,
+suspension, reconnect and restart retry the original request.
 
-Every v2 write authenticates the existing opaque session, locks the player's
-kingdom row, settles server-timestamped production/timers, validates catalog
-requirements, spends resources and commits one transaction. Client-generated
-request IDs are scoped to player and operation, bound to payload digests and
-replay the original response. They do not provide authority. Mutations never
-accept a subject player ID, balances, rewards, completed timestamps or XP.
+Settlement positions in historical tables are retained for compatibility.
+New scene entry projects a decorative ruler and autonomous residents into a fixed
+128-metre half-size presentation. It allocates four terrain chunks. Physical scene
+positions have no strategic authority. Strategic plots/tiles track regional position
+and ownership independently. Clan relocation is atomic and never replaces a village.
 
-## Vertical delivery order
+Combat locks participants and target, validates composition/adjacency/protection/
+war state, computes shared troop stats with formations, stances, research,
+commanders and fortifications, then commits casualties, plunder, rewards, territory,
+war score and reports in one transaction. The client receives persistent replay
+input and presents the recorded outcome.
 
-1. Additive migration, catalogs, economy, building/research/training queues,
-   configurable level requirements, empire customization, strategic plots and
-   bounded persistent settlement entry. Connect Godot management and map UI.
-2. Clan creation gate, roles, region/capital/member-plot allocation and safe
-   transactional relocation; expose actual clan controls in Godot.
-3. Army presets, deterministic battle instances, casualty/report persistence,
-   connected conquest and protections; directly controlled battle presentation.
-4. Equipment/commanders, quests/social, complete clan wars and progression gates.
+Queues and war phases settle against database time. Due work and rewards are
+unique, persistent events. Inbox notifications deduplicate by event key. Chat
+checks channel membership, rate, message length, block/report scope and database
+constraints. Operational moderation remains a release gate.
 
-Each checkpoint must include integration/anti-replay tests and an exact HANDOFF.
-Configuration/art tables do not mean unfinished gameplay is implemented.
-
-## Rendering
-
-Reuse the pinned MakeHuman rig, shared actor meshes, touch controls, scenery and
-materials. New settlement terrain allocates a fixed bounded set; legacy streaming
-remains only as compatibility code exercised by historical tests. Army display
-is bounded independently of persistent army size. LOW/BALANCED/HIGH/ULTRA are
-allocation/shadow targets; retain GL Compatibility and do not promise device FPS.
-
-Future synchronous battle workers use the same battle IDs, participants,
-commands, snapshots and result transactions; no UDP service is assumed on Railway.
+Pipeline-generated humans, motions, photographic materials, horse and environmental
+geometry use recorded licensed/checksummed sources. Quality tiers bound scenery,
+active residents, army aggregates, replay actors, shadows and antialiasing.
+Physical-device performance must be measured before final release.

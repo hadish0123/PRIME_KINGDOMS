@@ -34,14 +34,6 @@ static func cell(value) -> bool:
 static func territories(value) -> bool:
 	return value is Dictionary and number(value.get("owned")) and float(value.owned) == int(value.owned) and value.owned >= 1 and value.owned <= 16129 and value.get("cells") is Array and value.cells.size() <= 169 and value.cells.all(cell)
 
-static func army(value) -> bool:
-	if not value is Array or value.size() not in [0,8]: return false
-	var ids: Dictionary = {}
-	for unit in value:
-		if not unit is Dictionary or not unit.get("id") is String or ids.has(unit.id) or not position(unit.get("position")): return false
-		ids[unit.id] = true
-	return true
-
 static func state(value) -> bool:
 	if not value is Dictionary or not player(value.get("player")) or not village(value.get("village")): return false
 	if value.has("scene"):
@@ -52,24 +44,19 @@ static func state(value) -> bool:
 	return world is Dictionary and world.get("id") is String and number(world.get("seed")) and number(world.get("sizeM")) and world.sizeM == 65536 and world.get("terrainVersion") == 1 and value.village.ownerPlayerId == value.player.id
 
 static func accepts(path: String, value: Dictionary) -> bool:
+	path = path.get_slice("?",0)
 	if path == "/v2/scene": return state(value) and value.has("scene")
-	if path == "/v2/scene/move": return position(value.get("position")) and number(value.get("yaw")) and army(value.get("army"))
-	if path == "/v2/scene/mount": return value.get("mounted") is bool and position(value.get("playerPosition")) and position(value.get("horsePosition")) and number(value.get("yaw"))
 	if path == "/v2/kingdom": return kingdom(value)
 	if path in ["/v2/buildings/upgrade","/v2/research/start","/v2/units/train","/v2/empire/customize"]: return kingdom(value.get("kingdom"))
 	if path == "/v2/world/map": return strategic_map(value)
+	if path == "/v2/command": return command(value)
+	if path in ["/v2/army/march","/v2/army/recall","/v2/army/preset","/v2/army/preset/delete","/v2/battles/attack"]: return command(value.get("command"))
 	if path == "/v2/clans": return clans(value)
 	if path.begins_with("/v2/clans/"): return clans(value.get("clans"))
 	if path in ["/v1/auth/register", "/v1/auth/login"]:
 		var session = value.get("session")
 		return session is Dictionary and session.get("token") is String and session.token.length() == 43 and state(value.get("state"))
 	if path == "/v1/game": return state(value)
-	if path == "/v1/player/move": return position(value.get("position")) and number(value.get("yaw")) and (not value.has("army") or army(value.army))
-	if path == "/v1/player/order": return value.get("order") in ["guard","follow"]
-	if path == "/v1/player/mount": return value.get("mounted") is bool and position(value.get("playerPosition")) and position(value.get("horsePosition")) and number(value.get("yaw"))
-	if path == "/v1/territory/claim":
-		var claimed = value.get("claimed")
-		return claimed is Dictionary and number(claimed.get("x")) and number(claimed.get("z")) and value.get("stage") in ["village","city","country","empire"] and territories(value.get("territories"))
 	if path == "/v1/world/nearby":
 		if not value.get("villages") is Array or not value.get("players") is Array: return false
 		if value.has("territories") and not territories(value.territories): return false
@@ -89,13 +76,15 @@ static func kingdom(value) -> bool:
 	if not empire.get("name") is String or not empire.get("primaryColor") is String or not empire.get("secondaryColor") is String: return false
 	if not empire.get("emblem") in ["lion","eagle","crown","stag","sun","wolf"] or not empire.get("bannerStyle") in ["square","swallowtail","pennant"]: return false
 	if not value.get("catalog") is Array or value.catalog.size() > 64 or not value.get("quotes") is Array or value.quotes.size() > 48: return false
-	if not value.get("tasks") is Array or value.tasks.size() > 3 or not value.get("units") is Array or value.units.size() > 13: return false
+	if not value.get("tasks") is Array or value.tasks.size() > 3 or not value.get("units") is Array or value.units.size() > 20: return false
 	for task in value.tasks:
 		if not task is Dictionary or not task.get("id") is String or not task.get("kind") is String or not task.get("key") is String or not number(task.get("quantity")) or not number(task.get("target_level")) or not task.get("finishes_at") is String: return false
 	for unit in value.units:
 		if not unit is Dictionary or not unit.get("type") is String: return false
 		for key in ["alive","wounded","dead"]:
 			if not number(unit.get(key)) or unit[key] < 0: return false
+		if unit.has("available"):
+			if not number(unit.available) or not number(unit.get("deployed")) or unit.available<0 or unit.deployed<0 or unit.available+unit.deployed!=unit.alive: return false
 	for quote in value.quotes:
 		if not quote is Dictionary or not quote.get("key") is String or not quote.get("kind") is String or not quote.get("cost") is Dictionary: return false
 		for key in ["current","next","maxLevel","durationSeconds"]:
@@ -132,4 +121,25 @@ static func clans(value) -> bool:
 		if not member is Dictionary or not member.get("playerId") is String or not member.get("empireName") is String or not member.get("role") in ["leader","officer","member"] or not number(member.get("plot")): return false
 	for application in group.applications:
 		if not application is Dictionary or not application.get("playerId") is String or not application.get("empireName") is String: return false
+	return true
+
+static func command(value) -> bool:
+	if not value is Dictionary or not value.get("serverTime") is String or not value.get("realm") is Dictionary: return false
+	if not value.get("presets") is Array or value.presets.size()>5 or not value.get("reports") is Array or value.reports.size()>100: return false
+	if not value.get("marches") is Array or value.marches.size()>3 or not value.get("incoming") is Array or value.incoming.size()>30: return false
+	for march in value.marches+value.incoming:
+		if not march is Dictionary or not march.get("id") is String or not march.get("name") is String: return false
+		if not march.get("kind") in ["attack","reinforce"] or not march.get("phase") in ["outbound","returning","stationed"]: return false
+		if not march.get("target") is Dictionary or not march.target.get("name") is String: return false
+		var route= march.get("route")
+		if not route is Dictionary or not route.get("startedAt") is String: return false
+		if not route.get("from") is Dictionary or not route.get("to") is Dictionary: return false
+		for at in [route.from,route.to,march.get("position"),march.target]:
+			if not at is Dictionary or not number(at.get("x")) or not number(at.get("z")): return false
+		if march.phase=="stationed":
+			if route.get("arrivesAt")!=null or march.kind!="reinforce": return false
+		elif not route.get("arrivesAt") is String: return false
+		if not march.get("units") is Array or march.units.size()>20: return false
+		for unit in march.units:
+			if not unit is Dictionary or not unit.get("type") is String or not number(unit.get("quantity")) or unit.quantity<1 or unit.quantity>100000: return false
 	return true

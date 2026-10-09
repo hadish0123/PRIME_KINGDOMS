@@ -223,7 +223,7 @@ def animate(glb, heads, bone_ids):
              ('fall', 0.8), ('land', 0.26), ('guard', 4.0), ('work', 2.6),
              ('draw', 1.50), ('sheathe', 1.50), ('attack', 0.90),
              ('lie_down', 0.65), ('prone', 2.8), ('crawl', 1.4),
-             ('stand_up', 0.65), ('ride', 1.0)]
+             ('stand_up', 0.65), ('ride', 1.0), ('death', 1.1), ('block',1.0), ('hit',0.5)]
     for clip, duration in clips:
         count = int(duration*30)+1
         times = [i*duration/(count-1) for i in range(count)]
@@ -239,15 +239,17 @@ def animate(glb, heads, bone_ids):
             poses = {bone: identity[:] for bone in bone_ids}
             poses['spine03'] = axis(0, -0.1 if running else 0.015*math.sin(cycle*math.tau))
             poses['head'] = axis(1, 0.14*math.sin(cycle*math.tau) if clip == 'guard' else 0.018*math.sin(cycle*math.tau))
-            lying = clip in ('lie_down', 'prone', 'crawl', 'stand_up')
+            lying = clip in ('lie_down', 'prone', 'crawl', 'stand_up', 'death')
             if lying:
-                amount = cycle if clip == 'lie_down' else (1-cycle if clip == 'stand_up' else 1.)
+                amount = cycle if clip in ('lie_down','death') else (1-cycle if clip == 'stand_up' else 1.)
                 amount = amount*amount*(3-2*amount)
                 poses['root'] = axis(0, math.pi*0.5*amount)
                 displacement = [0., -0.72*amount, 0.]
                 poses['head'] = axis(0, -0.25*amount)
             elif clip == 'attack':
                 poses['spine03'] = quat_mul(axis(1, -0.30*math.sin(cycle*math.tau)), axis(0, -0.07*math.sin(cycle*math.pi)))
+            elif clip == 'hit':
+                poses['spine03'] = axis(0,0.22*math.sin(cycle*math.pi))
             elif clip == 'ride':
                 displacement = [0., 0.012*math.sin(cycle*math.tau), 0.]
             for side, sign in [('L', 1), ('R', -1)]:
@@ -276,6 +278,8 @@ def animate(glb, heads, bone_ids):
                     target = add(shoulder, [sign*0.065, -0.41 if running else -0.49, -(0.22 if running else 0.15)*swing])
                 elif clip in ('jump', 'fall'):
                     target = add(shoulder, [sign*0.12, -0.30, 0.22])
+                elif clip == 'block':
+                    target=add(shoulder,[sign*0.04,-0.18,0.38])
                 elif clip == 'work':
                     target = add(shoulder, [-sign*0.06, -0.29+0.035*math.sin(cycle*math.tau), 0.23])
                 elif clip in ('draw', 'sheathe') and side == 'R':

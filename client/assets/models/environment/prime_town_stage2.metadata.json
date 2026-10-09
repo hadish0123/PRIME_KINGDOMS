@@ -1,0 +1,194 @@
+{
+  "asset_name": "prime_town_stage2",
+  "triangle_count": 31950,
+  "materials": [
+    "PRIME_Cloth",
+    "PRIME_Dark",
+    "PRIME_Grass",
+    "PRIME_Ground",
+    "PRIME_Iron",
+    "PRIME_Limestone",
+    "PRIME_Plaster",
+    "PRIME_Roof",
+    "PRIME_Stone",
+    "PRIME_Timber",
+    "PRIME_Water"
+  ],
+  "textures": [],
+  "lods": [
+    {
+      "name": "PK_Town_Castle_Merged_LOD0",
+      "level": 0,
+      "triangles": 23414
+    },
+    {
+      "name": "PK_Town_Market_Merged_LOD0",
+      "level": 0,
+      "triangles": 1088
+    },
+    {
+      "name": "PK_Town_Academy_Merged_LOD0",
+      "level": 0,
+      "triangles": 2934
+    },
+    {
+      "name": "PK_Town_Blacksmith_Merged_LOD1",
+      "level": 1,
+      "triangles": 1157
+    },
+    {
+      "name": "PK_Town_Warehouse_Merged_LOD1",
+      "level": 1,
+      "triangles": 1231
+    },
+    {
+      "name": "PK_Town_Stable_Merged_LOD1",
+      "level": 1,
+      "triangles": 1285
+    },
+    {
+      "name": "PK_Town_Windmill_Merged_LOD0",
+      "level": 0,
+      "triangles": 802
+    },
+    {
+      "name": "PK_Town_Farm_Merged_LOD1",
+      "level": 1,
+      "triangles": 5131
+    },
+    {
+      "name": "PK_Town_House_A_Merged_LOD1",
+      "level": 1,
+      "triangles": 1035
+    },
+    {
+      "name": "PK_Town_House_B_Merged_LOD1",
+      "level": 1,
+      "triangles": 1035
+    },
+    {
+      "name": "PK_Town_House_C_Merged_LOD1",
+      "level": 1,
+      "triangles": 1035
+    },
+    {
+      "name": "PK_Town_House_D_Merged_LOD1",
+      "level": 1,
+      "triangles": 1035
+    },
+    {
+      "name": "PK_Town_Lumber_Merged_LOD1",
+      "level": 1,
+      "triangles": 1639
+    },
+    {
+      "name": "PK_Town_Quarry_Merged_LOD1",
+      "level": 1,
+      "triangles": 3495
+    },
+    {
+      "name": "PK_Town_Terrain_Merged_LOD0",
+      "level": 0,
+      "triangles": 1678
+    },
+    {
+      "name": "PK_Town_Road_Main_Merged_LOD0",
+      "level": 0,
+      "triangles": 36
+    },
+    {
+      "name": "PK_Town_Wall_N_Merged_LOD1",
+      "level": 1,
+      "triangles": 2322
+    },
+    {
+      "name": "PK_Town_Wall_S_Merged_LOD1",
+      "level": 1,
+      "triangles": 2322
+    },
+    {
+      "name": "PK_Town_Wall_E_Merged_LOD1",
+      "level": 1,
+      "triangles": 2322
+    },
+    {
+      "name": "PK_Town_Wall_W_Merged_LOD1",
+      "level": 1,
+      "triangles": 2322
+    },
+    {
+      "name": "PK_Town_Gate_Merged_LOD0",
+      "level": 0,
+      "triangles": 902
+    },
+    {
+      "name": "PK_Town_Watchtower_Merged_LOD0",
+      "level": 0,
+      "triangles": 1096
+    }
+  ],
+  "bounding_box": {
+    "min": [
+      -59.040382385253906,
+      -36.0,
+      -2.0265815258026123
+    ],
+    "max": [
+      59.040382385253906,
+      36.0,
+      26.988086700439453
+    ],
+    "dimensions": [
+      118.08076477050781,
+      72.0,
+      29.014668226242065
+    ]
+  },
+  "recommended_distance": 70,
+  "android_quality_tier": "android_medium",
+  "godot_validation": {
+    "valid": true,
+    "issues": [],
+    "warnings": [
+      "PRIME_Stone: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Limestone: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Roof: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Timber: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Plaster: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Ground: procedural detail needs texture baking for glTF; Principled base values still export",
+      "PRIME_Grass: procedural detail needs texture baking for glTF; Principled base values still export"
+    ],
+    "scale": {
+      "unit": "metres",
+      "gltf_up_axis": "Y",
+      "godot_up_axis": "Y"
+    },
+    "rotation": "Blender Z-up converted to glTF/Godot Y-up",
+    "normals": "exported",
+    "materials": [
+      "PRIME_Cloth",
+      "PRIME_Dark",
+      "PRIME_Grass",
+      "PRIME_Ground",
+      "PRIME_Iron",
+      "PRIME_Limestone",
+      "PRIME_Plaster",
+      "PRIME_Roof",
+      "PRIME_Stone",
+      "PRIME_Timber",
+      "PRIME_Water"
+    ],
+    "textures": [],
+    "armatures": [],
+    "animations": [],
+    "file_size": 6764480,
+    "triangle_count": 59316
+  },
+  "lod_distances": [
+    0,
+    28.0,
+    49.0,
+    70
+  ],
+  "style": "Medieval semi-realistic premium mobile strategy"
+}

@@ -53,6 +53,20 @@ test('strategic command: presets, online presence, deterministic battles, report
       }, user);
     }
 
+    async function attack(user, body) {
+      const started=await api('/v2/battles/attack',{requestId:randomUUID(),...body},user);
+      assert.equal(started.status,200,JSON.stringify(started.body));
+      assert.ok(started.body.marchId);
+      assert.equal(started.body.battle,undefined,'Departure must not decide victory');
+      const due=async()=>pool.query("UPDATE kingdom_marches SET route_started_at=clock_timestamp()-interval '2 seconds',arrives_at=clock_timestamp()-interval '1 second' WHERE id=$1",[started.body.marchId]);
+      await due();
+      const command=(await api('/v2/command',undefined,user)).body;
+      const battle=command.reports.find(r=>r.id===command.marches.find(m=>m.id===started.body.marchId).reportId);
+      assert.ok(battle,'Arrival must create the persistent report');
+      await due(); await api('/v2/kingdom',undefined,user);
+      return {status:200,body:{battle}};
+    }
+
     const attacker = await register('Attacker');
     const defender = await register('Defender');
 
@@ -83,9 +97,7 @@ test('strategic command: presets, online presence, deterministic battles, report
       "INSERT INTO strategic_tiles(world_id,x,z,kind) SELECT world_id,$2,$3,'neutral' FROM players WHERE id=$1 ON CONFLICT(world_id,x,z) DO UPDATE SET owner_player_id=NULL,owner_clan_id=NULL,kind='neutral',protected_until=NULL,occupied_until=NULL",
       [attacker.id, own.x + 1, own.z],
     );
-    const neutral = await api('/v2/battles/attack', {
-      requestId: randomUUID(), x: own.x + 1, z: own.z, presetSlot: 1,
-    }, attacker);
+    const neutral = await attack(attacker,{x:own.x+1,z:own.z,presetSlot:1});
     assert.equal(neutral.status, 200, JSON.stringify(neutral.body));
     assert.equal(neutral.body.battle.result, 'attacker');
     assert.equal(neutral.body.battle.territoryChange, 'captured');
@@ -96,9 +108,7 @@ test('strategic command: presets, online presence, deterministic battles, report
       "INSERT INTO strategic_tiles(world_id,x,z,kind,owner_player_id) SELECT world_id,$2,$3,'neutral',$4 FROM players WHERE id=$1 ON CONFLICT(world_id,x,z) DO UPDATE SET owner_player_id=$4,owner_clan_id=NULL,kind='neutral',protected_until=NULL,occupied_until=NULL",
       [attacker.id, own.x + 2, own.z, defender.id],
     );
-    const pvp = await api('/v2/battles/attack', {
-      requestId: randomUUID(), x: own.x + 2, z: own.z, presetSlot: 1,
-    }, attacker);
+    const pvp = await attack(attacker,{x:own.x+2,z:own.z,presetSlot:1});
     assert.equal(pvp.status, 200, JSON.stringify(pvp.body));
     assert.equal(pvp.body.battle.result, 'attacker');
     assert.equal(pvp.body.battle.territoryChange, 'captured');
@@ -119,10 +129,17 @@ test('strategic command: presets, online presence, deterministic battles, report
       "INSERT INTO strategic_tiles(world_id,x,z,kind,owner_player_id) SELECT world_id,$2,$3,'neutral',$1 FROM players WHERE id=$1 ON CONFLICT(world_id,x,z) DO UPDATE SET owner_player_id=$1,kind='neutral'",
       [attacker.id, own.x + 1, own.z + 1],
     );
+    const incomplete=(await api('/v2/kingdom',undefined,attacker)).body;
+    assert.equal(incomplete.stage,'village','Keep and XP must not bypass economic development');
+    await pool.query("UPDATE kingdom_buildings SET level=2 WHERE player_id=$1 AND key IN ('farm','lumber_mill')",[attacker.id]);
     const grown = (await api('/v2/kingdom', undefined, attacker)).body;
     assert.equal(grown.stage, 'town');
     assert.equal(grown.realm.stage, 'town');
     assert.equal(grown.realm.next.stage, 'city');
+    const promotionGold=grown.resources.gold;
+    assert.equal((await api('/v2/kingdom',undefined,attacker)).body.resources.gold,promotionGold,'Promotion paid twice');
+    await pool.query("UPDATE kingdom_buildings SET level=1 WHERE player_id=$1 AND key='keep'",[attacker.id]);
+    assert.equal((await api('/v2/kingdom',undefined,attacker)).body.stage,'town','Earned realm title regressed');
 
     // Connected-edge and stale-preset protections are enforced by the server.
     assert.equal((await api('/v2/battles/attack', { requestId: randomUUID(), x: own.x + 30, z: own.z + 30, presetSlot: 1 }, attacker)).body.error, 'target_not_connected');
