@@ -15,6 +15,9 @@ var loaded_models: int = 0
 var development_signature = ""
 var building_root: Node3D
 var building_nodes: Dictionary = {}
+var premium_visual_root: Node3D
+var premium_owner_visuals: bool = false
+const PREMIUM_VILLAGE_SCENE := "res://assets/models/environment/prime_village_stage1.tscn"
 const SLOTS = {
 	"keep":Vector3(0,0,-27), "farm":Vector3(31,0,33), "lumber_mill":Vector3(-39,0,-15),
 	"quarry":Vector3(40,0,-38), "iron_mine":Vector3(38,0,-24), "market":Vector3(15,0,-8),
@@ -65,6 +68,45 @@ func asset(asset_name: String, at: Vector3, width: float, angle: float = 0.0, so
 	model.build(asset_name, width)
 	return model
 
+func load_premium_village() -> bool:
+	if premium_owner_visuals and is_instance_valid(premium_visual_root):
+		return true
+	if not ResourceLoader.exists(PREMIUM_VILLAGE_SCENE):
+		return false
+	var packed = load(PREMIUM_VILLAGE_SCENE)
+	if not packed is PackedScene:
+		return false
+	premium_visual_root = packed.instantiate()
+	premium_visual_root.name = "PremiumVillageStage1"
+	premium_visual_root.position = Vector3.ZERO
+	premium_visual_root.rotation = Vector3.ZERO
+	premium_visual_root.scale = Vector3.ONE
+	add_child(premium_visual_root)
+	premium_owner_visuals = true
+	loaded_models += 1
+	return true
+
+func finish_population(data: Dictionary, p: Dictionary, owner: bool) -> void:
+	var name_label = Label3D.new()
+	name_label.text = str(data.name) + ("  •  YOUR VILLAGE" if owner else "")
+	name_label.position = Vector3(0, 21.0, -27)
+	name_label.font_size = 48
+	name_label.pixel_size = 0.011
+	name_label.modulate = Color(0.90, 0.83, 0.61)
+	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	name_label.visibility_range_end = 35.0
+	add_child(name_label)
+	for npc_data in data.npcs:
+		var npc = Npc.new()
+		add_child(npc)
+		var n: Dictionary = npc_data.position
+		npc.setup(npc_data, Vector3(float(n.x) - float(p.x), float(n.y) - float(p.y), float(n.z) - float(p.z)))
+		if owner and npc.role=="villager":
+			var jobs = [Vector3(13,0.1,-9),Vector3(-15,0.1,2),Vector3(15,0.1,-7),Vector3(7,0.1,-14),Vector3(-8,0.1,-16)]
+			npc.home = jobs[npc.ordinal%jobs.size()]
+			npc.position = npc.home
+		population.append(npc)
+
 func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	village_id = str(data.id)
 	var p: Dictionary = data.position
@@ -80,6 +122,11 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	palette.wood = Surfaces.pbr("wood_planks", Color(0.58, 0.46, 0.33), 0.7)
 	palette.gold = material(Color(0.66, 0.47, 0.20), 0.48)
 	palette.soil = Surfaces.pbr("brown_mud", Color(0.75, 0.68, 0.58))
+	# Stage-one owner realms now use the production Blender village instead of
+	# the legacy procedural blockout. NPC/gameplay state stays native Godot.
+	if owner and load_premium_village():
+		finish_population(data,p,owner)
+		return
 	box(Vector3(8, 0.055, 112), Vector3(0, 0.025, 4), palette.road).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var cross_road = road.duplicate()
 	cross_road.set_shader_parameter("half_size",Vector2(46,3))
@@ -147,25 +194,7 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		asset("bench", at, 2.4)
 	for index in range(6):
 		box(Vector3(11, 0.08, 0.35), Vector3(31, 0.04, 29 + index * 1.7), palette.soil)
-	var name_label = Label3D.new()
-	name_label.text = str(data.name) + ("  •  YOUR VILLAGE" if owner else "")
-	name_label.position = Vector3(0, 21.0, -27)
-	name_label.font_size = 48
-	name_label.pixel_size = 0.011
-	name_label.modulate = Color(0.90, 0.83, 0.61)
-	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	name_label.visibility_range_end = 35.0
-	add_child(name_label)
-	for npc_data in data.npcs:
-		var npc = Npc.new()
-		add_child(npc)
-		var n: Dictionary = npc_data.position
-		npc.setup(npc_data, Vector3(float(n.x) - float(p.x), float(n.y) - float(p.y), float(n.z) - float(p.z)))
-		if owner and npc.role=="villager":
-			var jobs = [Vector3(33,0.1,28),Vector3(-34,0.1,-15),Vector3(37,0.1,-33),Vector3(11,0.1,-6),Vector3(-20,0.1,31)]
-			npc.home = jobs[npc.ordinal%jobs.size()]
-			npc.position = npc.home
-		population.append(npc)
+	finish_population(data,p,owner)
 
 func build_defenses(architecture: Node3D,key: String,level_value: int) -> void:
 	architecture.set_meta("defense_level",level_value)
@@ -247,6 +276,10 @@ func apply_development(kingdom: Dictionary) -> void:
 	building_nodes.clear()
 	building_root=Node3D.new()
 	add_child(building_root)
+	var use_premium_stage = premium_owner_visuals and str(kingdom.realm.rank)=="Village"
+	if is_instance_valid(premium_visual_root):
+		premium_visual_root.visible = use_premium_stage
+	building_root.visible = not use_premium_stage
 	for key in SLOTS:
 		var level_value = int(kingdom.buildings.get(key,0))
 		var architecture = Architecture.new()
