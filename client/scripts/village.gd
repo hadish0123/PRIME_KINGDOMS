@@ -325,16 +325,21 @@ func apply_development(kingdom: Dictionary) -> void:
 	# Stateful gameplay buildings stay live so their actual backend level is visible.
 	var use_premium_stage = premium_owner_visuals and show_premium_stage(realm_stage)
 	building_root.visible = true
+	var stage_spread: float = {
+		"Village":0.62, "Town":0.78, "City":0.90,
+		"Country":1.0, "Kingdom":1.0, "Empire":1.0
+	}.get(realm_stage,1.0)
 	for key in SLOTS:
 		var level_value = int(kingdom.buildings.get(key,0))
 		var architecture = Architecture.new()
 		architecture.set_meta("building_key",key)
 		building_root.add_child(architecture)
-		architecture.position=SLOTS[key]
+		architecture.position=SLOTS[key]*stage_spread
 		building_nodes[key]=architecture
 		architecture.begin()
 		if key in ["walls","watch_towers","gatehouse"] and level_value>0:
 			build_defenses(architecture,key,level_value)
+			architecture.scale = Vector3(stage_spread,1.0,stage_spread)
 		elif level_value==0:
 			# An unbuilt facility should not already exist in the world. Only show
 			# its surveyed footprint once a real construction task has started.
