@@ -159,6 +159,16 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 	# Stage-one owner realms now use the production Blender village instead of
 	# the legacy procedural blockout. NPC/gameplay state stays native Godot.
 	if owner and load_premium_village():
+		# The premium pack is environment dressing, not the whole economy.
+		# Add a modest residential hamlet around it so a new ruler starts with
+		# a believable lived-in village while gameplay facilities remain level-driven.
+		var starter_homes = [
+			Vector3(-18,0,7), Vector3(16,0,11),
+			Vector3(-20,0,-20), Vector3(19,0,-20)
+		]
+		for index in range(starter_homes.size()):
+			asset("house_2" if index%2==0 else "house_1",starter_homes[index],6.0+float(index%2)*0.6,PI*0.5 if index%2==0 else -PI*0.5)
+		build_gardens()
 		finish_population(data,p,owner)
 		return
 	box(Vector3(8, 0.055, 112), Vector3(0, 0.025, 4), palette.road).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
