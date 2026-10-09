@@ -881,26 +881,28 @@ func setup_lighting() -> void:
 	environment.sky = sky
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_energy = 0.34
-	environment.ambient_light_color = Color(0.82, 0.80, 0.77)
-	environment.ambient_light_sky_contribution = 0.25
+	# Strategy lighting needs strong shape readability from an elevated camera.
+	# Keep the ambient fill restrained so roofs, walls and terrain retain depth.
+	environment.ambient_light_energy = 0.24
+	environment.ambient_light_color = Color(0.76, 0.75, 0.72)
+	environment.ambient_light_sky_contribution = 0.38
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.69, 0.75, 0.80)
-	environment.fog_density = 0.00012
+	environment.fog_light_color = Color(0.70, 0.76, 0.80)
+	environment.fog_density = 0.000075
 	environment.fog_sky_affect = 0.0
 	var world_environment = WorldEnvironment.new()
 	world_environment.environment = environment
 	add_child(world_environment)
 	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-34, -24, 0)
-	sun.light_color = Color(1.0, 0.92, 0.80)
-	sun.light_energy = 0.82
+	sun.rotation_degrees = Vector3(-42, -34, 0)
+	sun.light_color = Color(1.0, 0.90, 0.75)
+	sun.light_energy = 1.08
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 180.0
-	sun.shadow_bias = 0.04
-	sun.shadow_normal_bias = 0.6
+	sun.directional_shadow_max_distance = 230.0
+	sun.shadow_bias = 0.025
+	sun.shadow_normal_bias = 0.32
 	add_child(sun)
 
 
