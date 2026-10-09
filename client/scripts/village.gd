@@ -310,7 +310,7 @@ func apply_development(kingdom: Dictionary) -> void:
 	building_nodes.clear()
 	building_root=Node3D.new()
 	add_child(building_root)
-	var realm_stage = str(kingdom.realm.rank)
+	var realm_stage = str(kingdom.realm.get("stage","village")).capitalize()
 	var use_premium_stage = premium_owner_visuals and show_premium_stage(realm_stage)
 	building_root.visible = not use_premium_stage
 	for key in SLOTS:
