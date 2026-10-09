@@ -311,8 +311,10 @@ func apply_development(kingdom: Dictionary) -> void:
 	building_root=Node3D.new()
 	add_child(building_root)
 	var realm_stage = str(kingdom.realm.get("stage","village")).capitalize()
+	# Premium stage packs provide terrain, roads and residential dressing.
+	# Stateful gameplay buildings stay live so their actual backend level is visible.
 	var use_premium_stage = premium_owner_visuals and show_premium_stage(realm_stage)
-	building_root.visible = not use_premium_stage
+	building_root.visible = true
 	for key in SLOTS:
 		var level_value = int(kingdom.buildings.get(key,0))
 		var architecture = Architecture.new()
@@ -324,10 +326,12 @@ func apply_development(kingdom: Dictionary) -> void:
 		if key in ["walls","watch_towers","gatehouse"] and level_value>0:
 			build_defenses(architecture,key,level_value)
 		elif level_value==0:
-			# Surveyed building sites are part of construction gameplay.
-			for x in [-3,3]:
-				for z in [-2.5,2.5]: architecture.cylinder(0.08,1.1,Vector3(x,0.55,z),"wood")
-			architecture.collision(Vector3(7,0.25,6),Vector3(0,0.13,0))
+			# An unbuilt facility should not already exist in the world. Only show
+			# its surveyed footprint once a real construction task has started.
+			if active.has(key):
+				for x in [-3,3]:
+					for z in [-2.5,2.5]: architecture.cylinder(0.08,1.1,Vector3(x,0.55,z),"wood")
+				architecture.collision(Vector3(7,0.25,6),Vector3(0,0.13,0))
 		elif key=="keep":
 			if level_value<4:
 				architecture.house(11,9,2 if level_value>=2 else 1,1)
