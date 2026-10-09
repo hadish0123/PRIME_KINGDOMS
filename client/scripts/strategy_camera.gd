@@ -8,7 +8,7 @@ var displayed_focus = focus
 var yaw: float = -0.55
 var displayed_yaw: float = yaw
 var elevation: float = 0.69
-var distance: float = 88.0
+var distance: float = 74.0
 var displayed_distance: float = distance
 var council_offset: float = 0.0
 var enabled: bool = true:
@@ -120,7 +120,7 @@ func pan_screen(motion: Vector2) -> void:
 	velocity = movement*24.0
 	_clamp_focus()
 
-func zoom(amount: float) -> void: distance = clampf(distance+amount,32.0,155.0)
+func zoom(amount: float) -> void: distance = clampf(distance+amount,28.0,145.0)
 func rotate_view(amount: float) -> void: yaw = wrapf(yaw+amount,-PI,PI)
 
 func _clamp_focus() -> void:
