@@ -168,6 +168,12 @@ func configure(data: Dictionary, origin: Vector3, owner: bool) -> void:
 		]
 		for index in range(starter_homes.size()):
 			asset("house_2" if index%2==0 else "house_1",starter_homes[index],6.0+float(index%2)*0.6,PI*0.5 if index%2==0 else -PI*0.5)
+		asset("well",Vector3(0,0.08,1),3.1)
+		asset("cart",Vector3(11,0,-2),3.0,PI*0.18)
+		asset("fence",Vector3(15,0,20),7.0)
+		asset("fence",Vector3(15,0,27),7.0)
+		for row in range(4):
+			box(Vector3(9.0,0.06,1.1),Vector3(15,0.03,20.5+float(row)*1.7),palette.soil)
 		build_gardens()
 		finish_population(data,p,owner)
 		return
