@@ -17,7 +17,16 @@ var building_root: Node3D
 var building_nodes: Dictionary = {}
 var premium_visual_root: Node3D
 var premium_owner_visuals: bool = false
+var premium_stage_roots: Dictionary = {}
 const PREMIUM_VILLAGE_SCENE := "res://assets/models/environment/prime_village_stage1.tscn"
+const PREMIUM_STAGE_SCENES := {
+	"Village": PREMIUM_VILLAGE_SCENE,
+	"Town": "res://assets/models/environment/prime_town_stage2.tscn",
+	"City": "res://assets/models/environment/prime_city_stage3.tscn",
+	"Country": "res://assets/models/environment/prime_country_stage4.tscn",
+	"Kingdom": "res://assets/models/environment/prime_kingdom_stage5.tscn",
+	"Empire": "res://assets/models/environment/prime_empire_stage6.tscn",
+}
 const SLOTS = {
 	"keep":Vector3(0,0,-27), "farm":Vector3(31,0,33), "lumber_mill":Vector3(-39,0,-15),
 	"quarry":Vector3(40,0,-38), "iron_mine":Vector3(38,0,-24), "market":Vector3(15,0,-8),
@@ -68,23 +77,48 @@ func asset(asset_name: String, at: Vector3, width: float, angle: float = 0.0, so
 	model.build(asset_name, width)
 	return model
 
-func load_premium_village() -> bool:
-	if premium_owner_visuals and is_instance_valid(premium_visual_root):
-		return true
-	if not ResourceLoader.exists(PREMIUM_VILLAGE_SCENE):
-		return false
-	var packed = load(PREMIUM_VILLAGE_SCENE)
+func load_premium_stage(stage: String):
+	if premium_stage_roots.has(stage):
+		var cached = premium_stage_roots[stage]
+		if is_instance_valid(cached):
+			return cached
+	var scene_path = str(PREMIUM_STAGE_SCENES.get(stage,""))
+	if scene_path.is_empty() or not ResourceLoader.exists(scene_path):
+		return null
+	var packed = load(scene_path)
 	if not packed is PackedScene:
-		return false
-	premium_visual_root = packed.instantiate()
-	premium_visual_root.name = "PremiumVillageStage1"
-	premium_visual_root.position = Vector3.ZERO
-	premium_visual_root.rotation = Vector3.ZERO
-	premium_visual_root.scale = Vector3.ONE
-	add_child(premium_visual_root)
+		return null
+	var root = packed.instantiate()
+	root.name = "Premium" + stage + "Stage"
+	root.position = Vector3.ZERO
+	root.rotation = Vector3.ZERO
+	root.scale = Vector3.ONE
+	root.visible = false
+	add_child(root)
+	premium_stage_roots[stage] = root
+	if stage=="Village":
+		premium_visual_root = root
 	premium_owner_visuals = true
 	loaded_models += 1
+	return root
+
+func show_premium_stage(stage: String) -> bool:
+	var target = load_premium_stage(stage)
+	if target == null:
+		# Keep the previous premium settlement visible while procedural upgrade
+		# pieces provide a safe fallback for stages whose art pack is not ready.
+		var fallback = premium_stage_roots.get("Village")
+		if is_instance_valid(fallback):
+			fallback.visible = true
+		return false
+	for key in premium_stage_roots:
+		var root = premium_stage_roots[key]
+		if is_instance_valid(root):
+			root.visible = root == target
 	return true
+
+func load_premium_village() -> bool:
+	return show_premium_stage("Village")
 
 func finish_population(data: Dictionary, p: Dictionary, owner: bool) -> void:
 	var name_label = Label3D.new()
@@ -276,9 +310,8 @@ func apply_development(kingdom: Dictionary) -> void:
 	building_nodes.clear()
 	building_root=Node3D.new()
 	add_child(building_root)
-	var use_premium_stage = premium_owner_visuals and str(kingdom.realm.rank)=="Village"
-	if is_instance_valid(premium_visual_root):
-		premium_visual_root.visible = use_premium_stage
+	var realm_stage = str(kingdom.realm.rank)
+	var use_premium_stage = premium_owner_visuals and show_premium_stage(realm_stage)
 	building_root.visible = not use_premium_stage
 	for key in SLOTS:
 		var level_value = int(kingdom.buildings.get(key,0))
