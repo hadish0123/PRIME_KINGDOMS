@@ -36,9 +36,9 @@ func run() -> void:
 	camera.pan_screen(Vector2(100000,100000))
 	check(abs(camera.focus.x)<=76 and abs(camera.focus.z)<=76,"Camera left the settlement")
 	camera.zoom(-10000)
-	check(camera.distance==32,"Minimum camera zoom failed")
+	check(camera.distance==28,"Minimum camera zoom failed")
 	camera.zoom(10000)
-	check(camera.distance==155,"Maximum camera zoom failed")
+	check(camera.distance==145,"Maximum camera zoom failed")
 	camera.set_focus(Vector3.ZERO)
 	camera.distance = 105
 	# A real pinch and rotation must update the strategic camera.
