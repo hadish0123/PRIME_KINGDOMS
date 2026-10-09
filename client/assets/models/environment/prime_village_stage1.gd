@@ -11,7 +11,7 @@ func _configure_lods(node: Node) -> void:
             if text.ends_with("_LOD" + str(i)):
                 level = i
         if level >= 0:
-            var bounds: Array[float] = [0.0, 22.0, 38.5, 55, 100000.0]
+            var bounds: Array[float] = [0.0, 50.0, 85.0, 125.0, 100000.0]
             node.visibility_range_begin = bounds[level]
             node.visibility_range_end = bounds[level + 1]
             node.visibility_range_begin_margin = 0.0
