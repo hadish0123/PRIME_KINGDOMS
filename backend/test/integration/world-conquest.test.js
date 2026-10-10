@@ -52,6 +52,15 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
     assert.equal(ownerState.stage,'empire');
     assert.ok(ownerState.realm.ownedTiles < 10,'Owner should not receive a giant starting territory');
 
+    const ownerSearch=await api('/v2/world/search?q=Prime',undefined,rival.token);
+    assert.equal(ownerSearch.status,200);
+    const publicOwner=ownerSearch.body.results.find(r=>r.playerId===owner.playerId);
+    assert.ok(publicOwner&&publicOwner.divineOwner===true,'Creator realm must be publicly identifiable on the world map');
+    const ownerView=(await api(`/v2/world/map?radius=2&x=${publicOwner.x}&z=${publicOwner.z}`,undefined,rival.token)).body;
+    const ownerTile=ownerView.tiles.find(t=>t.ownerPlayerId===owner.playerId&&t.kind==='settlement');
+    assert.ok(ownerTile&&ownerTile.divineOwner===true);
+    assert.equal(ownerTile.attackable,false,'Divine owner settlement must be sovereign-protected');
+
     const resourcesBefore = structuredClone(ownerState.resources);
     const upgrade = await api('/v2/buildings/upgrade',{requestId:randomUUID(),key:'keep'},owner.token);
     assert.equal(upgrade.status,200,JSON.stringify(upgrade.body));
