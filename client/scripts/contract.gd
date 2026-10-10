@@ -116,6 +116,7 @@ static func strategic_map(value) -> bool:
 		if not tile.get("siteType") in ["empty","resource_node","npc_camp","wildlife","settlement","fort"]: return false
 		if not number(tile.get("siteLevel")) or tile.siteLevel < 0 or tile.siteLevel > 10: return false
 		if tile.get("resourceType") != null and not tile.resourceType in ["food","wood","stone","iron","gold"]: return false
+		if tile.has("divineOwner") and not tile.divineOwner is bool: return false
 	return true
 
 static func world_search(value) -> bool:
@@ -127,6 +128,7 @@ static func world_search(value) -> bool:
 		for key in ["x","z","realmRank"]:
 			if not number(result.get(key)): return false
 		if not result.get("online") is bool: return false
+		if result.has("divineOwner") and not result.divineOwner is bool: return false
 	return true
 
 static func clans(value) -> bool:
