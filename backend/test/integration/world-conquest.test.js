@@ -39,7 +39,6 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
 
     const owner = await register('owner@example.com','Prime Owner');
     const rival = await register('rival@example.com','Frontier Rival');
-    assert.equal((await api('/v2/kingdom',undefined,rival.token)).status,200);
     config.ownerAccountId = (await pool.query('SELECT account_id FROM players WHERE id=$1',[owner.playerId])).rows[0].account_id;
 
     const ownerState = (await api('/v2/kingdom',undefined,owner.token)).body;
@@ -73,7 +72,15 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
 
     const rivalSearch = await api('/v2/world/search?q=Frontier',undefined,owner.token);
     assert.equal(rivalSearch.status,200);
-    assert.ok(rivalSearch.body.results.some(r=>r.playerId===rival.playerId));
+    const rivalResult = rivalSearch.body.results.find(r=>r.playerId===rival.playerId);
+    assert.ok(rivalResult,'Every registered ruler must be searchable before opening the strategy layer');
+
+    const reservedView=(await api(`/v2/world/map?radius=2&x=${rivalResult.x}&z=${rivalResult.z}`,undefined,owner.token)).body;
+    assert.equal(reservedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z),false,'Inactive player home must not become procedural neutral land');
+    const rivalKingdom=(await api('/v2/kingdom',undefined,rival.token)).body;
+    assert.equal(rivalKingdom.stage,'village');
+    const activatedView=(await api(`/v2/world/map?radius=2&x=${rivalResult.x}&z=${rivalResult.z}`,undefined,owner.token)).body;
+    assert.ok(activatedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z&&t.kind==='settlement'&&t.ownerPlayerId===rival.playerId),'Activation must materialize the reserved home as a real settlement');
 
     const home = (await pool.query("SELECT x,z,world_id FROM strategic_tiles WHERE owner_player_id=$1 AND kind='settlement' LIMIT 1",[owner.playerId])).rows[0];
     assert.ok(home);
@@ -91,6 +98,7 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
     const report=command.reports.find(r=>r.id===march.reportId);
     assert.equal(report.result,'attacker');
     assert.equal(report.territoryChange,'captured');
+    assert.deepEqual(report.rewards,{},'Empty land expands territory but must not be farmable for free resources');
     assert.ok(Object.values(report.attackerLosses).every(loss=>loss.wounded===0&&loss.dead===0));
     assert.equal((await pool.query('SELECT owner_player_id FROM strategic_tiles WHERE world_id=$1 AND x=$2 AND z=$3',[home.world_id,home.x+1,home.z])).rows[0].owner_player_id,owner.playerId);
 
