@@ -158,21 +158,29 @@ export function searchMap(pool, identity, query = new URLSearchParams()) {
     const configured = Number((await db.query("SELECT value FROM kingdom_config WHERE key='world_map_search_limit'")).rows[0]?.value ?? 30);
     const limit = queryInteger(query, 'limit', Math.min(20, configured), 1, Math.min(50, configured));
     const rows = (await db.query(`
-      SELECT k.player_id,k.empire_name,k.primary_color,k.secondary_color,k.emblem,k.realm_rank,
-        p.map_x,p.map_z,a.display_name,
+      SELECT pl.id AS player_id,a.display_name,
+        coalesce(k.empire_name,v.name) AS empire_name,
+        coalesce(k.primary_color,'#6f5635') AS primary_color,
+        coalesce(k.secondary_color,'#c8a45f') AS secondary_color,
+        coalesce(k.emblem,'crown') AS emblem,
+        coalesce(k.realm_rank,1) AS realm_rank,
+        coalesce(sp.map_x,home.cell_x) AS map_x,
+        coalesce(sp.map_z,home.cell_z) AS map_z,
         (pl.last_seen_at >= clock_timestamp()-interval '45 seconds') AS online
-      FROM kingdoms k
-      JOIN players pl ON pl.id=k.player_id
+      FROM players pl
       JOIN accounts a ON a.id=pl.account_id
-      JOIN strategic_plots p ON p.player_id=k.player_id
+      JOIN villages v ON v.owner_player_id=pl.id
+      LEFT JOIN kingdoms k ON k.player_id=pl.id
+      LEFT JOIN strategic_plots sp ON sp.player_id=pl.id
+      LEFT JOIN territories home ON home.owner_player_id=pl.id AND home.is_home
       WHERE pl.world_id=$1
-        AND (k.empire_name ILIKE $2 OR a.display_name ILIKE $2)
+        AND (coalesce(k.empire_name,v.name) ILIKE $2 OR a.display_name ILIKE $2)
       ORDER BY
-        CASE WHEN lower(k.empire_name)=lower($3) OR lower(a.display_name)=lower($3) THEN 0 ELSE 1 END,
-        k.realm_rank DESC,k.empire_name,k.player_id
+        CASE WHEN lower(coalesce(k.empire_name,v.name))=lower($3) OR lower(a.display_name)=lower($3) THEN 0 ELSE 1 END,
+        coalesce(k.realm_rank,1) DESC,coalesce(k.empire_name,v.name),pl.id
       LIMIT $4
     `, [identity.world_id, `%${raw}%`, raw, limit])).rows;
-    return { query: raw, results: rows.map(r => ({
+    return { query: raw, results: rows.filter(r=>r.map_x!=null&&r.map_z!=null).map(r => ({
       playerId: r.player_id,
       playerName: r.display_name,
       empireName: r.empire_name,
