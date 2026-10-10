@@ -65,8 +65,13 @@ test('v2 settlement: forward compatibility, production, timers, replay, races, r
     const customize={requestId:randomUUID(),name:'Emerald Kingdom',primaryColor:'#117744',secondaryColor:'#ddcc22',emblem:'eagle',bannerStyle:'square'};
     assert.equal((await api('/v2/empire/customize',customize,token)).status,200);
     assert.equal((await api('/v2/empire/customize',{...customize,requestId:randomUUID(),emblem:'https://evil/upload.png'},token)).status,400);
-    const map=(await api('/v2/world/map',undefined,token)).body; assert.equal(map.tiles.length,49); assert.equal(map.region.kind,'starter');
+    const map=(await api('/v2/world/map',undefined,token)).body; assert.equal(map.tiles.length,81); assert.equal(map.region.kind,'starter');
+    assert.ok(map.tiles.every(t=>['grassland','forest','highlands','wetlands'].includes(t.biome)));
+    assert.ok(map.tiles.some(t=>t.siteType==='npc_camp'||t.siteType==='resource_node'||t.siteType==='wildlife'||t.siteType==='empty'));
     assert.ok(map.tiles.some(t=>t.ownerPlayerId===player&&t.primaryColor==='#117744'), JSON.stringify({center:map.center,owned:map.tiles.filter(t=>t.ownerPlayerId),plots:(await pool.query('SELECT * FROM strategic_plots WHERE player_id=$1',[player])).rows}));
+    const wide=(await api('/v2/world/map?radius=12',undefined,token)).body; assert.equal(wide.tiles.length,625); assert.equal(wide.radius,12);
+    const search=(await api('/v2/world/search?q=Emerald',undefined,token)).body;
+    assert.ok(search.results.some(r=>r.playerId===player&&r.empireName==='Emerald Kingdom'));
     const scene=(await api('/v2/scene',undefined,token)).body; assert.equal(scene.scene.halfSize,128); assert.equal(scene.scene.type,'settlement');
     assert.equal((await api('/v2/scene/move',{position:scene.player.position,yaw:0},token)).status,404);
     assert.equal((await api('/v2/scene/mount',{mounted:true},token)).status,404);
