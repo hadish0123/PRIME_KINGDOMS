@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ApiError } from '../errors.js';
+import { grantOwnerCapability } from './capabilities.js';
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function integer(value, min, max, code = 'invalid_quantity') {
@@ -28,6 +29,7 @@ export async function transaction(pool, identity, operation, body, perform, { re
     const playerLock = presence ? 'UPDATE players SET last_seen_at=clock_timestamp() WHERE id=$1 RETURNING id' : 'SELECT id FROM players WHERE id=$1 FOR UPDATE';
     if (!(await db.query(playerLock, [identity.player_id])).rows.length) throw new ApiError(404, 'player_unavailable');
     await db.query('SELECT initialize_kingdom($1)', [identity.player_id]);
+    if (identity.is_owner) await grantOwnerCapability(db, identity.player_id);
     const profile = (await db.query('SELECT * FROM kingdoms WHERE player_id=$1 FOR UPDATE', [identity.player_id])).rows[0];
     const hash = createHash('sha256').update(JSON.stringify(canonical(body))).digest('hex');
     if (replay) {
