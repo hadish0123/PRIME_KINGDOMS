@@ -1,6 +1,7 @@
 import { ApiError } from '../errors.js';
 import { grantXP } from './progression.js';
 import { notify } from './wars.js';
+import { capabilities } from './capabilities.js';
 
 export const RESOURCES = ['food', 'wood', 'stone', 'iron', 'gold'];
 export async function levels(db, playerId, kind) {
@@ -23,7 +24,8 @@ async function accrue(db, profile, until) {
   const clanBonus = Math.min(10, Number((await db.query('SELECT c.level FROM clan_members m JOIN clans c ON c.id=m.clan_id WHERE m.player_id=$1', [profile.player_id])).rows[0]?.level ?? 0));
   const rates = production(buildings, research, territoryBonus, clanBonus);
   const base = Number((await db.query("SELECT value FROM kingdom_config WHERE key='resource_base_capacity'")).rows[0].value);
-  const capacity = storageCapacity(buildings.warehouse??0,base);
+  const powers = await capabilities(db, profile.player_id);
+  const capacity = powers.unlimitedResources ? 1000000000000 : storageCapacity(buildings.warehouse??0,base);
   const wallets = (await db.query('SELECT * FROM kingdom_resources WHERE player_id=$1 ORDER BY resource', [profile.player_id])).rows;
   for (const w of wallets) {
     const numerator = BigInt(Math.floor(elapsed)) * BigInt(rates[w.resource]) + BigInt(w.remainder);
@@ -63,9 +65,13 @@ export async function settle(db, profile, now) {
 }
 
 export async function spend(db, playerId, cost) {
-  const wallets = Object.fromEntries((await db.query('SELECT resource,amount FROM kingdom_resources WHERE player_id=$1', [playerId])).rows.map(r => [r.resource, Number(r.amount)]));
   for (const [key, value] of Object.entries(cost)) {
     if (!RESOURCES.includes(key) || !Number.isSafeInteger(value) || value < 0 || value > 1000000000000) throw new Error('Invalid server catalog cost');
+  }
+  const powers = await capabilities(db, playerId);
+  if (powers.unlimitedResources) return;
+  const wallets = Object.fromEntries((await db.query('SELECT resource,amount FROM kingdom_resources WHERE player_id=$1', [playerId])).rows.map(r => [r.resource, Number(r.amount)]));
+  for (const [key, value] of Object.entries(cost)) {
     if (wallets[key] < value) throw new ApiError(409, 'insufficient_resources');
   }
   for (const [key, value] of Object.entries(cost)) await db.query('UPDATE kingdom_resources SET amount=amount-$3 WHERE player_id=$1 AND resource=$2', [playerId, key, value]);
