@@ -4,6 +4,7 @@ import { levels, settle } from './economy.js';
 import { loadPreset, attackTarget, resolveBattle, commandSnapshot } from './realm.js';
 import { notify, settleWars } from './wars.js';
 import { beginReturn, commanderAway, marchUnits, travelSeconds } from './campaign_inventory.js';
+import { capabilities } from './capabilities.js';
 
 async function reinforcementTarget(db, playerId, worldId, x, z) {
   const target=(await db.query('SELECT * FROM strategic_tiles WHERE world_id=$1 AND x=$2 AND z=$3 FOR UPDATE',[worldId,x,z])).rows[0];
@@ -26,7 +27,11 @@ export async function startMarch(pool, identity, body, legacy=false) {
     const army=await loadPreset(db,profile.player_id,slot);
     if (await commanderAway(db,profile.player_id,army.commander)) throw new ApiError(409,'commander_away');
     const research=await levels(db,profile.player_id,'research');
-    const limit=Math.min(Number((await db.query("SELECT value FROM kingdom_config WHERE key='march_maximum_slots'")).rows[0].value),1+Math.floor((research.leadership??0)/10));
+    const powers=await capabilities(db,profile.player_id);
+    const regularLimit=Math.min(Number((await db.query("SELECT value FROM kingdom_config WHERE key='march_maximum_slots'")).rows[0].value),1+Math.floor((research.leadership??0)/10));
+    const limit=powers.divinePower
+      ? Number((await db.query("SELECT value FROM kingdom_config WHERE key='owner_virtual_march_limit'")).rows[0]?.value ?? 100)
+      : regularLimit;
     if (Number((await db.query("SELECT count(*)::int AS n FROM kingdom_marches WHERE player_id=$1 AND phase<>'completed'",[profile.player_id])).rows[0].n)>=limit) throw new ApiError(409,'march_capacity');
     const target=kind==='attack'?await attackTarget(db,identity,profile,x,z,army,now):await reinforcementTarget(db,profile.player_id,identity.world_id,x,z);
     if (kind==='reinforce' && Number((await db.query("SELECT count(*)::int AS n FROM kingdom_marches WHERE target_owner_id=$1 AND kind='reinforce' AND phase IN ('outbound','stationed')",[target.owner_player_id])).rows[0].n)>=30) throw new ApiError(409,'reinforcement_capacity');
