@@ -55,8 +55,8 @@ func run() -> void:
 	await issue(panel,"/v2/army/preset",{"slot":1,"name":"Royal Host","formation":"wedge","stance":"aggressive","isDefense":false,"units":[{"type":"swordsman","quantity":8}]})
 	check(not panel.command_data.is_empty() and panel.command_data.presets.size()==1,"Army preset did not reach the command UI")
 	await panel.load_map()
-	check(panel.map_data.tiles.size()==49,"Strategic ownership map did not load")
-	var targets: Array = panel.map_data.tiles.filter(func(tile): return bool(tile.get("attackable",false)) and tile.ownerPlayerId == null)
+	check(panel.map_data.tiles.size()==81 and int(panel.map_data.get("radius",0))==4,"Strategic ownership map did not load")
+	var targets: Array = panel.map_data.tiles.filter(func(tile): return bool(tile.get("attackable",false)) and tile.ownerPlayerId == null and str(tile.get("siteType",""))=="empty")
 	check(not targets.is_empty(),"Strategic map exposed no connected target")
 	if not targets.is_empty():
 		await issue(panel,"/v2/army/march",{"x":int(targets[0].x),"z":int(targets[0].z),"presetSlot":1,"kind":"attack"})
