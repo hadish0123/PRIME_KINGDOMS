@@ -809,7 +809,14 @@ func build_map(column: VBoxContainer) -> void:
 		var dz = int(direction[2])
 		var home: bool = direction[0]=="Capital"
 		navigation.add_child(game.button(str(direction[0]),func():
-			map_center = {} if home else {"x":int(map_data.center.x)+dx,"z":int(map_data.center.z)+dz}
+			if home:
+				map_center = {}
+			else:
+				var world_bounds: Dictionary = map_data.get("bounds",{"minX":-63,"maxX":63,"minZ":-63,"maxZ":63})
+				map_center = {
+					"x":clampi(int(map_data.center.x)+dx,int(world_bounds.minX),int(world_bounds.maxX)),
+					"z":clampi(int(map_data.center.z)+dz,int(world_bounds.minZ),int(world_bounds.maxZ))
+				}
 			load_map()))
 	var grid = GridContainer.new()
 	grid.columns = mini(9,int(map_data.get("diameter",9)))
