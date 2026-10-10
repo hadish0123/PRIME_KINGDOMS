@@ -2,8 +2,8 @@ import { ApiError } from '../errors.js';
 import { territoryName } from './locations.js';
 import { integer, transaction } from './transaction.js';
 
-const WORLD_MIN = -63;
-const WORLD_MAX = 63;
+const WORLD_MIN = -100000;
+const WORLD_MAX = 100000;
 
 function hash01(seed, x, z, salt = 0) {
   let h = (Number(seed) ^ Math.imul(x, 374761393) ^ Math.imul(z, 668265263) ^ Math.imul(salt + 1, 2246822519)) >>> 0;
