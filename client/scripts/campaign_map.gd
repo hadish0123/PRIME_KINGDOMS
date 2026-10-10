@@ -43,6 +43,7 @@ func point(x: float,z: float) -> Vector2:
 	return (Vector2(x,z)-Vector2(bounds.position)+Vector2(0.5,0.5))*cell
 
 func base_tint(tile: Dictionary) -> Color:
+	if bool(tile.get("divineOwner",false)): return Color(0.30,0.20,0.055)
 	if tile.get("primaryColor")!=null:
 		return Color(str(tile.primaryColor)).darkened(0.56)
 	match str(tile.get("biome","grassland")):
@@ -60,7 +61,10 @@ func _draw() -> void:
 		draw_rect(Rect2(at-cell*0.5,cell),Color(0.40,0.37,0.27,0.65),false,1.0)
 		var site := str(tile.get("siteType",""))
 		if tile.kind=="settlement":
-			draw_rect(Rect2(at-Vector2(5,5),Vector2(10,10)),Color(0.82,0.73,0.52))
+			var settlement_tint = Color(1.0,0.78,0.22) if bool(tile.get("divineOwner",false)) else Color(0.82,0.73,0.52)
+			draw_rect(Rect2(at-Vector2(5,5),Vector2(10,10)),settlement_tint)
+			if bool(tile.get("divineOwner",false)):
+				draw_arc(at,8,0,TAU,20,Color(1.0,0.83,0.28),2.0,true)
 		elif tile.kind=="fort":
 			draw_circle(at,5,Color(0.69,0.62,0.48))
 		elif tile.kind=="resource":
