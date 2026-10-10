@@ -2,6 +2,9 @@ import { ApiError } from '../errors.js';
 import { territoryName } from './locations.js';
 import { integer, transaction } from './transaction.js';
 
+const WORLD_MIN = -63;
+const WORLD_MAX = 63;
+
 function hash01(seed, x, z, salt = 0) {
   let h = (Number(seed) ^ Math.imul(x, 374761393) ^ Math.imul(z, 668265263) ^ Math.imul(salt + 1, 2246822519)) >>> 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
@@ -31,8 +34,8 @@ function generatedTile(seed, x, z) {
 
 async function ensureViewport(db, worldId, seed, centerX, centerZ, radius) {
   const rows = [];
-  for (let x = centerX - radius; x <= centerX + radius; x++) {
-    for (let z = centerZ - radius; z <= centerZ + radius; z++) {
+  for (let x = Math.max(WORLD_MIN,centerX-radius); x <= Math.min(WORLD_MAX,centerX+radius); x++) {
+    for (let z = Math.max(WORLD_MIN,centerZ-radius); z <= Math.min(WORLD_MAX,centerZ+radius); z++) {
       const tile = generatedTile(seed, x, z);
       rows.push([worldId, x, z, tile.kind, tile.biome, tile.siteType, tile.siteLevel, tile.resourceType]);
     }
@@ -102,12 +105,17 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
     if (!plot) throw new ApiError(409, 'strategic_plot_required');
     const configRows = (await db.query("SELECT key,value FROM kingdom_config WHERE key IN ('world_map_default_radius','world_map_max_radius')")).rows;
     const config = Object.fromEntries(configRows.map(r => [r.key, Number(r.value)]));
-    const centerX = queryInteger(query, 'x', plot.map_x, -100000, 100000);
-    const centerZ = queryInteger(query, 'z', plot.map_z, -100000, 100000);
+    const centerX = queryInteger(query, 'x', plot.map_x, WORLD_MIN, WORLD_MAX);
+    const centerZ = queryInteger(query, 'z', plot.map_z, WORLD_MIN, WORLD_MAX);
     const radius = queryInteger(query, 'radius', config.world_map_default_radius ?? 4, 2, config.world_map_max_radius ?? 12);
+    const minX = Math.max(WORLD_MIN,centerX-radius);
+    const maxX = Math.min(WORLD_MAX,centerX+radius);
+    const minZ = Math.max(WORLD_MIN,centerZ-radius);
+    const maxZ = Math.min(WORLD_MAX,centerZ+radius);
     const seed = Number((await db.query('SELECT seed FROM worlds WHERE id=$1', [identity.world_id])).rows[0]?.seed);
     if (!Number.isSafeInteger(seed)) throw new ApiError(503, 'world_unavailable');
-    await ensureViewport(db, identity.world_id, seed, centerX, centerZ, radius);
+    const materializeRadius = radius;
+    await ensureViewport(db, identity.world_id, seed, centerX, centerZ, materializeRadius);
 
     const clan = (await db.query('SELECT clan_id FROM clan_members WHERE player_id=$1', [identity.player_id])).rows[0]?.clan_id ?? null;
     const tiles = (await db.query(`
@@ -133,7 +141,7 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
         AND t.z BETWEEN $4 AND $5
       ORDER BY t.z,t.x
       LIMIT 625
-    `, [identity.world_id, centerX-radius, centerX+radius, centerZ-radius, centerZ+radius, identity.player_id, clan])).rows;
+    `, [identity.world_id, minX, maxX, minZ, maxZ, identity.player_id, clan])).rows;
     const reserved = (await db.query(`
       SELECT t.cell_x AS x,t.cell_z AS z,t.owner_player_id,
         v.name AS empire_name,a.display_name,
@@ -150,7 +158,7 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
         AND st.world_id IS NULL
       ORDER BY t.cell_z,t.cell_x
       LIMIT 625
-    `,[identity.world_id,centerX-radius,centerX+radius,centerZ-radius,centerZ+radius])).rows;
+    `,[identity.world_id,minX,maxX,minZ,maxZ])).rows;
     const mappedTiles = tiles.map(mapTile);
     for (const row of reserved) {
       const natural = generatedTile(seed,Number(row.x),Number(row.z));
@@ -186,6 +194,8 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
       center: { x: centerX, z: centerZ },
       radius,
       diameter: radius * 2 + 1,
+      bounds: { minX:WORLD_MIN,maxX:WORLD_MAX,minZ:WORLD_MIN,maxZ:WORLD_MAX },
+      viewport: { minX,maxX,minZ,maxZ },
       tiles: mappedTiles,
       region: {
         id: plot.id,
