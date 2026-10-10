@@ -31,3 +31,13 @@ test('missing or invalid database URL fails without exposing credentials', () =>
     });
   }
 });
+
+
+test('owner account binding is optional and only accepts a UUID', () => {
+  assert.equal(loadConfig(base).ownerAccountId, null);
+  const owner = '11111111-2222-4333-8444-555555555555';
+  assert.equal(loadConfig({ ...base, PRIME_OWNER_ACCOUNT_ID: owner }).ownerAccountId, owner);
+  for (const value of ['owner@example.com','123','00000000-0000-0000-0000-00000000000z']) {
+    assert.throws(() => loadConfig({ ...base, PRIME_OWNER_ACCOUNT_ID: value }), /Invalid PRIME_OWNER_ACCOUNT_ID/);
+  }
+});
