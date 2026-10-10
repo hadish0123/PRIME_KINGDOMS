@@ -1,3 +1,4 @@
+import { capabilities } from './capabilities.js';
 export async function grantXP(db, profile, source, eventId, requested, now) {
   let amount = Math.min(100000, Math.max(0, Math.floor(requested)));
   if (source === 'training' || source === 'research' || source==='battle') {
@@ -12,7 +13,12 @@ export async function grantXP(db, profile, source, eventId, requested, now) {
 }
 
 export async function progression(db, profile) {
+  const powers = await capabilities(db, profile.player_id);
   const levels = (await db.query('SELECT * FROM kingdom_level_requirements ORDER BY level')).rows;
+  if (powers.role === 'owner') {
+    const max = levels.at(-1)?.level ?? 100;
+    return { level: max, levelDisplay: '∞', xp: Number(profile.xp), prestige: profile.prestige, conquests: profile.conquests, seasonalMedals: profile.seasonal_medals, ascensionTokens: profile.ascension_tokens, next: null, owner: true };
+  }
   const qualifies = r => Number(r.cumulative_xp) <= Number(profile.xp) && r.prestige <= profile.prestige && r.conquests <= profile.conquests && r.seasonal_medals <= profile.seasonal_medals && r.ascension_tokens <= profile.ascension_tokens;
   let level = 1;
   for (const r of levels) { if (!qualifies(r)) break; level = r.level; }
