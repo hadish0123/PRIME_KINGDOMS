@@ -45,7 +45,17 @@ async function ensureViewport(db, worldId, seed, centerX, centerZ, radius) {
   }).join(',');
   await db.query(`
     INSERT INTO strategic_tiles(world_id,x,z,kind,biome,site_type,site_level,resource_type)
-    VALUES ${values}
+    SELECT generated.world_id,generated.x,generated.z,generated.kind,generated.biome,generated.site_type,generated.site_level,generated.resource_type
+    FROM (VALUES ${values}) AS generated(world_id,x,z,kind,biome,site_type,site_level,resource_type)
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM territories reserved
+      LEFT JOIN kingdoms initialized ON initialized.player_id=reserved.owner_player_id
+      WHERE reserved.world_id=generated.world_id
+        AND reserved.cell_x=generated.x
+        AND reserved.cell_z=generated.z
+        AND initialized.player_id IS NULL
+    )
     ON CONFLICT(world_id,x,z) DO NOTHING
   `, params);
 }
