@@ -812,7 +812,7 @@ func build_map(column: VBoxContainer) -> void:
 			if home:
 				map_center = {}
 			else:
-				var world_bounds: Dictionary = map_data.get("bounds",{"minX":-63,"maxX":63,"minZ":-63,"maxZ":63})
+				var world_bounds: Dictionary = map_data.get("bounds",{"minX":-100000,"maxX":100000,"minZ":-100000,"maxZ":100000})
 				map_center = {
 					"x":clampi(int(map_data.center.x)+dx,int(world_bounds.minX),int(world_bounds.maxX)),
 					"z":clampi(int(map_data.center.z)+dz,int(world_bounds.minZ),int(world_bounds.maxZ))
