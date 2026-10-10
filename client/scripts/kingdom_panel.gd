@@ -835,6 +835,9 @@ func build_map(column: VBoxContainer) -> void:
 	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+site_title,20,Color(0.94,0.80,0.50)))
 	var owner: String = str(selected_target.empireName) if selected_target.empireName!=null else "Unclaimed Territory"
 	column.add_child(game.label(owner+" · "+Text.name_for(str(selected_target.get("biome","grassland"))),15))
+	if bool(selected_target.get("reserved",false)):
+		column.add_child(game.label("Protected ruler home · visible on the world map, but unavailable for conquest until its strategy realm activates.",14,Color(0.86,0.76,0.56)))
+		return
 	if selected_target.get("siteType")=="npc_camp":
 		column.add_child(game.label("NPC military camp · Tier %d · conquer for territory and scaled resources"%int(selected_target.get("siteLevel",1)),14,Color(0.86,0.58,0.42)))
 	elif selected_target.get("siteType")=="wildlife":
