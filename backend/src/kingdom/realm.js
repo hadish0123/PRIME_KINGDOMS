@@ -427,7 +427,9 @@ export async function resolveBattle(db,profile,now,identity,body,attacker) {
         settlement: { food: 90, gold: 85 },
         fort: { iron: 55, gold: 110 },
       };
-      rewards = {...(rewardTable[target.kind] ?? {})};
+      rewards = target.kind === 'neutral' && target.site_type === 'empty'
+        ? {}
+        : {...(rewardTable[target.kind] ?? {})};
       if (target.site_type === 'npc_camp') {
         const scale = Math.max(1, Math.min(10, Number(target.site_level ?? 1)));
         rewards = Object.fromEntries(Object.entries(rewards).map(([key,value])=>[key,value*scale]));
