@@ -828,7 +828,8 @@ func build_map(column: VBoxContainer) -> void:
 		var title: String = str(tile.get("name","Borderlands"))
 		var site_name = Text.name_for(str(tile.get("siteType",tile.kind)))
 		var ownership = "Your Realm" if own else (str(tile.empireName) if tile.empireName!=null else "Unclaimed")
-		var card = game.button(title+"\n"+site_name,func():
+		if bool(tile.get("divineOwner",false)): ownership = "DIVINE OWNER EMPIRE · "+ownership
+		var card = game.button(title+"\n"+("DIVINE" if bool(tile.get("divineOwner",false)) else site_name),func():
 			selected_target=tile_copy
 			desired_section="Map"
 			rebuild())
@@ -842,6 +843,9 @@ func build_map(column: VBoxContainer) -> void:
 	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+site_title,20,Color(0.94,0.80,0.50)))
 	var owner: String = str(selected_target.empireName) if selected_target.empireName!=null else "Unclaimed Territory"
 	column.add_child(game.label(owner+" · "+Text.name_for(str(selected_target.get("biome","grassland"))),15))
+	if bool(selected_target.get("divineOwner",false)):
+		column.add_child(game.label("DIVINE OWNER EMPIRE · Realm of the game creator · sovereign protection",15,Color(1.0,0.78,0.28)))
+		return
 	if bool(selected_target.get("reserved",false)):
 		column.add_child(game.label("Protected ruler home · visible on the world map, but unavailable for conquest until its strategy realm activates.",14,Color(0.86,0.76,0.56)))
 		return
