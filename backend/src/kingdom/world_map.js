@@ -92,6 +92,7 @@ function mapTile(t) {
     occupiedUntil: t.occupied_until,
     version: t.version,
     online: Boolean(t.owner_online),
+    divineOwner: Boolean(t.divine_owner),
     attackable: Boolean(t.attackable),
   };
 }
@@ -124,11 +125,13 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
         coalesce(k.secondary_color,c.secondary_color) AS secondary_color,
         coalesce(k.emblem,c.emblem) AS emblem,
         (op.last_seen_at >= clock_timestamp()-interval '45 seconds') AS owner_online,
+        coalesce(kc.divine_power,false) AS divine_owner,
         EXISTS(
           SELECT 1 FROM strategic_tiles own
           WHERE own.world_id=t.world_id AND own.owner_player_id=$6
             AND abs(own.x-t.x)+abs(own.z-t.z)=1
         ) AND t.owner_player_id IS DISTINCT FROM $6
+          AND NOT coalesce(kc.divine_power,false)
           AND ($7::uuid IS NULL OR t.owner_clan_id IS DISTINCT FROM $7)
           AND (t.protected_until IS NULL OR t.protected_until<=clock_timestamp())
           AND (t.occupied_until IS NULL OR t.occupied_until<=clock_timestamp()) AS attackable
@@ -136,6 +139,7 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
       LEFT JOIN kingdoms k ON k.player_id=t.owner_player_id
       LEFT JOIN clans c ON c.id=t.owner_clan_id
       LEFT JOIN players op ON op.id=t.owner_player_id
+      LEFT JOIN kingdom_capabilities kc ON kc.player_id=t.owner_player_id
       WHERE t.world_id=$1
         AND t.x BETWEEN $2 AND $3
         AND t.z BETWEEN $4 AND $5
@@ -181,6 +185,7 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
         occupiedUntil: null,
         version: 0,
         online: Boolean(row.owner_online),
+        divineOwner: false,
         attackable: false,
         reserved: true,
       });
@@ -230,6 +235,7 @@ export function searchMap(pool, identity, query = new URLSearchParams()) {
         coalesce(k.secondary_color,'#c8a45f') AS secondary_color,
         coalesce(k.emblem,'crown') AS emblem,
         coalesce(k.realm_rank,1) AS realm_rank,
+        coalesce(kc.divine_power,false) AS divine_owner,
         coalesce(sp.map_x,home.cell_x) AS map_x,
         coalesce(sp.map_z,home.cell_z) AS map_z,
         (pl.last_seen_at >= clock_timestamp()-interval '45 seconds') AS online
@@ -237,6 +243,7 @@ export function searchMap(pool, identity, query = new URLSearchParams()) {
       JOIN accounts a ON a.id=pl.account_id
       JOIN villages v ON v.owner_player_id=pl.id
       LEFT JOIN kingdoms k ON k.player_id=pl.id
+      LEFT JOIN kingdom_capabilities kc ON kc.player_id=pl.id
       LEFT JOIN strategic_plots sp ON sp.player_id=pl.id
       LEFT JOIN territories home ON home.owner_player_id=pl.id AND home.is_home
       WHERE pl.world_id=$1
@@ -256,6 +263,7 @@ export function searchMap(pool, identity, query = new URLSearchParams()) {
       primaryColor: r.primary_color,
       secondaryColor: r.secondary_color,
       emblem: r.emblem,
+      divineOwner: Boolean(r.divine_owner),
       online: Boolean(r.online),
     })) };
   }, { replay: false });
