@@ -39,6 +39,7 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
 
     const owner = await register('owner@example.com','Prime Owner');
     const rival = await register('rival@example.com','Frontier Rival');
+    assert.equal((await api('/v2/kingdom',undefined,rival.token)).status,200);
     config.ownerAccountId = (await pool.query('SELECT account_id FROM players WHERE id=$1',[owner.playerId])).rows[0].account_id;
 
     const ownerState = (await api('/v2/kingdom',undefined,owner.token)).body;
