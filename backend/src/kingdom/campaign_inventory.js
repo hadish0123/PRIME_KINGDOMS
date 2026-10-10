@@ -1,7 +1,15 @@
 import { ApiError } from '../errors.js';
 import { territoryName } from './locations.js';
+import { capabilities } from './capabilities.js';
 
 export async function availableUnits(db, playerId) {
+  const powers = await capabilities(db, playerId);
+  if (powers.unlimitedArmy) {
+    const limit = Number((await db.query("SELECT value FROM kingdom_config WHERE key='owner_virtual_unit_limit'")).rows[0]?.value ?? 100000);
+    return (await db.query("SELECT key AS type FROM kingdom_catalog WHERE kind='unit' ORDER BY key")).rows.map(r => ({
+      type:r.type,alive:limit,available:limit,deployed:0,wounded:0,dead:0,virtual:true,
+    }));
+  }
   return (await db.query('SELECT type,alive,available,deployed,wounded,dead FROM kingdom_unit_availability WHERE player_id=$1 ORDER BY type',[playerId])).rows;
 }
 

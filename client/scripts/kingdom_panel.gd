@@ -25,6 +25,8 @@ var received_ticks = 0
 var server_seconds = 0
 var replay_view: Control
 var map_center: Dictionary = {}
+var map_search_results: Array = []
+var map_radius = 4
 var chat_channel = "global"
 var view_request = 0
 var waiting_reads = 0
@@ -135,6 +137,8 @@ func clear_session() -> void:
 	extra_data.clear()
 	countdowns.clear()
 	map_center.clear()
+	map_search_results.clear()
+	map_radius = 4
 	kingdom.clear()
 	map_data.clear()
 	clan_data.clear()
@@ -288,7 +292,7 @@ func page(title: String) -> VBoxContainer:
 	scroll.add_child(column)
 	return column
 
-func council_resource_chip(key: String, value: int) -> PanelContainer:
+func council_resource_chip(key: String, value: int, unlimited: bool = false) -> PanelContainer:
 	var chip = PanelContainer.new()
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chip.custom_minimum_size.y = 37
@@ -297,7 +301,7 @@ func council_resource_chip(key: String, value: int) -> PanelContainer:
 	row.add_theme_constant_override("separation",5)
 	chip.add_child(row)
 	row.add_child(game.ui_icon(game.resource_icon_index(key),Vector2(25,25)))
-	var amount = game.label(game.format_amount(value),13,Color(0.99,0.91,0.73))
+	var amount = game.label("∞" if unlimited else game.format_amount(value),13,Color(0.99,0.91,0.73))
 	amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(amount)
 	return chip
@@ -428,14 +432,18 @@ func rebuild() -> void:
 	status.visible = false
 	column.add_child(status)
 	if not kingdom.is_empty():
-		column.add_child(game.label(Text.copy("%s · Level %d · %s") % [kingdom.empire.name,int(kingdom.progression.level),str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
+		var owner_caps: Dictionary = kingdom.get("capabilities",{})
+		var level_text = str(kingdom.progression.get("levelDisplay",kingdom.progression.level))
+		column.add_child(game.label(Text.copy("%s · Level %s · %s") % [kingdom.empire.name,level_text,str(kingdom.realm.name)],17,Color(0.92,0.86,0.74)))
+		if owner_caps.get("role")== "owner":
+			column.add_child(game.label("DIVINE OWNER REALM · unlimited resources, armies and sovereign power",14,Color(0.99,0.76,0.32)))
 		var resource_strip = GridContainer.new()
 		resource_strip.columns = 5
 		resource_strip.add_theme_constant_override("h_separation",6)
 		resource_strip.add_theme_constant_override("v_separation",4)
 		column.add_child(resource_strip)
 		for key in ["food","wood","stone","iron","gold"]:
-			resource_strip.add_child(council_resource_chip(key,int(kingdom.resources.get(key,0))))
+			resource_strip.add_child(council_resource_chip(key,int(kingdom.resources.get(key,0)),bool(owner_caps.get("unlimitedResources",false))))
 	tabs = TabContainer.new()
 	tabs.custom_minimum_size.y = 100
 	tabs.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
@@ -502,7 +510,8 @@ func cost_text(cost: Dictionary) -> String:
 func build_overview(column: VBoxContainer) -> void:
 	var realm: Dictionary = kingdom.realm
 	column.add_child(game.label(Text.copy("%s · %d controlled territories") % [realm.name,int(realm.ownedTiles)],20,Color(0.94,0.80,0.50)))
-	column.add_child(game.label(Text.copy("Ruler level %d · Keep %d · Conquests %d · Prestige %d") % [kingdom.progression.level,kingdom.buildings.keep,kingdom.progression.conquests,kingdom.progression.prestige],15))
+	var level_text = str(kingdom.progression.get("levelDisplay",kingdom.progression.level))
+	column.add_child(game.label(Text.copy("Ruler level %s · Keep %d · Conquests %d · Prestige %d") % [level_text,kingdom.buildings.keep,kingdom.progression.conquests,kingdom.progression.prestige],15))
 	if realm.next != null:
 		var next: Dictionary = realm.next
 		column.add_child(game.label(Text.copy("NEXT: %s") % next.name,17))
@@ -515,7 +524,8 @@ func build_overview(column: VBoxContainer) -> void:
 
 func build_queue(column: VBoxContainer) -> void:
 	column.add_child(game.label("Production per hour: "+cost_text(kingdom.productionPerHour),15))
-	column.add_child(game.label(Text.copy("Storage per resource: %d · XP: %d") % [kingdom.storageCapacity,kingdom.progression.xp],15))
+	var storage_text = "∞" if kingdom.get("storageCapacity")==null else str(int(kingdom.storageCapacity))
+	column.add_child(game.label(Text.copy("Storage per resource: %s · XP: %d") % [storage_text,kingdom.progression.xp],15))
 	if kingdom.progression.next != null:
 		column.add_child(game.label(Text.copy("Next level needs %d total XP; prestige and achievements also apply at high levels.") % kingdom.progression.next.xp,14))
 	if kingdom.tasks.is_empty(): column.add_child(game.label("No active construction, training or research.",16))
@@ -634,11 +644,13 @@ func build_marches(column: VBoxContainer) -> void:
 
 func build_units(column: VBoxContainer) -> void:
 	build_marches(column)
+	var unlimited_army: bool = bool(kingdom.get("capabilities",{}).get("unlimitedArmy",false))
 	var alive = 0
 	var selectors: Dictionary = {}
 	for unit in kingdom.units:
 		alive += int(unit.alive)
-		column.add_child(game.label(Text.copy("%s · %d ready · %d away · %d wounded · %d fallen") % [catalog_name("unit",str(unit.type)),unit.get("available",unit.alive),unit.get("deployed",0),unit.wounded,unit.dead],15))
+		var ready_text = "∞" if unlimited_army else str(int(unit.get("available",unit.alive)))
+		column.add_child(game.label(Text.copy("%s · %s ready · %d away · %d wounded · %d fallen") % [catalog_name("unit",str(unit.type)),ready_text,unit.get("deployed",0),unit.wounded,unit.dead],15))
 		if int(unit.wounded)>0:
 			var heal_key: String = unit.type
 			var heal_count = mini(100,int(unit.wounded))
@@ -654,7 +666,7 @@ func build_units(column: VBoxContainer) -> void:
 			amount.custom_minimum_size.x = 120
 			row.add_child(amount)
 			selectors[str(unit.type)] = amount
-	column.add_child(game.label(Text.copy("Army capacity: %d / %d") % [alive,kingdom.armyCapacity],16))
+	column.add_child(game.label("Army capacity: ∞ / ∞" if unlimited_army else Text.copy("Army capacity: %d / %d") % [alive,kingdom.armyCapacity],16))
 	column.add_child(game.label("ARMY PRESET · choose the exact force you command into battle",16,Color(0.94,0.80,0.50)))
 	var slot = SpinBox.new()
 	slot.min_value = 1
@@ -743,18 +755,45 @@ func build_empire(column: VBoxContainer) -> void:
 	column.add_child(game.button("Save Heraldry",func(): submit("/v2/empire/customize",{"name":name_input.text,"primaryColor":"#"+primary.color.to_html(false),"secondaryColor":"#"+secondary.color.to_html(false),"emblem":emblem.get_item_metadata(emblem.selected),"bannerStyle":banner.get_item_metadata(banner.selected)})))
 
 func build_map(column: VBoxContainer) -> void:
-	column.add_child(game.button("Survey Region",load_map))
+	var search_row = HBoxContainer.new()
+	search_row.add_theme_constant_override("separation",6)
+	column.add_child(search_row)
+	var search_input = game.input_field("Find ruler or empire anywhere in the world")
+	search_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	search_row.add_child(search_input)
+	search_row.add_child(game.button("Find",func(): load_map_search(search_input.text)))
+	if not map_search_results.is_empty():
+		var search_results = HFlowContainer.new()
+		search_results.add_theme_constant_override("h_separation",6)
+		column.add_child(search_results)
+		for result in map_search_results:
+			var result_copy: Dictionary = result.duplicate(true)
+			search_results.add_child(game.button(Text.copy("%s · %s") % [str(result.empireName),str(result.playerName)],func():
+				map_center={"x":int(result_copy.x),"z":int(result_copy.z)}
+				load_map()))
+	var survey_row = HBoxContainer.new()
+	survey_row.add_theme_constant_override("separation",6)
+	column.add_child(survey_row)
+	survey_row.add_child(game.button("Survey Region",load_map))
+	survey_row.add_child(game.button("− Zoom",func():
+		map_radius=maxi(2,map_radius-1)
+		load_map()))
+	survey_row.add_child(game.button("+ Zoom",func():
+		map_radius=mini(12,map_radius+1)
+		load_map()))
+	survey_row.add_child(game.label("World radius %d"%map_radius,13))
 	if map_data.is_empty():
-		column.add_child(game.label("Survey the frontier to find resources and neighboring holdings.",15))
+		column.add_child(game.label("Survey the frontier or search a ruler to inspect any known realm. Conquest expands from connected borders.",15))
 		return
 	column.add_child(game.label(str(map_data.region.name),20,Color(0.94,0.80,0.50)))
+	column.add_child(game.label("Forests, wildlife, resource sites, NPC war camps and unclaimed land are persistent strategic locations.",13))
 	var routes = CampaignMap.new()
 	routes.tiles = map_data.tiles
 	routes.campaigns = command_data.get("marches",[])+command_data.get("incoming",[])
 	routes.server_time = server_seconds
 	routes.received_ticks = received_ticks
 	routes.player_id = str(game.state.player.id)
-	routes.custom_minimum_size.y = 220
+	routes.custom_minimum_size.y = 320
 	routes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	routes.target_selected.connect(func(tile):
 		selected_target = tile
@@ -764,39 +803,61 @@ func build_map(column: VBoxContainer) -> void:
 	build_marches(column)
 	var navigation = HBoxContainer.new()
 	column.add_child(navigation)
-	for direction in [["West",-7,0],["North",0,-7],["Capital",0,0],["South",0,7],["East",7,0]]:
+	var step = int(map_data.get("diameter",map_radius*2+1))
+	for direction in [["West",-step,0],["North",0,-step],["Capital",0,0],["South",0,step],["East",step,0]]:
 		var dx = int(direction[1])
 		var dz = int(direction[2])
 		var home: bool = direction[0]=="Capital"
 		navigation.add_child(game.button(str(direction[0]),func():
-			map_center = {} if home else {"x":int(map_data.center.x)+dx,"z":int(map_data.center.z)+dz}
+			if home:
+				map_center = {}
+			else:
+				var world_bounds: Dictionary = map_data.get("bounds",{"minX":-100000,"maxX":100000,"minZ":-100000,"maxZ":100000})
+				map_center = {
+					"x":clampi(int(map_data.center.x)+dx,int(world_bounds.minX),int(world_bounds.maxX)),
+					"z":clampi(int(map_data.center.z)+dz,int(world_bounds.minZ),int(world_bounds.maxZ))
+				}
 			load_map()))
 	var grid = GridContainer.new()
-	grid.columns = 7
+	grid.columns = mini(9,int(map_data.get("diameter",9)))
 	column.add_child(grid)
 	for tile in map_data.tiles:
 		var tile_copy: Dictionary = tile.duplicate(true)
 		var color = Color(str(tile.primaryColor)) if tile.primaryColor != null else Color(0.18,0.23,0.19)
 		var own: bool = tile.ownerPlayerId==game.state.player.id
 		var title: String = str(tile.get("name","Borderlands"))
-		var kind_name: String = Text.name_for(str(tile.kind))
+		var site_name = Text.name_for(str(tile.get("siteType",tile.kind)))
 		var ownership = "Your Realm" if own else (str(tile.empireName) if tile.empireName!=null else "Unclaimed")
-		var card = game.button(title+"\n"+kind_name,func():
+		if bool(tile.get("divineOwner",false)): ownership = "DIVINE OWNER EMPIRE · "+ownership
+		var card = game.button(title+"\n"+("DIVINE" if bool(tile.get("divineOwner",false)) else site_name),func():
 			selected_target=tile_copy
 			desired_section="Map"
 			rebuild())
-		card.custom_minimum_size = Vector2(116,62)
-		card.add_theme_font_size_override("font_size",12)
-		card.tooltip_text = ownership
+		card.custom_minimum_size = Vector2(96,58)
+		card.add_theme_font_size_override("font_size",11)
+		card.tooltip_text = ownership+" · "+Text.name_for(str(tile.get("biome","grassland")))
 		card.add_theme_stylebox_override("normal",game.panel_style(color.darkened(0.5),Color(0.74,0.64,0.32) if own else Color(0.36,0.38,0.30)))
 		grid.add_child(card)
 	if selected_target.is_empty(): return
-	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+Text.name_for(str(selected_target.kind)),20,Color(0.94,0.80,0.50)))
+	var site_title = Text.name_for(str(selected_target.get("siteType",selected_target.kind)))
+	column.add_child(game.label(str(selected_target.get("name","Borderlands"))+" · "+site_title,20,Color(0.94,0.80,0.50)))
 	var owner: String = str(selected_target.empireName) if selected_target.empireName!=null else "Unclaimed Territory"
-	column.add_child(game.label(owner,15))
+	column.add_child(game.label(owner+" · "+Text.name_for(str(selected_target.get("biome","grassland"))),15))
+	if bool(selected_target.get("divineOwner",false)):
+		column.add_child(game.label("DIVINE OWNER EMPIRE · Realm of the game creator · sovereign protection",15,Color(1.0,0.78,0.28)))
+		return
+	if bool(selected_target.get("reserved",false)):
+		column.add_child(game.label("Protected ruler home · visible on the world map, but unavailable for conquest until its strategy realm activates.",14,Color(0.86,0.76,0.56)))
+		return
+	if selected_target.get("siteType")=="npc_camp":
+		column.add_child(game.label("NPC military camp · Tier %d · conquer for territory and scaled resources"%int(selected_target.get("siteLevel",1)),14,Color(0.86,0.58,0.42)))
+	elif selected_target.get("siteType")=="wildlife":
+		column.add_child(game.label("Wildlife habitat · neutral territory",14))
+	elif selected_target.kind=="resource":
+		column.add_child(game.label("Resource site · "+Text.name_for(str(selected_target.get("resourceType","resource"))),14))
 	var friendly = selected_target.kind=="settlement" and selected_target.ownerPlayerId!=game.state.player.id and selected_target.get("ownerClanId")!=null and selected_target.get("ownerClanId")==map_data.region.get("clanId")
 	if not selected_target.attackable and not friendly:
-		column.add_child(game.label("This holding cannot be attacked now. Review its borders and protection.",14))
+		column.add_child(game.label("This location is visible, but conquest requires a connected border and no active protection.",14))
 		return
 	if command_data.get("presets",[]).is_empty():
 		column.add_child(game.button("Organize an Army",func(): open_section("Army")))
@@ -942,11 +1003,34 @@ func load_map() -> void:
 	if not await wait_for_idle(): return
 	busy = true
 	var epoch: int = game.world_epoch
-	var response: Dictionary = await game.api.call_api("/v2/world/map"+(Text.copy("?x=%d&z=%d") % [map_center.x,map_center.z] if not map_center.is_empty() else ""))
+	var query = "?radius=%d"%map_radius
+	if not map_center.is_empty():
+		query += Text.copy("&x=%d&z=%d") % [map_center.x,map_center.z]
+	var response: Dictionary = await game.api.call_api("/v2/world/map"+query)
 	if epoch != game.world_epoch or not game.in_world: return
 	busy = false
 	if response.ok:
 		map_data = response.data
+		map_radius = int(map_data.get("radius",map_radius))
+		rebuild()
+	else:
+		status.text = Text.error(str(response.error))
+		if response.status==401: game.expire_session()
+
+func load_map_search(query: String) -> void:
+	var cleaned = query.strip_edges()
+	if cleaned.length()<2:
+		status.text = "Enter at least two characters."
+		return
+	if not await wait_for_idle(): return
+	busy = true
+	var epoch: int = game.world_epoch
+	var response: Dictionary = await game.api.call_api("/v2/world/search?q="+cleaned.uri_encode())
+	if epoch != game.world_epoch or not game.in_world: return
+	busy = false
+	if response.ok:
+		map_search_results = response.data.get("results",[])
+		if map_search_results.is_empty(): status.text = "No matching ruler or empire."
 		rebuild()
 	else:
 		status.text = Text.error(str(response.error))

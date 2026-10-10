@@ -49,6 +49,7 @@ static func accepts(path: String, value: Dictionary) -> bool:
 	if path == "/v2/kingdom": return kingdom(value)
 	if path in ["/v2/buildings/upgrade","/v2/research/start","/v2/units/train","/v2/empire/customize"]: return kingdom(value.get("kingdom"))
 	if path == "/v2/world/map": return strategic_map(value)
+	if path == "/v2/world/search": return world_search(value)
 	if path == "/v2/command": return command(value)
 	if path in ["/v2/army/march","/v2/army/recall","/v2/army/preset","/v2/army/preset/delete","/v2/battles/attack"]: return command(value.get("command"))
 	if path == "/v2/clans": return clans(value)
@@ -70,8 +71,18 @@ static func kingdom(value) -> bool:
 	for key in ["food","wood","stone","iron","gold"]:
 		if not number(value.resources.get(key)) or value.resources[key] < 0 or value.resources[key] > 1000000000000: return false
 	if not value.get("serverTime") is String or not value.get("settlementId") is String or not value.get("stage") is String: return false
-	if not number(value.get("storageCapacity")) or not number(value.get("armyCapacity")): return false
+	var caps = value.get("capabilities",{})
+	if not caps is Dictionary: return false
+	var unlimited_resources = bool(caps.get("unlimitedResources",false))
+	var unlimited_army = bool(caps.get("unlimitedArmy",false))
+	if unlimited_resources:
+		if value.get("storageCapacity") != null: return false
+	elif not number(value.get("storageCapacity")): return false
+	if unlimited_army:
+		if value.get("armyCapacity") != null: return false
+	elif not number(value.get("armyCapacity")): return false
 	if not number(value.progression.get("level")) or value.progression.level < 1 or value.progression.level > 100 or not number(value.progression.get("xp")): return false
+	if value.progression.has("levelDisplay") and not value.progression.levelDisplay is String: return false
 	var empire = value.empire
 	if not empire.get("name") is String or not empire.get("primaryColor") is String or not empire.get("secondaryColor") is String: return false
 	if not empire.get("emblem") in ["lion","eagle","crown","stag","sun","wolf"] or not empire.get("bannerStyle") in ["square","swallowtail","pennant"]: return false
@@ -94,10 +105,30 @@ static func kingdom(value) -> bool:
 	return true
 
 static func strategic_map(value) -> bool:
-	if not value is Dictionary or not value.get("tiles") is Array or value.tiles.size() > 49 or not value.get("region") is Dictionary: return false
+	if not value is Dictionary or not value.get("tiles") is Array or value.tiles.size() > 625 or not value.get("region") is Dictionary: return false
+	if not number(value.get("radius")) or value.radius < 2 or value.radius > 12: return false
+	if not number(value.get("diameter")) or int(value.diameter) != int(value.radius)*2+1: return false
+	if not value.get("center") is Dictionary or not number(value.center.get("x")) or not number(value.center.get("z")): return false
 	if not value.region.get("id") is String or not value.region.get("name") is String or not number(value.region.get("ownPlot")): return false
 	for tile in value.tiles:
 		if not tile is Dictionary or not number(tile.get("x")) or not number(tile.get("z")) or not tile.get("kind") in ["settlement","neutral","resource","npc","fort"]: return false
+		if not tile.get("biome") in ["grassland","forest","highlands","wetlands"]: return false
+		if not tile.get("siteType") in ["empty","resource_node","npc_camp","wildlife","settlement","fort"]: return false
+		if not number(tile.get("siteLevel")) or tile.siteLevel < 0 or tile.siteLevel > 10: return false
+		if tile.get("resourceType") != null and not tile.resourceType in ["food","wood","stone","iron","gold"]: return false
+		if tile.has("divineOwner") and not tile.divineOwner is bool: return false
+	return true
+
+static func world_search(value) -> bool:
+	if not value is Dictionary or not value.get("query") is String or not value.get("results") is Array or value.results.size()>50: return false
+	for result in value.results:
+		if not result is Dictionary: return false
+		for key in ["playerId","playerName","empireName"]:
+			if not result.get(key) is String: return false
+		for key in ["x","z","realmRank"]:
+			if not number(result.get(key)): return false
+		if not result.get("online") is bool: return false
+		if result.has("divineOwner") and not result.divineOwner is bool: return false
 	return true
 
 static func clans(value) -> bool:

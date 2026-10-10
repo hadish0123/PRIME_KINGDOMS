@@ -1,3 +1,12 @@
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function optionalUUID(env, name) {
+  const raw = env[name];
+  if (raw == null || raw === '') return null;
+  if (!UUID.test(raw)) throw new Error(`Invalid ${name}`);
+  return raw.toLowerCase();
+}
+
 function integer(env, name, fallback, min, max) {
   const raw = env[name] ?? String(fallback);
   if (!/^\d+$/.test(raw)) throw new Error(`Invalid ${name}`);
@@ -28,5 +37,6 @@ export function loadConfig(env = process.env) {
     startupRetryMs: integer(env, 'DATABASE_RETRY_MS', 3000, 100, 10000),
     version: '0.9.2',
     commit: env.RAILWAY_GIT_COMMIT_SHA || 'local',
+    ownerAccountId: optionalUUID(env, 'PRIME_OWNER_ACCOUNT_ID'),
   });
 }

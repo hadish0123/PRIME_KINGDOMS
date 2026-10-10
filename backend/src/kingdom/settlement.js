@@ -4,6 +4,7 @@ import { settle, levels, spend, scaledCost, storageCapacity } from './economy.js
 import { progression } from './progression.js';
 import { realmStage } from './realm.js';
 import { availableUnits } from './campaign_inventory.js';
+import { capabilities } from './capabilities.js';
 
 export async function snapshot(db, profile, now) {
   const economy = await settle(db, profile, now);
@@ -11,6 +12,7 @@ export async function snapshot(db, profile, now) {
   const research = await levels(db, profile.player_id, 'research');
   const healing = (await db.query('SELECT id,unit_type,quantity,finishes_at FROM kingdom_healing WHERE player_id=$1 AND completed_at IS NULL', [profile.player_id])).rows;
   const tasks = (await db.query('SELECT id,kind,key,target_level,quantity,started_at,finishes_at FROM kingdom_tasks WHERE player_id=$1 AND completed_at IS NULL ORDER BY finishes_at', [profile.player_id])).rows;
+  const powers = await capabilities(db, profile.player_id);
   const units = await availableUnits(db,profile.player_id);
   const catalog = (await db.query('SELECT kind,key,data FROM kingdom_catalog ORDER BY kind,key')).rows;
   const purposes = {
@@ -44,7 +46,7 @@ export async function snapshot(db, profile, now) {
   const progress = await progression(db, profile);
   const realm = await realmStage(db, profile, buildings, progress);
   const resources = Object.fromEntries((await db.query('SELECT resource,amount FROM kingdom_resources WHERE player_id=$1', [profile.player_id])).rows.map(r => [r.resource, Number(r.amount)]));
-  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: realm.stage, realm, empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: progress, resources, productionPerHour: economy.rates, storageCapacity: economy.capacity, buildings, research, units, healing, economyBonuses:{territory:economy.territoryBonus,clan:economy.clanBonus}, armyCapacity: (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), tasks, catalog, quotes };
+  return { serverTime: now.toISOString(), settlementId: profile.village_id, stage: realm.stage, realm, empire: { name: profile.empire_name, primaryColor: profile.primary_color, secondaryColor: profile.secondary_color, emblem: profile.emblem, bannerStyle: profile.banner_style }, progression: progress, resources, productionPerHour: economy.rates, storageCapacity: powers.unlimitedResources ? null : economy.capacity, buildings, research, units, healing, economyBonuses:{territory:economy.territoryBonus,clan:economy.clanBonus}, armyCapacity: powers.unlimitedArmy ? null : (buildings.barracks ?? 0) * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value), capabilities: powers, tasks, catalog, quotes };
 }
 
 export const getKingdom = (pool, identity) => transaction(pool, identity, 'snapshot', {}, snapshot, { replay: false });
@@ -58,13 +60,14 @@ export function enqueue(pool, identity, body, kind) {
     if (!definition) throw new ApiError(400, 'unknown_catalog_entry');
     const buildings = await levels(db, profile.player_id, 'building');
     const research = await levels(db, profile.player_id, 'research');
+    const powers = await capabilities(db, profile.player_id);
     let target = 1, quantity = 1;
     if (kind === 'training') {
       quantity = integer(body.quantity, 1, 100);
       if ((buildings[definition.facility] ?? 0) < definition.requiredLevel) throw new ApiError(409, 'building_required');
       const alive = Number((await db.query('SELECT coalesce(sum(alive+wounded),0) AS n FROM kingdom_units WHERE player_id=$1', [profile.player_id])).rows[0].n);
       const capacity = buildings.barracks * Number((await db.query("SELECT value FROM kingdom_config WHERE key='army_capacity_per_barracks_level'")).rows[0].value);
-      if (alive + quantity > Math.min(100000, capacity)) throw new ApiError(409, 'army_capacity');
+      if (!powers.unlimitedArmy && alive + quantity > Math.min(100000, capacity)) throw new ApiError(409, 'army_capacity');
     } else {
       target = (kind === 'building' ? buildings : research)[body.key] + 1;
       if (target > definition.maxLevel) throw new ApiError(409, 'maximum_level');
