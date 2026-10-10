@@ -6,7 +6,7 @@ import { register, login, gameState, nearbyWorld } from './game.js';
 import { readJSON, createAuthLimiter, createGameLimiter } from './http.js';
 import { getKingdom, enqueue, customize } from './kingdom/settlement.js';
 import { getScene } from './kingdom/scene.js';
-import { getMap } from './kingdom/world_map.js';
+import { getMap, searchMap } from './kingdom/world_map.js';
 import { getClans, clanAction } from './kingdom/clans.js';
 import { getCommandState, saveArmyPreset, deleteArmyPreset, getPresence } from './kingdom/realm.js';
 import { startMarch, recallMarch, processDueMarches } from './kingdom/campaigns.js';
@@ -32,7 +32,7 @@ export function createApplication({ pool, config, logger = console }) {
     ['/', ['GET','HEAD']], ['/health', ['GET','HEAD']], ['/ready', ['GET','HEAD']], ['/v1/world', ['GET','HEAD']],
     ['/v1/auth/register', ['POST']], ['/v1/auth/login', ['POST']], ['/v1/auth/logout', ['POST']],
     ['/v1/game', ['GET']], ['/v1/world/nearby', ['GET']],
-    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/scene',['GET']], ['/v2/command',['GET']], ['/v2/presence',['GET']],
+    ['/v2/kingdom',['GET']], ['/v2/world/map',['GET']], ['/v2/world/search',['GET']], ['/v2/scene',['GET']], ['/v2/command',['GET']], ['/v2/presence',['GET']],
     ['/v2/buildings/upgrade',['POST']], ['/v2/research/start',['POST']], ['/v2/units/train',['POST']],
     ['/v2/empire/customize',['POST']],
     ['/v2/army/preset',['POST']], ['/v2/army/preset/delete',['POST']], ['/v2/battles/attack',['POST']],
@@ -93,6 +93,7 @@ export function createApplication({ pool, config, logger = console }) {
       }
       if (path !== '/v1/world') {
         const identity = await authenticate(pool, req.headers.authorization);
+        identity.is_owner = Boolean(config.ownerAccountId && identity.account_id === config.ownerAccountId);
         if (path.startsWith('/v2/')) {
           gameLimit(identity.player_id, req.method, path);
           const body = req.method === 'POST' ? await readJSON(req) : {};
@@ -100,6 +101,7 @@ export function createApplication({ pool, config, logger = console }) {
           const handlers = {
             '/v2/kingdom': () => getKingdom(pool, identity),
             '/v2/world/map': () => getMap(pool, identity, new URL(req.url,'http://localhost').searchParams),
+            '/v2/world/search': () => searchMap(pool, identity, new URL(req.url,'http://localhost').searchParams),
             '/v2/scene': () => getScene(pool, identity),
             '/v2/buildings/upgrade': () => enqueue(pool, identity, body, 'building'),
             '/v2/research/start': () => enqueue(pool, identity, body, 'research'),
