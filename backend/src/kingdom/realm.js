@@ -6,6 +6,7 @@ import { grantXP, progression } from './progression.js';
 import { territoryName } from './locations.js';
 import { notify, settleWars, eligibleWar } from './wars.js';
 import { campaignSnapshot, commanderAway, marchUnits } from './campaign_inventory.js';
+import { capabilities } from './capabilities.js';
 
 const FORMATIONS = new Set(['balanced', 'line', 'wedge', 'shield', 'square', 'skirmish']);
 const STANCES = new Set(['aggressive', 'balanced', 'defensive']);
@@ -25,6 +26,16 @@ export async function realmStage(db, profile, buildings = null, progress = null)
   progress ??= await progression(db, profile);
   const ownedTiles = await ownedTileCount(db, profile.player_id);
   const requirements = (await db.query('SELECT * FROM realm_stage_requirements ORDER BY rank')).rows;
+  const powers = await capabilities(db, profile.player_id);
+  if (powers.role === 'owner') {
+    const row = requirements.at(-1);
+    return {
+      stage: row.stage, name: row.display_name, keep: row.min_keep,
+      playerLevel: row.min_player_level, ownedTiles, conquests: profile.conquests,
+      economy: row.min_economy, research: row.min_research, prestige: profile.prestige,
+      rank: row.rank, next: null, owner: true,
+    };
+  }
   let current = requirements[0];
   for (const row of requirements) {
     if ((buildings.keep ?? 0) < row.min_keep) break;
@@ -151,11 +162,12 @@ export function saveArmyPreset(pool, identity, body) {
       seen.add(unit.type);
       requested.push({ type: unit.type, quantity: integer(unit.quantity, 1, 100000, 'invalid_army_quantity') });
     }
-    const owned = new Map((await db.query('SELECT type,alive FROM kingdom_units WHERE player_id=$1', [profile.player_id])).rows.map(r => [r.type, r.alive]));
+    const powers = await capabilities(db, profile.player_id);
+    const owned = powers.unlimitedArmy ? new Map() : new Map((await db.query('SELECT type,alive FROM kingdom_units WHERE player_id=$1', [profile.player_id])).rows.map(r => [r.type, r.alive]));
     const known = new Set((await db.query("SELECT key FROM kingdom_catalog WHERE kind='unit'")).rows.map(r => r.key));
     for (const unit of requested) {
       if (!known.has(unit.type)) throw new ApiError(400, 'unknown_unit_type');
-      if ((owned.get(unit.type) ?? 0) < unit.quantity) throw new ApiError(409, 'army_units_unavailable');
+      if (!powers.unlimitedArmy && (owned.get(unit.type) ?? 0) < unit.quantity) throw new ApiError(409, 'army_units_unavailable');
     }
     if (body.isDefense) await db.query('UPDATE kingdom_army_presets SET is_defense=false,updated_at=$2 WHERE player_id=$1 AND is_defense', [profile.player_id, now]);
     const preset = (await db.query(`
@@ -189,6 +201,7 @@ async function combatPower(db, playerId, composition, formation, stance, targetK
   const defs = new Map((await db.query("SELECT key,data FROM kingdom_catalog WHERE kind='unit' AND key=ANY($1::text[])", [keys])).rows.map(r => [r.key, r.data]));
   const research = await levels(db, playerId, 'research');
   const buildings = await levels(db, playerId, 'building');
+  const powers = await capabilities(db, playerId);
   let power = 0;
   const led = commander ? (await db.query('SELECT key,xp FROM kingdom_commanders WHERE player_id=$1 AND key=$2',[playerId,commander])).rows[0] : null;
   const specialty = {arden:'infantry',serah:'ranged',idris:'cavalry'}[led?.key];
@@ -224,7 +237,7 @@ async function combatPower(db, playerId, composition, formation, stance, targetK
   let fortification = 1;
   if (defending && targetKind === 'settlement') fortification += Math.min(.55, (fortBuildings.walls ?? 0) * .02+(fortBuildings.gatehouse??0)*.01+(fortBuildings.watch_towers??0)*.01 + (fortResearch.defense ?? 0) * .015);
   if (defending && targetKind === 'fort') fortification += .55 + Math.min(.30, (fortResearch.defense ?? 0) * .015);
-  return power * stanceMultiplier * fortification;
+  return power * stanceMultiplier * fortification * (powers.divinePower ? 1000000 : 1);
 }
 
 export async function loadPreset(db, playerId, slot) {
@@ -236,19 +249,28 @@ export async function loadPreset(db, playerId, slot) {
   const units = (await db.query('SELECT unit_type,quantity FROM kingdom_army_preset_units WHERE preset_id=$1 ORDER BY unit_type', [preset.id])).rows
     .map(r => ({ type: r.unit_type, quantity: r.quantity }));
   if (!units.length) throw new ApiError(409, 'army_preset_empty');
-  const owned = new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
-  if (units.some(u => (owned.get(u.type) ?? 0) < u.quantity)) throw new ApiError(409, 'army_preset_stale');
+  const powers = await capabilities(db, playerId);
+  if (!powers.unlimitedArmy) {
+    const owned = new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
+    if (units.some(u => (owned.get(u.type) ?? 0) < u.quantity)) throw new ApiError(409, 'army_preset_stale');
+  }
   return { ...preset, units };
 }
 
 async function defenseComposition(db, playerId) {
+  const powers = await capabilities(db, playerId);
   const preset = (await db.query('SELECT * FROM kingdom_army_presets WHERE player_id=$1 AND is_defense=true', [playerId])).rows[0];
   if (preset) {
     const units = (await db.query('SELECT unit_type,quantity FROM kingdom_army_preset_units WHERE preset_id=$1 ORDER BY unit_type', [preset.id])).rows
       .map(r => ({ type: r.unit_type, quantity: r.quantity }));
-    const owned = new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
-    const legal = units.map(u => ({ type: u.type, quantity: Math.min(u.quantity, owned.get(u.type) ?? 0) })).filter(u => u.quantity > 0);
+    const owned = powers.unlimitedArmy ? null : new Map((await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1', [playerId])).rows.map(r => [r.type, r.alive]));
+    const legal = powers.unlimitedArmy ? units : units.map(u => ({ type: u.type, quantity: Math.min(u.quantity, owned.get(u.type) ?? 0) })).filter(u => u.quantity > 0);
     if (legal.length) return { formation: preset.formation, stance: preset.stance, commander:await commanderAway(db,playerId,preset.commander)?null:preset.commander, units: legal };
+  }
+  if (powers.unlimitedArmy) {
+    const limit = Number((await db.query("SELECT value FROM kingdom_config WHERE key='owner_virtual_unit_limit'")).rows[0]?.value ?? 100000);
+    const rows = (await db.query("SELECT key AS type FROM kingdom_catalog WHERE kind='unit' ORDER BY key")).rows;
+    return { formation:'shield', stance:'defensive', units:rows.map(r=>({type:r.type,quantity:limit})) };
   }
   const rows = (await db.query('SELECT type,available AS alive FROM kingdom_unit_availability WHERE player_id=$1 AND available>0 ORDER BY type', [playerId])).rows;
   return {
@@ -259,6 +281,8 @@ async function defenseComposition(db, playerId) {
 }
 
 async function applyCasualties(db, playerId, composition, rate, seed, side) {
+  const powers = await capabilities(db, playerId);
+  if (powers.unlimitedArmy) return Object.fromEntries(composition.map(unit => [unit.type,{wounded:0,dead:0}]));
   const result = {};
   for (const unit of composition) {
     const variance = .85 + deterministic(seed, side + ':' + unit.type) * .30;
@@ -290,8 +314,11 @@ async function addRewards(db, profile, rewards, capacity) {
   }
 }
 
-function npcPower(kind, x, z) {
-  const base = { neutral: 145, resource: 240, npc: 520, fort: 900, settlement: 650 }[kind] ?? 180;
+function npcPower(target, x, z) {
+  if (target.kind === 'neutral' && target.site_type === 'empty') return 0;
+  const base = target.site_type === 'wildlife' ? 90
+    : target.site_type === 'npc_camp' ? 420 + Math.max(1,target.site_level ?? 1) * 120
+      : ({ neutral: 145, resource: 240, npc: 520, fort: 900, settlement: 650 }[target.kind] ?? 180);
   return base * (1 + ((Math.abs(x * 13 + z * 7) % 9) / 20));
 }
 
@@ -359,14 +386,18 @@ export async function resolveBattle(db,profile,now,identity,body,attacker) {
     const attackerPower = await combatPower(db, profile.player_id, attacker.units, attacker.formation, attacker.stance, target.kind, false,attacker.commander,defendingUnits);
     let defenderPower;
     if (defender) defenderPower = await combatPower(db, defenderId, defenderArmy.units, defenderArmy.formation, defenderArmy.stance, target.kind, true,defenderArmy.commander,attacker.units);
-    else defenderPower = npcPower(target.kind, targetX, targetZ);
+    else defenderPower = npcPower(target, targetX, targetZ);
     for (const guard of guards) defenderPower+=await combatPower(db,guard.player_id,guard.units,guard.formation,guard.stance,target.kind,true,guard.commander,attacker.units,defenderId);
 
+    const attackerPowers = await capabilities(db, profile.player_id);
+    const defenderPowers = defenderId ? await capabilities(db, defenderId) : { divinePower:false };
     const attackRoll = .93 + deterministic(seed, 'attack') * .14;
     const defenseRoll = .93 + deterministic(seed, 'defense') * .14;
     const attackScore = attackerPower * attackRoll;
     const defenseScore = defenderPower * defenseRoll;
-    const result = Math.abs(attackScore - defenseScore) / Math.max(1, attackScore, defenseScore) < .025 ? 'draw' : (attackScore > defenseScore ? 'attacker' : 'defender');
+    let result = Math.abs(attackScore - defenseScore) / Math.max(1, attackScore, defenseScore) < .025 ? 'draw' : (attackScore > defenseScore ? 'attacker' : 'defender');
+    if (attackerPowers.divinePower && !defenderPowers.divinePower) result = 'attacker';
+    if (defenderPowers.divinePower && !attackerPowers.divinePower) result = 'defender';
     const ratio = attackerPower / Math.max(1, defenderPower);
     const attackerRate = result === 'attacker' ? Math.max(.025, Math.min(.11, .075 / Math.max(.55, ratio))) : (result === 'draw' ? .12 : Math.min(.34, .18 + .06 / Math.max(.4, ratio)));
     const defenderRate = result === 'defender' ? Math.max(.025, Math.min(.11, .075 * Math.max(.55, ratio))) : (result === 'draw' ? .12 : Math.min(.36, .18 + .055 * Math.max(.7, ratio)));
@@ -396,7 +427,12 @@ export async function resolveBattle(db,profile,now,identity,body,attacker) {
         settlement: { food: 90, gold: 85 },
         fort: { iron: 55, gold: 110 },
       };
-      rewards = rewardTable[target.kind] ?? {};
+      rewards = {...(rewardTable[target.kind] ?? {})};
+      if (target.site_type === 'npc_camp') {
+        const scale = Math.max(1, Math.min(10, Number(target.site_level ?? 1)));
+        rewards = Object.fromEntries(Object.entries(rewards).map(([key,value])=>[key,value*scale]));
+      }
+      if (target.kind === 'resource' && target.resource_type) rewards[target.resource_type] = (rewards[target.resource_type] ?? 0) + 60 * Math.max(1, Number(target.site_level ?? 1));
       if (defender) {
         const defenses=await levels(db,defenderId,'building');
         const protectedAmount=100+(defenses.granary??0)*100;
@@ -463,7 +499,7 @@ export async function resolveBattle(db,profile,now,identity,body,attacker) {
         id: battleId,
         replay,
         result,
-        target: { name:territoryName(targetX,targetZ), x: targetX, z: targetZ, kind: target.kind },
+        target: { name:territoryName(targetX,targetZ), x: targetX, z: targetZ, kind: target.kind, biome:target.biome, siteType:target.site_type, siteLevel:target.site_level, resourceType:target.resource_type },
         attackerPower: Math.round(attackerPower),
         defenderPower: Math.round(defenderPower),
         attackerLosses,
