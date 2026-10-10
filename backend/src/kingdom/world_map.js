@@ -45,15 +45,17 @@ async function ensureViewport(db, worldId, seed, centerX, centerZ, radius) {
   }).join(',');
   await db.query(`
     INSERT INTO strategic_tiles(world_id,x,z,kind,biome,site_type,site_level,resource_type)
-    SELECT generated.world_id,generated.x,generated.z,generated.kind,generated.biome,generated.site_type,generated.site_level,generated.resource_type
+    SELECT generated.world_id::uuid,generated.x::integer,generated.z::integer,
+      generated.kind::text,generated.biome::text,generated.site_type::text,
+      generated.site_level::integer,generated.resource_type::text
     FROM (VALUES ${values}) AS generated(world_id,x,z,kind,biome,site_type,site_level,resource_type)
     WHERE NOT EXISTS (
       SELECT 1
       FROM territories reserved
       LEFT JOIN kingdoms initialized ON initialized.player_id=reserved.owner_player_id
-      WHERE reserved.world_id=generated.world_id
-        AND reserved.cell_x=generated.x
-        AND reserved.cell_z=generated.z
+      WHERE reserved.world_id=generated.world_id::uuid
+        AND reserved.cell_x=generated.x::integer
+        AND reserved.cell_z=generated.z::integer
         AND initialized.player_id IS NULL
     )
     ON CONFLICT(world_id,x,z) DO NOTHING
