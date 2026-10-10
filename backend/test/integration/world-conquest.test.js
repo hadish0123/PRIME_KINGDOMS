@@ -76,11 +76,14 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
     assert.ok(rivalResult,'Every registered ruler must be searchable before opening the strategy layer');
 
     const reservedView=(await api(`/v2/world/map?radius=2&x=${rivalResult.x}&z=${rivalResult.z}`,undefined,owner.token)).body;
-    assert.equal(reservedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z),false,'Inactive player home must not become procedural neutral land');
+    const reservedTile=reservedView.tiles.find(t=>t.x===rivalResult.x&&t.z===rivalResult.z);
+    assert.ok(reservedTile&&reservedTile.reserved===true&&reservedTile.kind==='settlement','Inactive ruler must appear as a protected virtual settlement');
+    assert.equal(reservedTile.ownerPlayerId,rival.playerId);
+    assert.equal(reservedTile.attackable,false);
     const rivalKingdom=(await api('/v2/kingdom',undefined,rival.token)).body;
     assert.equal(rivalKingdom.stage,'village');
     const activatedView=(await api(`/v2/world/map?radius=2&x=${rivalResult.x}&z=${rivalResult.z}`,undefined,owner.token)).body;
-    assert.ok(activatedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z&&t.kind==='settlement'&&t.ownerPlayerId===rival.playerId),'Activation must materialize the reserved home as a real settlement');
+    assert.ok(activatedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z&&t.kind==='settlement'&&t.ownerPlayerId===rival.playerId&&!t.reserved),'Activation must replace the virtual marker with the authoritative settlement');
 
     const home = (await pool.query("SELECT x,z,world_id FROM strategic_tiles WHERE owner_player_id=$1 AND kind='settlement' LIMIT 1",[owner.playerId])).rows[0];
     assert.ok(home);
