@@ -134,6 +134,50 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
       ORDER BY t.z,t.x
       LIMIT 625
     `, [identity.world_id, centerX-radius, centerX+radius, centerZ-radius, centerZ+radius, identity.player_id, clan])).rows;
+    const reserved = (await db.query(`
+      SELECT t.cell_x AS x,t.cell_z AS z,t.owner_player_id,
+        v.name AS empire_name,a.display_name,
+        (p.last_seen_at >= clock_timestamp()-interval '45 seconds') AS owner_online
+      FROM territories t
+      JOIN players p ON p.id=t.owner_player_id
+      JOIN accounts a ON a.id=p.account_id
+      JOIN villages v ON v.owner_player_id=p.id
+      LEFT JOIN strategic_tiles st
+        ON st.world_id=t.world_id AND st.x=t.cell_x AND st.z=t.cell_z
+      WHERE t.world_id=$1
+        AND t.cell_x BETWEEN $2 AND $3
+        AND t.cell_z BETWEEN $4 AND $5
+        AND st.world_id IS NULL
+      ORDER BY t.cell_z,t.cell_x
+      LIMIT 625
+    `,[identity.world_id,centerX-radius,centerX+radius,centerZ-radius,centerZ+radius])).rows;
+    const mappedTiles = tiles.map(mapTile);
+    for (const row of reserved) {
+      const natural = generatedTile(seed,Number(row.x),Number(row.z));
+      mappedTiles.push({
+        name: territoryName(row.x,row.z),
+        x: Number(row.x), z: Number(row.z),
+        kind: 'settlement',
+        biome: natural.biome,
+        siteType: 'settlement',
+        siteLevel: 0,
+        resourceType: null,
+        ownerPlayerId: row.owner_player_id,
+        ownerClanId: null,
+        empireName: row.empire_name,
+        playerName: row.display_name,
+        primaryColor: '#6f5635',
+        secondaryColor: '#c8a45f',
+        emblem: 'crown',
+        protectedUntil: null,
+        occupiedUntil: null,
+        version: 0,
+        online: Boolean(row.owner_online),
+        attackable: false,
+        reserved: true,
+      });
+    }
+    mappedTiles.sort((a,b)=>a.z-b.z || a.x-b.x);
     const regionPlots = (await db.query(
       'SELECT p.plot,p.player_id,p.map_x,p.map_z,k.empire_name,k.primary_color,k.emblem FROM strategic_plots p LEFT JOIN kingdoms k ON k.player_id=p.player_id WHERE p.region_id=$1 ORDER BY p.plot LIMIT 1024',
       [plot.id],
@@ -142,7 +186,7 @@ export function getMap(pool, identity, query = new URLSearchParams()) {
       center: { x: centerX, z: centerZ },
       radius,
       diameter: radius * 2 + 1,
-      tiles: tiles.map(mapTile),
+      tiles: mappedTiles,
       region: {
         id: plot.id,
         name: plot.name,
