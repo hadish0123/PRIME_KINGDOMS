@@ -52,15 +52,6 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
     assert.equal(ownerState.stage,'empire');
     assert.ok(ownerState.realm.ownedTiles < 10,'Owner should not receive a giant starting territory');
 
-    const ownerSearch=await api('/v2/world/search?q=Prime',undefined,rival.token);
-    assert.equal(ownerSearch.status,200);
-    const publicOwner=ownerSearch.body.results.find(r=>r.playerId===owner.playerId);
-    assert.ok(publicOwner&&publicOwner.divineOwner===true,'Creator realm must be publicly identifiable on the world map');
-    const ownerView=(await api(`/v2/world/map?radius=2&x=${publicOwner.x}&z=${publicOwner.z}`,undefined,rival.token)).body;
-    const ownerTile=ownerView.tiles.find(t=>t.ownerPlayerId===owner.playerId&&t.kind==='settlement');
-    assert.ok(ownerTile&&ownerTile.divineOwner===true);
-    assert.equal(ownerTile.attackable,false,'Divine owner settlement must be sovereign-protected');
-
     const resourcesBefore = structuredClone(ownerState.resources);
     const upgrade = await api('/v2/buildings/upgrade',{requestId:randomUUID(),key:'keep'},owner.token);
     assert.equal(upgrade.status,200,JSON.stringify(upgrade.body));
@@ -93,6 +84,15 @@ test('world conquest and owner capability: global search, NPC camps, empty land 
     assert.equal(rivalKingdom.stage,'village');
     const activatedView=(await api(`/v2/world/map?radius=2&x=${rivalResult.x}&z=${rivalResult.z}`,undefined,owner.token)).body;
     assert.ok(activatedView.tiles.some(t=>t.x===rivalResult.x&&t.z===rivalResult.z&&t.kind==='settlement'&&t.ownerPlayerId===rival.playerId&&!t.reserved),'Activation must replace the virtual marker with the authoritative settlement');
+
+    const ownerSearch=await api('/v2/world/search?q=Prime',undefined,rival.token);
+    assert.equal(ownerSearch.status,200);
+    const publicOwner=ownerSearch.body.results.find(r=>r.playerId===owner.playerId);
+    assert.ok(publicOwner&&publicOwner.divineOwner===true,'Creator realm must be publicly identifiable on the world map');
+    const ownerView=(await api(`/v2/world/map?radius=2&x=${publicOwner.x}&z=${publicOwner.z}`,undefined,rival.token)).body;
+    const ownerTile=ownerView.tiles.find(t=>t.ownerPlayerId===owner.playerId&&t.kind==='settlement');
+    assert.ok(ownerTile&&ownerTile.divineOwner===true);
+    assert.equal(ownerTile.attackable,false,'Divine owner settlement must be sovereign-protected');
 
     const home = (await pool.query("SELECT x,z,world_id FROM strategic_tiles WHERE owner_player_id=$1 AND kind='settlement' LIMIT 1",[owner.playerId])).rows[0];
     assert.ok(home);
